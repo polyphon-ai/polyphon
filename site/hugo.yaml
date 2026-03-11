@@ -1,0 +1,37 @@
+baseURL: https://coreydaley.dev/polyphon/
+languageCode: en-us
+title: Polyphon
+theme: PaperMod
+
+paginate: 10
+
+params:
+  homeInfoParams:
+    Title: "One chat. Many minds."
+    Content: >
+      Polyphon is an open source GUI for orchestrating conversations between multiple
+      AI agents simultaneously. Agents respond to you — and to each other.
+  socialIcons:
+    - name: github
+      url: https://github.com/coreydaley/polyphon
+
+  label:
+    text: Polyphon
+
+  assets:
+    disableHLJS: false
+
+  ShowReadingTime: true
+  ShowShareButtons: false
+  ShowPostNavLinks: true
+  ShowBreadCrumbs: true
+  ShowCodeCopyButtons: true
+
+menu:
+  main:
+    - name: Docs
+      url: /docs/
+      weight: 10
+    - name: GitHub
+      url: https://github.com/coreydaley/polyphon
+      weight: 20
