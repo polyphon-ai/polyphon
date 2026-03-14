@@ -3,7 +3,7 @@ import type { ExpiryStatus } from '../../../shared/types';
 import wordmarkLightUrl from '../../../../assets/wordmark-light.svg?url';
 import wordmarkDarkUrl from '../../../../assets/wordmark-dark.svg?url';
 
-function ChannelBadge({ channel }: { channel: 'alpha' | 'beta' | 'release' }) {
+function ChannelBadge({ channel }: { channel: 'alpha' | 'beta' | 'release' | 'dev' }) {
   const label = channel === 'alpha' ? 'Alpha Build' : 'Beta Build';
   return (
     <span className="inline-flex items-center rounded-full bg-indigo-100 dark:bg-indigo-900/40 px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">
