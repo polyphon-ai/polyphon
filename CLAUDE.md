@@ -116,10 +116,13 @@ idempotent and safe to call on every startup.
 
 **Schema change rules:**
 
-1. Edit `schema.ts` directly — add columns to `CREATE_TABLES_SQL` and bump `SCHEMA_VERSION`.
-2. Never run migrations from the renderer.
-3. Integration tests use `:memory:` — never the user's real data directory.
-4. When changing the schema, update the affected query file's row interface in the same commit.
+1. Every schema change after the initial release requires a new numbered migration file (e.g. `002_add_foo.ts`) that exports `up(db: DatabaseSync): void`.
+2. Register the new migration in `migrations/index.ts` — call it conditionally based on `currentVersion` and bump `SCHEMA_VERSION` in `schema.ts`.
+3. Also update `CREATE_TABLES_SQL` in `schema.ts` to reflect the final schema for fresh installs.
+4. Migrations are append-only. Never edit a migration file after it has been committed.
+5. Never run migrations from the renderer.
+6. Integration tests use `:memory:` — never the user's real data directory.
+7. When adding a migration, update the affected query file's row interface in the same commit.
 
 
 ---
