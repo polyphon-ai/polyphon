@@ -1,0 +1,158 @@
+import { describe, it, expect } from 'vitest';
+import { DatabaseSync } from 'node:sqlite';
+import { runMigrations } from './index';
+
+// v13 schema: same as current CREATE_TABLES_SQL but without build_expiry table
+const V13_SCHEMA = `
+  CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL);
+
+  CREATE TABLE IF NOT EXISTS compositions (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    mode TEXT NOT NULL CHECK(mode IN ('conductor', 'broadcast')),
+    continuation_policy TEXT NOT NULL CHECK(continuation_policy IN ('none', 'prompt', 'auto')),
+    continuation_max_rounds INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    archived INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS composition_voices (
+    id TEXT PRIMARY KEY,
+    composition_id TEXT NOT NULL REFERENCES compositions(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL,
+    model TEXT,
+    cli_command TEXT,
+    cli_args TEXT,
+    display_name TEXT NOT NULL,
+    system_prompt TEXT,
+    sort_order INTEGER NOT NULL,
+    color TEXT NOT NULL,
+    avatar_icon TEXT NOT NULL,
+    custom_provider_id TEXT,
+    tone_override TEXT,
+    system_prompt_template_id TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    composition_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    mode TEXT NOT NULL CHECK(mode IN ('conductor', 'broadcast')),
+    continuation_policy TEXT NOT NULL CHECK(continuation_policy IN ('none', 'prompt', 'auto')),
+    continuation_max_rounds INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    archived INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS messages (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK(role IN ('conductor', 'voice', 'system')),
+    voice_id TEXT,
+    voice_name TEXT,
+    content TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    round_index INTEGER NOT NULL,
+    metadata TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS provider_configs (
+    id TEXT PRIMARY KEY,
+    provider TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    voice_type TEXT NOT NULL CHECK(voice_type IN ('api', 'cli')) DEFAULT 'api',
+    default_model TEXT,
+    cli_command TEXT,
+    cli_args TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    UNIQUE(provider, voice_type)
+  );
+
+  CREATE TABLE IF NOT EXISTS custom_providers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    base_url TEXT NOT NULL,
+    api_key_env_var TEXT,
+    default_model TEXT,
+    deleted INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS tones (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    is_builtin INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS system_prompt_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS user_profile (
+    id INTEGER PRIMARY KEY CHECK(id = 1),
+    conductor_name TEXT NOT NULL DEFAULT '',
+    pronouns TEXT NOT NULL DEFAULT '',
+    conductor_context TEXT NOT NULL DEFAULT '',
+    default_tone TEXT NOT NULL DEFAULT 'collaborative',
+    conductor_color TEXT NOT NULL DEFAULT '',
+    conductor_avatar TEXT NOT NULL DEFAULT '',
+    updated_at INTEGER NOT NULL
+  );
+`;
+
+describe('migration 014 (v13 → v14): build_expiry table', () => {
+  it('adds build_expiry table on upgrade from v13 DB', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA journal_mode = WAL');
+    // Set up v13 schema (no build_expiry table)
+    db.exec(V13_SCHEMA);
+    db.prepare('INSERT INTO schema_version (version) VALUES (?)').run(13);
+
+    // Verify build_expiry does not exist before migration
+    const beforeTables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='build_expiry'")
+      .all() as { name: string }[];
+    expect(beforeTables).toHaveLength(0);
+
+    // Run migrations
+    runMigrations(db);
+
+    // Verify build_expiry now exists
+    const afterTables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='build_expiry'")
+      .all() as { name: string }[];
+    expect(afterTables).toHaveLength(1);
+
+    // Verify schema_version was updated to 14
+    const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
+    expect(row.version).toBe(14);
+  });
+
+  it('does not fail on fresh install (build_expiry already in CREATE_TABLES_SQL)', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA journal_mode = WAL');
+    // Fresh install — no schema_version, runMigrations creates everything
+    runMigrations(db);
+
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='build_expiry'")
+      .all() as { name: string }[];
+    expect(tables).toHaveLength(1);
+
+    const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
+    expect(row.version).toBe(14);
+  });
+});
