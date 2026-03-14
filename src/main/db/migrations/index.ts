@@ -59,6 +59,11 @@ export function runMigrations(db: DatabaseSync): void {
     insertTemplate.run(id, name, content, now, now);
   }
 
+  db.prepare(`
+    INSERT OR IGNORE INTO user_profile (id, conductor_name, pronouns, conductor_context, default_tone, conductor_color, conductor_avatar, updated_at)
+    VALUES (1, '', '', '', 'collaborative', '', '', ?)
+  `).run(now);
+
   const row = db.prepare('SELECT version FROM schema_version LIMIT 1').get() as
     | { version: number }
     | undefined;

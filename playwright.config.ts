@@ -9,7 +9,7 @@ export default defineConfig({
   globalTimeout: process.env.CI ? 30 * 60 * 1_000 : 0,
   retries: process.env.CI ? 2 : 0,
   // Run spec files in parallel — each launches its own isolated Electron instance.
-  workers: process.env.CI ? 3 : 3,
+  workers: process.env.CI ? 3 : 5,
   reporter: process.env.CI ? 'github' : 'list',
   // Electron tests launch the app process directly — no browser URL needed.
   use: {

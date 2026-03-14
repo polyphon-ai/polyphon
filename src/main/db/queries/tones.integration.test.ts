@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { runMigrations } from '../migrations';
-import { up as migration009 } from '../migrations/009_tones_and_templates';
 import { listTones, getTone, createTone, updateTone, deleteTone } from './tones';
 import { upsertUserProfile } from './userProfile';
 import { insertComposition } from './compositions';
@@ -139,7 +138,7 @@ describe('tones queries', () => {
 
   it('INSERT OR IGNORE prevents re-seeding built-in tones on repeated runs', () => {
     const before = getTone(db, 'professional')!;
-    migration009(db);
+    runMigrations(db);
     const after = getTone(db, 'professional')!;
     expect(after.name).toBe(before.name);
     expect(after.createdAt).toBe(before.createdAt);
