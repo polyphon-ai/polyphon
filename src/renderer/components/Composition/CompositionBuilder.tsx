@@ -261,7 +261,7 @@ export default function CompositionBuilder({
           {voices.length > 0 ? (
             <div className="mt-4">
               <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                Roster — drag to reorder
+                Ensemble — drag to reorder
               </div>
               <VoiceOrderList
                 voices={voices}
