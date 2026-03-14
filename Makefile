@@ -39,7 +39,7 @@ dist: ## Create distributable installers for the current platform
 # ─── Test ─────────────────────────────────────────────────────────────────────
 
 .PHONY: test
-test: test-unit test-integration test-e2e ## Run all non-live tests (unit + integration + e2e)
+test: lint test-unit test-integration test-e2e ## Run lint then all non-live tests (unit + integration + e2e)
 
 .PHONY: test-unit
 test-unit: ## Run unit tests (TypeScript)
