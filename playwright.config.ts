@@ -3,7 +3,8 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   testMatch: ['**/*.spec.ts'],
-  timeout: 60_000,
+  // 120s to accommodate Electron startup on Windows (dev-drive workspace copy adds latency).
+  timeout: 120_000,
   // Cap the entire suite. voices.spec.ts alone takes ~14 min on Linux/Windows runners.
   globalTimeout: process.env.CI ? 30 * 60 * 1_000 : 0,
   retries: process.env.CI ? 2 : 0,
