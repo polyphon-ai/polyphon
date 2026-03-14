@@ -34,9 +34,9 @@ jobs:
       - name: Integration tests
         run: npm run test:integration
 
-  # ── 2a. Build Linux installers (.deb + .rpm) ────────────────────────────────
-  make-linux:
-    name: Make (Linux)
+  # ── 2a. Build Linux x64 AppImage ────────────────────────────────────────────
+  make-linux-x64:
+    name: Make (Linux x64)
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -61,20 +61,58 @@ jobs:
             libxshmfence1 \
             rpm
 
-      - name: Build Linux installers
-        run: npm run make
+      - name: Build Linux x64 AppImage
+        run: npm run make -- --arch x64
 
-      - name: Upload Linux artifacts
+      - name: Upload Linux x64 artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: installers-linux
+          name: installers-linux-x64
           path: out/make/**/*.AppImage
           if-no-files-found: error
           retention-days: 1
 
-  # ── 2b. Build macOS installer (.zip) ────────────────────────────────────────
-  make-macos:
-    name: Make (macOS)
+  # ── 2b. Build Linux arm64 AppImage ───────────────────────────────────────────
+  make-linux-arm64:
+    name: Make (Linux arm64)
+    needs: test
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Install Electron system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            libgtk-3-0 \
+            libgbm1 \
+            libnss3 \
+            libasound2t64 \
+            libxshmfence1 \
+            rpm
+
+      - name: Build Linux arm64 AppImage
+        run: npm run make -- --arch arm64
+
+      - name: Upload Linux arm64 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-linux-arm64
+          path: out/make/**/*.AppImage
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── 2b. Build macOS arm64 installer ─────────────────────────────────────────
+  make-macos-arm64:
+    name: Make (macOS arm64)
     needs: test
     runs-on: macos-latest
     steps:
@@ -88,20 +126,47 @@ jobs:
       - name: Install npm dependencies
         run: npm install
 
-      - name: Build macOS installer
+      - name: Build macOS arm64 installer
         run: npm run make -- --arch arm64
 
-      - name: Upload macOS artifacts
+      - name: Upload macOS arm64 artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: installers-macos
+          name: installers-macos-arm64
           path: out/make/**/*.dmg
           if-no-files-found: error
           retention-days: 1
 
-  # ── 2c. Build Windows installer (.exe) ──────────────────────────────────────
-  make-windows:
-    name: Make (Windows)
+  # ── 2c. Build macOS x64 installer ────────────────────────────────────────────
+  make-macos-x64:
+    name: Make (macOS x64)
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Build macOS x64 installer
+        run: npm run make -- --arch x64
+
+      - name: Upload macOS x64 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-macos-x64
+          path: out/make/**/*.dmg
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── 2d. Build Windows x64 installer ──────────────────────────────────────────
+  make-windows-x64:
+    name: Make (Windows x64)
     needs: test
     runs-on: windows-latest
     steps:
@@ -115,13 +180,44 @@ jobs:
       - name: Install npm dependencies
         run: npm install
 
-      - name: Build Windows installer
-        run: npm run make
+      - name: Build Windows x64 installer
+        run: npm run make -- --arch x64
+        env:
+          BUILD_ARCH: x64
 
-      - name: Upload Windows artifacts
+      - name: Upload Windows x64 artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: installers-windows
+          name: installers-windows-x64
+          path: out/make/**/*.exe
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── 2e. Build Windows arm64 installer ────────────────────────────────────────
+  make-windows-arm64:
+    name: Make (Windows arm64)
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Build Windows arm64 installer
+        run: npm run make -- --arch arm64
+        env:
+          BUILD_ARCH: arm64
+
+      - name: Upload Windows arm64 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-windows-arm64
           path: out/make/**/*.exe
           if-no-files-found: error
           retention-days: 1
@@ -130,27 +226,45 @@ jobs:
   # Downloads all platform artifacts and attaches them to a release for the tag.
   release:
     name: Publish Release
-    needs: [make-linux, make-macos, make-windows]
+    needs: [make-linux-x64, make-linux-arm64, make-macos-arm64, make-macos-x64, make-windows-x64, make-windows-arm64]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Download Linux artifacts
+      - name: Download Linux x64 artifacts
         uses: actions/download-artifact@v4
         with:
-          name: installers-linux
+          name: installers-linux-x64
           path: dist/linux
 
-      - name: Download macOS artifacts
+      - name: Download Linux arm64 artifacts
         uses: actions/download-artifact@v4
         with:
-          name: installers-macos
+          name: installers-linux-arm64
+          path: dist/linux
+
+      - name: Download macOS arm64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: installers-macos-arm64
           path: dist/macos
 
-      - name: Download Windows artifacts
+      - name: Download macOS x64 artifacts
         uses: actions/download-artifact@v4
         with:
-          name: installers-windows
+          name: installers-macos-x64
+          path: dist/macos
+
+      - name: Download Windows x64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: installers-windows-x64
+          path: dist/windows
+
+      - name: Download Windows arm64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: installers-windows-arm64
           path: dist/windows
 
       - name: Create GitHub Release

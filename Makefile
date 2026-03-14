@@ -97,12 +97,12 @@ test-docker-e2e: ## Run e2e tests in Docker (Playwright + Electron + Xvfb)
 #   - Run `make vm-ubuntu-provision` / `make vm-windows-provision` once first.
 #   - Windows: Git for Windows must be installed before provisioning.
 
-UBUNTU_VM_USER  ?= UBUNTU_VM_USER_PLACEHOLDER
-UBUNTU_VM_HOST  ?= UBUNTU_VM_HOST_PLACEHOLDER
+UBUNTU_VM_USER  ?= corey
+UBUNTU_VM_HOST  ?= 192.168.64.4
 UBUNTU_VM_PATH  ?= ~/polyphon
 
-WINDOWS_VM_USER ?= WINDOWS_VM_USER_PLACEHOLDER
-WINDOWS_VM_HOST ?= WINDOWS_VM_HOST_PLACEHOLDER
+WINDOWS_VM_USER ?= corey
+WINDOWS_VM_HOST ?= 192.168.64.6
 WINDOWS_VM_PATH ?= ~/polyphon
 
 _UBUNTU_VM  := $(UBUNTU_VM_USER)@$(UBUNTU_VM_HOST)
@@ -131,6 +131,8 @@ vm-ubuntu-provision: ## Provision Ubuntu VM: install Node 22 + system deps for E
 	@ssh $(_UBUNTU_VM) 'node --version 2>/dev/null | grep -q "^v22" || { \
 		curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && \
 		sudo apt-get install -y nodejs; }'
+	@echo "==> Updating npm to latest..."
+	@ssh $(_UBUNTU_VM) 'sudo npm install -g npm@latest'
 	@echo "==> Ubuntu VM provisioned."
 
 .PHONY: test-vm-ubuntu
