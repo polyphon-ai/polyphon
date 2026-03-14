@@ -65,7 +65,7 @@ jobs:
         run: npm run make
 
       - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: installers-linux
           path: out/make/**/*.AppImage
@@ -92,7 +92,7 @@ jobs:
         run: npm run make -- --arch arm64
 
       - name: Upload macOS artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: installers-macos
           path: out/make/**/*.dmg
@@ -119,7 +119,7 @@ jobs:
         run: npm run make
 
       - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: installers-windows
           path: out/make/**/*.exe
