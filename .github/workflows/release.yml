@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  # ── 1. Lint + unit + integration ───────────────────────────────────────────
+  # Run on Linux only — deterministic across OSes; gates all build jobs.
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Lint (TypeScript type-check)
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests
+        run: npm run test:integration
+
+  # ── 2a. Build Linux installers (.deb + .rpm) ────────────────────────────────
+  make-linux:
+    name: Make (Linux)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Install Electron system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            libgtk-3-0 \
+            libgbm1 \
+            libnss3 \
+            libasound2t64 \
+            libxshmfence1 \
+            rpm
+
+      - name: Build Linux installers
+        run: npm run make
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-linux
+          path: out/make/**/*.AppImage
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── 2b. Build macOS installer (.zip) ────────────────────────────────────────
+  make-macos:
+    name: Make (macOS)
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Build macOS installer
+        run: npm run make -- --arch arm64
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-macos
+          path: out/make/**/*.dmg
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── 2c. Build Windows installer (.exe) ──────────────────────────────────────
+  make-windows:
+    name: Make (Windows)
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Build Windows installer
+        run: npm run make
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-windows
+          path: out/make/**/*.exe
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── 3. Create GitHub Release ─────────────────────────────────────────────────
+  # Downloads all platform artifacts and attaches them to a release for the tag.
+  release:
+    name: Publish Release
+    needs: [make-linux, make-macos, make-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: installers-linux
+          path: dist/linux
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: installers-macos
+          path: dist/macos
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: installers-windows
+          path: dist/windows
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/linux/**/*.AppImage
+            dist/macos/**/*.dmg
+            dist/windows/**/*.exe
