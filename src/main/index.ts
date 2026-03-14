@@ -72,6 +72,12 @@ app.whenReady().then(async () => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+
+  // Abort all active CLI voice subprocesses before the app exits so no orphaned
+  // child processes keep the process group alive (relevant on Linux/Windows).
+  app.on('before-quit', () => {
+    voiceManager.disposeAll();
+  });
 });
 
 app.on('window-all-closed', () => {
