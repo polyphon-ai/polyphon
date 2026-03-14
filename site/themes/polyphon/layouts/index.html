@@ -1,0 +1,385 @@
+{{ define "main" }}
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-logo" aria-hidden="true">
+      <img src="/brand/wordmark-light.svg" alt="" class="hero-logo-light" />
+      <img src="/brand/wordmark-dark.svg" alt="" class="hero-logo-dark" />
+    </div>
+
+    <h1>One chat. Many minds.</h1>
+    <p class="hero-subtitle">
+      Polyphon orchestrates conversations between multiple AI voices simultaneously.
+      You send a message — every voice responds. They hear each other.
+    </p>
+
+    <div class="demo-window card-base hero-demo" aria-label="See Polyphon in action">
+      <div class="demo-titlebar" aria-hidden="true">
+        <div class="demo-dots"><span></span><span></span><span></span></div>
+        <span class="demo-title">Polyphon</span>
+        <span class="demo-sim-label">Simulated</span>
+      </div>
+      <div class="demo-body">
+      <div class="demo-sidebar" aria-hidden="true">
+        <div class="demo-sidebar-logo">
+          <img src="/brand/wordmark-light.svg" alt="Polyphon" class="demo-wordmark-light" />
+          <img src="/brand/wordmark-dark.svg" alt="Polyphon" class="demo-wordmark-dark" />
+        </div>
+        <div class="demo-sidebar-nav">
+          <div class="demo-sidebar-section">
+            {{ partial "icon.html" (dict "name" "layers" "size" 14) }}
+            <span class="demo-sidebar-section-label">Sessions</span>
+          </div>
+          <div class="demo-sidebar-item demo-sidebar-item--active">Demo Session</div>
+          <div class="demo-sidebar-section demo-sidebar-section--gap">
+            {{ partial "icon.html" (dict "name" "music" "size" 14) }}
+            <span class="demo-sidebar-section-label">Compositions</span>
+          </div>
+        </div>
+        <div class="demo-sidebar-footer">
+          <div class="demo-sidebar-item">
+            {{ partial "icon.html" (dict "name" "sliders" "size" 14) }}
+            Settings
+          </div>
+        </div>
+      </div>
+      <div class="demo-main">
+        <div class="demo-session-header" aria-hidden="true">
+          <span class="demo-session-title">Demo Session</span>
+          <div class="demo-session-voices">
+            <span class="demo-session-badge demo-session-badge--broadcast">Broadcast</span>
+            <span class="demo-session-badge" style="--badge:var(--demo-anthropic)">Anthropic</span>
+            <span class="demo-session-badge" style="--badge:var(--demo-openai)">OpenAI</span>
+            <span class="demo-session-badge" style="--badge:var(--demo-gemini)">Gemini</span>
+            <span class="demo-session-badge" style="--badge:var(--demo-copilot)">Copilot</span>
+            <span class="demo-session-badge" style="--badge:var(--demo-ollama)">Ollama</span>
+          </div>
+        </div>
+      <div class="demo-feed">
+
+        <!-- Conductor — right, with user icon -->
+        <div class="demo-msg">
+          <div class="demo-row demo-row-end">
+            <div class="demo-voice-content demo-voice-content--right">
+              <div class="demo-voice-header demo-voice-header--right">
+                <span class="demo-voice-tag" style="--vtag:var(--demo-conductor)">conductor</span>
+                <span class="demo-voice-name">Corey</span>
+              </div>
+              <div class="demo-bubble demo-bubble-conductor" style="--accent:var(--demo-conductor)">
+                What's the single most important skill for a developer?
+              </div>
+            </div>
+            <span class="demo-avatar demo-avatar-you">{{ partial "icon.html" (dict "name" "user" "size" 18) }}</span>
+          </div>
+        </div>
+
+        <!-- Claude — left -->
+        <div class="demo-msg">
+          <div class="demo-row">
+            <span class="demo-avatar" style="color:var(--demo-anthropic)">
+              {{- partial "provider-logo.html" (dict "name" "anthropic" "size" 16) -}}
+            </span>
+            <div class="demo-voice-content">
+              <div class="demo-voice-header">
+                <span class="demo-voice-name">Claude</span>
+                <span class="demo-voice-tag" style="--vtag:var(--demo-anthropic)">anthropic</span>
+              </div>
+              <div class="demo-bubble demo-bubble-voice" style="--accent:var(--demo-anthropic)">
+                Learning to read error messages carefully. Most answers are already in the output — you just have to slow down and actually read them.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GPT-4o — right -->
+        <div class="demo-msg">
+          <div class="demo-row demo-row-end">
+            <div class="demo-voice-content demo-voice-content--right">
+              <div class="demo-voice-header demo-voice-header--right">
+                <span class="demo-voice-tag" style="--vtag:var(--demo-openai)">openai</span>
+                <span class="demo-voice-name">GPT-4o</span>
+              </div>
+              <div class="demo-bubble demo-bubble-voice demo-bubble-voice--right" style="--accent:var(--demo-openai)">
+                Claude's right that reading errors matters. I'd extend it: the real skill is forming a hypothesis from that output, testing it, and updating your mental model — debugging as a loop, not a guess.
+              </div>
+            </div>
+            <span class="demo-avatar" style="color:var(--demo-openai)">
+              {{- partial "provider-logo.html" (dict "name" "openai" "size" 16) -}}
+            </span>
+          </div>
+        </div>
+
+        <!-- Gemini — left -->
+        <div class="demo-msg">
+          <div class="demo-row">
+            <span class="demo-avatar" style="color:var(--demo-gemini)">
+              {{- partial "provider-logo.html" (dict "name" "gemini" "size" 16) -}}
+            </span>
+            <div class="demo-voice-content">
+              <div class="demo-voice-header">
+                <span class="demo-voice-name">Gemini</span>
+                <span class="demo-voice-tag" style="--vtag:var(--demo-gemini)">gemini</span>
+              </div>
+              <div class="demo-bubble demo-bubble-voice" style="--accent:var(--demo-gemini)">
+                Both Claude and GPT-4o are describing comfort with not knowing. That meta-skill — staying calm when confused — is what separates developers who compound from those who plateau.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Copilot — right -->
+        <div class="demo-msg">
+          <div class="demo-row demo-row-end">
+            <div class="demo-voice-content demo-voice-content--right">
+              <div class="demo-voice-header demo-voice-header--right">
+                <span class="demo-voice-tag" style="--vtag:var(--demo-copilot)">copilot</span>
+                <span class="demo-voice-name">Copilot</span>
+              </div>
+              <div class="demo-bubble demo-bubble-voice demo-bubble-voice--right" style="--accent:var(--demo-copilot)">
+                Agreed with Gemini. I'd add one habit that reinforces everything above: small, intentional commits. Articulating what you changed forces the clarity that Claude, GPT-4o, and Gemini are all pointing at.
+              </div>
+            </div>
+            <span class="demo-avatar" style="color:var(--demo-copilot)">
+              {{- partial "provider-logo.html" (dict "name" "copilot" "size" 16) -}}
+            </span>
+          </div>
+        </div>
+
+        <!-- Llama — left -->
+        <div class="demo-msg">
+          <div class="demo-row">
+            <span class="demo-avatar" style="color:var(--demo-ollama)">
+              {{- partial "provider-logo.html" (dict "name" "ollama" "size" 16) -}}
+            </span>
+            <div class="demo-voice-content">
+              <div class="demo-voice-header">
+                <span class="demo-voice-name">Llama</span>
+                <span class="demo-voice-tag" style="--vtag:var(--demo-ollama)">ollama</span>
+              </div>
+              <div class="demo-bubble demo-bubble-voice" style="--accent:var(--demo-ollama)">
+                What everyone above is pointing at is the same thing: tight feedback loops. Errors, hypotheses, commits — they all close the gap between action and understanding faster.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="demo-input-bar" aria-hidden="true">
+        <span class="demo-input-placeholder">Message the ensemble…</span>
+      </div>
+      </div><!-- /.demo-main -->
+      </div><!-- /.demo-body -->
+    </div><!-- /.demo-window -->
+
+  </div>
+</section>
+
+<!-- Features grid -->
+<section class="features" aria-label="Features">
+  <div class="container">
+    <div class="features-heading">
+      <h2>Everything you need to orchestrate AI</h2>
+      <p>Designed for engineers, researchers, and curious minds who want more than one perspective.</p>
+    </div>
+    <div class="features-grid">
+      {{ range .Site.Data.homepage.features }}
+      <div class="card-base feature-card">
+        <div class="feature-card-header">
+          <div class="feature-icon" aria-hidden="true">
+            {{ partial "icon.html" (dict "name" .icon "size" 20) }}
+          </div>
+          <h3>{{ .title }}</h3>
+        </div>
+        <p>{{ .body }}</p>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+</section>
+
+<!-- Supported providers -->
+<section class="providers" aria-label="Supported providers">
+  <div class="container">
+    <h2>Works with the models you already use</h2>
+    <div class="providers-grid">
+      <div class="provider-group">
+        <span class="provider-group-label">API</span>
+        <ul class="provider-group-list">
+          <li>{{ partial "provider-logo.html" (dict "name" "anthropic" "size" 16) }}Anthropic Claude</li>
+          <li>{{ partial "provider-logo.html" (dict "name" "openai" "size" 16) }}OpenAI GPT</li>
+          <li>{{ partial "provider-logo.html" (dict "name" "gemini" "size" 16) }}Google Gemini</li>
+        </ul>
+      </div>
+      <div class="provider-group">
+        <span class="provider-group-label">CLI</span>
+        <ul class="provider-group-list">
+          <li>{{ partial "provider-logo.html" (dict "name" "anthropic" "size" 16) }}Claude Code</li>
+          <li>{{ partial "provider-logo.html" (dict "name" "openai" "size" 16) }}Codex</li>
+          <li>{{ partial "provider-logo.html" (dict "name" "copilot" "size" 16) }}GitHub Copilot</li>
+        </ul>
+      </div>
+      <div class="provider-group">
+        <span class="provider-group-label">OpenAI-compatible</span>
+        <ul class="provider-group-list">
+          <li>{{ partial "provider-logo.html" (dict "name" "ollama" "size" 16) }}Ollama</li>
+          <li>{{ partial "provider-logo.html" (dict "name" "lmstudio" "size" 16) }}LM Studio</li>
+          <li>{{ partial "provider-logo.html" (dict "name" "custom" "size" 16) }}Any custom endpoint</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Principles -->
+<section class="principles" aria-label="Designed with you in mind">
+  <div class="container">
+    <div class="principles-inner">
+      <h2 class="principles-heading">Designed with you in mind</h2>
+      <ul class="principles-list" role="list">
+        <li class="principles-item">
+          {{ partial "icon.html" (dict "name" "hard-drive" "size" 16) }}
+          <span>Local-first</span>
+        </li>
+        <li class="principles-item">
+          {{ partial "icon.html" (dict "name" "eye-off" "size" 16) }}
+          <span>No telemetry</span>
+        </li>
+        <li class="principles-item">
+          {{ partial "icon.html" (dict "name" "key" "size" 16) }}
+          <span>Bring your own key</span>
+        </li>
+        <li class="principles-item">
+          {{ partial "icon.html" (dict "name" "shuffle" "size" 16) }}
+          <span>Provider-agnostic</span>
+        </li>
+        <li class="principles-item">
+          {{ partial "icon.html" (dict "name" "mic" "size" 16) }}
+          <span>Multi-voice</span>
+        </li>
+        <li class="principles-item">
+          {{ partial "icon.html" (dict "name" "monitor" "size" 16) }}
+          <span>Cross-platform</span>
+        </li>
+        <li class="principles-item">
+          {{ partial "icon.html" (dict "name" "accessibility" "size" 16) }}
+          <span>Accessible</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Downloads / CTA -->
+{{ $version := .Site.Params.appVersion }}
+<section id="download" class="downloads" aria-label="Download Polyphon">
+  <div class="container">
+    <div class="downloads-heading">
+      <h2>Ready to conduct your ensemble?</h2>
+      <p>Install Polyphon, add your voices, and start your first session in minutes.</p>
+    </div>
+    <div class="downloads-grid">
+
+      <!-- macOS -->
+      <div class="download-card card-base" data-platform="macos">
+        <div class="download-card-platform">
+          <div class="download-platform-icon" aria-hidden="true">
+            {{ partial "platform-logo.html" (dict "name" "macos" "size" 28) }}
+          </div>
+          <div>
+            <h3 class="download-platform-name">macOS</h3>
+            <p class="download-platform-sub">Apple Silicon</p>
+          </div>
+        </div>
+        <div class="download-files">
+          <a class="download-file-btn" href="Polyphon-{{ $version }}-arm64.dmg">
+            {{ partial "icon.html" (dict "name" "download" "size" 14) }}
+            <span class="download-file-info">
+              <span class="download-filename">Polyphon-{{ $version }}-arm64.dmg</span>
+              <span class="download-arch">Apple Silicon</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Linux -->
+      <div class="download-card card-base" data-platform="linux">
+        <div class="download-card-platform">
+          <div class="download-platform-icon" aria-hidden="true">
+            {{ partial "platform-logo.html" (dict "name" "linux" "size" 28) }}
+          </div>
+          <div>
+            <h3 class="download-platform-name">Linux</h3>
+            <p class="download-platform-sub">Universal · x86_64</p>
+          </div>
+        </div>
+        <div class="download-files">
+          <a class="download-file-btn" href="Polyphon-{{ $version }}.AppImage">
+            {{ partial "icon.html" (dict "name" "download" "size" 14) }}
+            <span class="download-file-info">
+              <span class="download-filename">Polyphon-{{ $version }}.AppImage</span>
+              <span class="download-arch">AppImage · x86_64</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Windows -->
+      <div class="download-card card-base" data-platform="windows">
+        <div class="download-card-platform">
+          <div class="download-platform-icon" aria-hidden="true">
+            {{ partial "platform-logo.html" (dict "name" "windows" "size" 28) }}
+          </div>
+          <div>
+            <h3 class="download-platform-name">Windows</h3>
+            <p class="download-platform-sub">Windows 10 &amp; 11</p>
+          </div>
+        </div>
+        <div class="download-files">
+          <a class="download-file-btn" href="Polyphon Setup.exe">
+            {{ partial "icon.html" (dict "name" "download" "size" 14) }}
+            <span class="download-file-info">
+              <span class="download-filename">Polyphon Setup.exe</span>
+              <span class="download-arch">64-bit installer</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+    <a class="docs-card card-base" href="/docs/getting-started/">
+      <div class="docs-card-icon" aria-hidden="true">
+        {{ partial "icon.html" (dict "name" "book-open" "size" 22) }}
+      </div>
+      <div class="docs-card-body">
+        <p class="docs-card-heading">New to Polyphon?</p>
+        <p class="docs-card-sub">Read the getting started guide to add your first voices and launch your first session in minutes.</p>
+      </div>
+      <span class="docs-card-cta" aria-hidden="true">
+        Read the docs
+        {{ partial "icon.html" (dict "name" "chevron-right" "size" 16) }}
+      </span>
+    </a>
+
+  </div>
+</section>
+<script>
+(function () {
+  var ua = navigator.userAgent;
+  var platform =
+    /Mac/.test(ua) && !/iPhone|iPad/.test(ua) ? 'macos' :
+    /Win/.test(ua) ? 'windows' :
+    /Linux/.test(ua) && !/Android/.test(ua) ? 'linux' :
+    null;
+  if (!platform) return;
+  var card = document.querySelector('.download-card[data-platform="' + platform + '"]');
+  if (!card) return;
+  card.classList.add('download-card--detected');
+  var badge = document.createElement('div');
+  badge.className = 'download-card-badge';
+  badge.textContent = 'Recommended for you';
+  card.prepend(badge);
+})();
+</script>
+
+{{ end }}

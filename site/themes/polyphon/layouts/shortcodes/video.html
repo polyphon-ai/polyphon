@@ -1,0 +1,6 @@
+<figure class="video-embed">
+  <video controls preload="metadata" playsinline width="100%"{{ with .Get "poster" }} poster="{{ . }}"{{ end }}>
+    <source src="{{ .Get "src" }}" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+</figure>

@@ -1,0 +1,19 @@
+{{ define "main" }}
+<div data-pagefind-ignore class="container search-page">
+  <h1>{{ .Title }}</h1>
+  <div class="search-container">
+    <label for="search-input" class="sr-only">Search blog posts and documentation</label>
+    <input
+      type="search"
+      id="search-input"
+      class="search-input"
+      placeholder="Search…"
+      autofocus
+    />
+  </div>
+  <div id="search-results" role="status" aria-live="polite" aria-atomic="true">
+    <p class="search-message">Enter a query to search blog posts and docs.</p>
+  </div>
+</div>
+<script type="module" src="/js/search.js"></script>
+{{ end }}
