@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 370 120" width="370" height="120">
+  <defs>
+    <clipPath id="ic">
+      <rect x="0" y="0" width="120" height="120" rx="26"/>
+    </clipPath>
+    <linearGradient id="wg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#3730a3"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="120" height="120" rx="26" fill="#f0f0f8"/>
+  <g clip-path="url(#ic)">
+    <path d="M 95 0 A 25 25 0 0 0 120 25"    fill="none" stroke="#3730a3" stroke-width="5"   stroke-linecap="round" opacity="0.95"/>
+    <path d="M 75 0 A 45 45 0 0 0 120 45"    fill="none" stroke="#4338ca" stroke-width="4.5" stroke-linecap="round" opacity="0.88"/>
+    <path d="M 54 0 A 66 66 0 0 0 120 66"    fill="none" stroke="#4f46e5" stroke-width="4"   stroke-linecap="round" opacity="0.78"/>
+    <path d="M 33 0 A 87 87 0 0 0 120 87"    fill="none" stroke="#6366f1" stroke-width="3.5" stroke-linecap="round" opacity="0.62"/>
+    <path d="M 13 0 A 107 107 0 0 0 120 107" fill="none" stroke="#818cf8" stroke-width="3"   stroke-linecap="round" opacity="0.44"/>
+    <path d="M 0 95 A 25 25 0 0 1 25 120"   fill="none" stroke="#6d28d9" stroke-width="5"   stroke-linecap="round" opacity="0.92"/>
+    <path d="M 0 73 A 47 47 0 0 1 47 120"   fill="none" stroke="#7c3aed" stroke-width="4.5" stroke-linecap="round" opacity="0.82"/>
+    <path d="M 0 50 A 70 70 0 0 1 70 120"   fill="none" stroke="#0891b2" stroke-width="4"   stroke-linecap="round" opacity="0.72"/>
+    <path d="M 0 27 A 93 93 0 0 1 93 120"   fill="none" stroke="#0e7490" stroke-width="3.5" stroke-linecap="round" opacity="0.56"/>
+  </g>
+  <text x="144" y="76" font-family="Geist Sans, system-ui, sans-serif" font-size="52" font-weight="600" letter-spacing="-1.5" fill="url(#wg)">Polyphon</text>
+</svg>
