@@ -1,0 +1,40 @@
+baseURL: https://polyphon.dev/
+languageCode: en-us
+title: Polyphon
+theme: polyphon
+
+paginate: 10
+
+params:
+  description: "Open source desktop app for orchestrating conversations between multiple AI voices simultaneously."
+  gaId: G-H87CVDM7K1
+  ogImage: "/images/og-default.png"
+  appVersion: "0.1.0-alpha"
+  # twitterHandle: "polyphonapp"        # set to enable twitter:site tag
+
+taxonomies:
+  tag: tags
+  category: categories
+
+outputs:
+  home:
+    - HTML
+    - RSS
+  section:
+    - HTML
+    - RSS
+
+menu:
+  main:
+    - name: Docs
+      url: /docs/
+      weight: 10
+    - name: Blog
+      url: /blog/
+      weight: 15
+    - name: Search
+      url: /search/
+      weight: 16
+    - name: Download
+      url: /#download
+      weight: 18

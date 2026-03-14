@@ -1,0 +1,99 @@
+{{ define "main" }}
+<div class="docs-layout">
+  <!-- Desktop sidebar -->
+  <aside data-pagefind-ignore class="docs-sidebar-wrap" aria-label="Documentation navigation">
+    {{ partial "docs-sidebar.html" . }}
+  </aside>
+
+  <!-- Content -->
+  <div class="docs-content">
+    <!-- Mobile: open sidebar drawer -->
+    <button class="docs-drawer-btn" id="docs-drawer-btn" type="button" aria-expanded="false" aria-controls="docs-sidebar-overlay">
+      {{ partial "icon.html" (dict "name" "menu" "size" 16) }}
+      Navigation
+    </button>
+
+    <h1 data-pagefind-meta="title:{{ .Title }}">{{ .Title }}</h1>
+    <span data-pagefind-meta="section:Docs" style="display:none"></span>
+    <article data-pagefind-body class="prose">
+      {{ .Content }}
+    </article>
+  </div>
+</div>
+
+<!-- Mobile sidebar overlay/drawer -->
+<div data-pagefind-ignore class="docs-sidebar-overlay" id="docs-sidebar-overlay" role="dialog" aria-modal="true" aria-label="Documentation navigation">
+  <div class="docs-sidebar-overlay-backdrop" id="docs-sidebar-backdrop"></div>
+  <div class="docs-sidebar-drawer" id="docs-sidebar-drawer">
+    <div class="docs-sidebar-drawer-header">
+      <span style="font-size:0.875rem;font-weight:700;color:var(--color-text-muted);letter-spacing:0.04em;text-transform:uppercase;">Docs</span>
+      <button class="docs-sidebar-drawer-close" id="docs-sidebar-close" type="button" aria-label="Close navigation">
+        {{ partial "icon.html" (dict "name" "x" "size" 16) }}
+      </button>
+    </div>
+    {{ $docsSection := .Site.GetPage "section" "docs" }}
+    {{ $currentPage := . }}
+    {{ range $docsSection.Pages.ByWeight }}
+    <a href="{{ .RelPermalink }}"{{ if eq $currentPage.RelPermalink .RelPermalink }} aria-current="page"{{ end }}>{{ .Title }}</a>
+    {{ end }}
+  </div>
+</div>
+
+<script>
+(function() {
+  var btn = document.getElementById('docs-drawer-btn');
+  var overlay = document.getElementById('docs-sidebar-overlay');
+  var close = document.getElementById('docs-sidebar-close');
+  var backdrop = document.getElementById('docs-sidebar-backdrop');
+  var drawer = document.getElementById('docs-sidebar-drawer');
+
+  if (!btn) return;
+
+  function openDrawer() {
+    overlay.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+    close.focus();
+    document.addEventListener('keydown', handleEscape);
+    trapFocus(drawer);
+  }
+
+  function closeDrawer() {
+    overlay.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.focus();
+    document.removeEventListener('keydown', handleEscape);
+    removeTrap();
+  }
+
+  function handleEscape(e) {
+    if (e.key === 'Escape') closeDrawer();
+  }
+
+  var trapCleanup = null;
+
+  function trapFocus(el) {
+    var focusable = el.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    var first = focusable[0];
+    var last = focusable[focusable.length - 1];
+    function onKey(e) {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+    el.addEventListener('keydown', onKey);
+    trapCleanup = function() { el.removeEventListener('keydown', onKey); };
+  }
+
+  function removeTrap() {
+    if (trapCleanup) { trapCleanup(); trapCleanup = null; }
+  }
+
+  btn.addEventListener('click', openDrawer);
+  close.addEventListener('click', closeDrawer);
+  backdrop.addEventListener('click', closeDrawer);
+})();
+</script>
+{{ end }}
