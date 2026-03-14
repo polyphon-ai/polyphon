@@ -218,6 +218,10 @@ clean-app: ## Remove Electron Forge / Vite build output
 clean-dev-data: ## Remove local development database
 	rm -rf .dev-data
 
+.PHONY: reset-app-data
+reset-app-data: ## Delete packaged app user data (DB + localStorage) for a clean first-run test — macOS only
+	rm -rf "$(HOME)/Library/Application Support/Polyphon"
+
 # ─── Help ─────────────────────────────────────────────────────────────────────
 
 .PHONY: help
