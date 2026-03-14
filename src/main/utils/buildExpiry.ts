@@ -110,9 +110,18 @@ export async function checkExpiry(db: DatabaseSync, options?: { skipNtp?: boolea
     };
   }
 
-  // Warn if buildTimestamp is 0 (Vite constants were not injected)
+  // Dev run: Vite constants were not injected
   if (buildTimestamp === 0) {
-    console.warn('[buildExpiry] buildTimestamp is 0 — Vite constants may not have been injected');
+    return {
+      expired: false,
+      channel: 'dev',
+      version,
+      buildTimestamp: 0,
+      expiryTimestamp: Infinity,
+      daysRemaining: Infinity,
+      hoursRemaining: Infinity,
+      downloadUrl: DOWNLOAD_URL,
+    };
   }
 
   const remoteTime = options?.skipNtp ? null : await fetchRemoteTime();

@@ -3,7 +3,7 @@
 
 export interface ExpiryStatus {
   expired: boolean;
-  channel: 'alpha' | 'beta' | 'release';
+  channel: 'alpha' | 'beta' | 'release' | 'dev';
   version: string;
   buildTimestamp: number;
   expiryTimestamp: number;
