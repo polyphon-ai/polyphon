@@ -1,0 +1,37 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+        name: Detect secrets (gitleaks)
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: lint
+        name: TypeScript type-check
+        language: system
+        entry: npm run lint
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: test-unit
+        name: Unit tests
+        language: system
+        entry: npm run test:unit
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: test-integration
+        name: Integration tests
+        language: system
+        entry: npm run test:integration
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: test-e2e
+        name: E2E tests (mocked voices)
+        language: system
+        entry: npm run test:e2e
+        pass_filenames: false
+        stages: [pre-push]
