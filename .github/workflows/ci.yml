@@ -30,7 +30,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Cache node_modules
         id: cache-node-modules
@@ -60,7 +60,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Cache node_modules
         id: cache-node-modules
@@ -90,7 +90,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Cache node_modules
         id: cache-node-modules
@@ -122,7 +122,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Cache node_modules
         id: cache-node-modules
@@ -171,7 +171,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: "24"
 
       # ── Caching: all cache steps must come BEFORE setup-dev-drive (Windows)
       # so the post-step cache upload runs before the dev drive is dismounted.
