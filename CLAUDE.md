@@ -83,10 +83,10 @@ const db = new DatabaseSync(dbPath)
 db.exec('PRAGMA journal_mode = WAL')
 ```
 
-### Schema (SCHEMA_VERSION = 9)
+### Schema (SCHEMA_VERSION = 1)
 
 Tables: `schema_version`, `compositions`, `composition_voices`, `sessions`, `messages`,
-`provider_configs`, `custom_providers`, `tones`, `system_prompt_templates`, `user_profile`
+`provider_configs`, `custom_providers`, `tones`, `system_prompt_templates`, `user_profile`, `build_expiry`
 
 Key constraints:
 - `messages.role` CHECK: `('conductor', 'voice', 'system')`
@@ -96,7 +96,7 @@ Key constraints:
 - `composition_voices` has a nullable `custom_provider_id TEXT` column (UUID into `custom_providers`) used when `provider = 'openai-compat'`
 - `composition_voices` has a nullable `system_prompt_template_id TEXT` column (UUID into `system_prompt_templates`)
 - `custom_providers.slug` has a UNIQUE constraint; `deleted INTEGER NOT NULL DEFAULT 0` enables soft-delete
-- `tones.name` has a UNIQUE constraint; `is_builtin = 1` rows (seeded by migration 009) cannot be deleted or updated
+- `tones.name` has a UNIQUE constraint; `is_builtin = 1` rows (seeded at startup) cannot be deleted or updated
 - `tones` built-in rows use the preset key as ID (`professional`, `collaborative`, etc.); custom tones use UUIDs
 
 ### Migrations
@@ -106,28 +106,20 @@ src/main/db/
 ├── index.ts              # DatabaseSync instance + path resolution
 ├── schema.ts             # Raw SQL + SCHEMA_VERSION
 ├── migrations/
-│   ├── index.ts          # Manual migration runner
-│   ├── 003_system_message_role.ts
-│   ├── 004_user_profile.ts
-│   ├── 005_archived.ts
-│   ├── 006_pronouns.ts
-│   ├── 007_custom_providers.ts
-│   ├── 008_voice_tone_override.ts
-│   └── 009_tones_and_templates.ts
+│   └── index.ts          # runMigrations: applies CREATE_TABLES_SQL + seeds built-in data
 └── queries/              # One file per domain (sessions, messages, compositions, …)
 ```
 
-Each migration exports an `up(db: DatabaseSync): void` function. The runner in
-`migrations/index.ts` calls them in order, guarding fresh installs with `if (row !== undefined)`
-where the column already exists in `CREATE_TABLES_SQL`.
+`runMigrations(db)` in `migrations/index.ts` runs `CREATE_TABLES_SQL` (all `CREATE TABLE IF NOT EXISTS`)
+then seeds built-in tones and sample system prompt templates using `INSERT OR IGNORE`. It is
+idempotent and safe to call on every startup.
 
-**Migration rules (absolute):**
+**Schema change rules:**
 
-1. Migrations are append-only. Never edit a migration file after it has been committed.
+1. Edit `schema.ts` directly — add columns to `CREATE_TABLES_SQL` and bump `SCHEMA_VERSION`.
 2. Never run migrations from the renderer.
 3. Integration tests use `:memory:` — never the user's real data directory.
-4. Every schema change requires a new numbered migration file.
-5. When adding a migration, update the affected query file's row interface in the same commit.
+4. When changing the schema, update the affected query file's row interface in the same commit.
 
 
 ---
@@ -159,7 +151,7 @@ polyphon/
 │   │   ├── db/
 │   │   │   ├── index.ts             # DatabaseSync instance + path resolution
 │   │   │   ├── schema.ts            # Raw SQL + SCHEMA_VERSION
-│   │   │   ├── migrations/          # Numbered migration files + runner
+│   │   │   ├── migrations/          # runMigrations: schema apply + seed
 │   │   │   └── queries/             # One file per domain
 │   │   ├── voices/
 │   │   │   ├── Voice.ts             # Voice interface + VoiceProviderRegistration
