@@ -181,4 +181,10 @@ export class VoiceManager {
       this.sessions.delete(sessionId);
     }
   }
+
+  disposeAll(): void {
+    for (const sessionId of [...this.sessions.keys()]) {
+      this.disposeSession(sessionId);
+    }
+  }
 }
