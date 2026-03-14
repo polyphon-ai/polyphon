@@ -265,6 +265,10 @@
           {{ partial "icon.html" (dict "name" "accessibility" "size" 16) }}
           <span>Accessible</span>
         </li>
+        <li class="principles-item">
+          {{ partial "icon.html" (dict "name" "unlink" "size" 16) }}
+          <span>No lock-in</span>
+        </li>
       </ul>
     </div>
   </div>
@@ -288,7 +292,7 @@
           </div>
           <div>
             <h3 class="download-platform-name">macOS</h3>
-            <p class="download-platform-sub">Apple Silicon</p>
+            <p class="download-platform-sub">Apple Silicon &amp; Intel</p>
           </div>
         </div>
         <div class="download-files">
@@ -297,6 +301,13 @@
             <span class="download-file-info">
               <span class="download-filename">Polyphon-{{ $version }}-arm64.dmg</span>
               <span class="download-arch">Apple Silicon</span>
+            </span>
+          </a>
+          <a class="download-file-btn" href="Polyphon-{{ $version }}-x64.dmg">
+            {{ partial "icon.html" (dict "name" "download" "size" 14) }}
+            <span class="download-file-info">
+              <span class="download-filename">Polyphon-{{ $version }}-x64.dmg</span>
+              <span class="download-arch">Intel</span>
             </span>
           </a>
         </div>
@@ -310,15 +321,22 @@
           </div>
           <div>
             <h3 class="download-platform-name">Linux</h3>
-            <p class="download-platform-sub">Universal · x86_64</p>
+            <p class="download-platform-sub">x86_64 &amp; arm64</p>
           </div>
         </div>
         <div class="download-files">
-          <a class="download-file-btn" href="Polyphon-{{ $version }}.AppImage">
+          <a class="download-file-btn" href="Polyphon-{{ $version }}-x64.AppImage">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
-              <span class="download-filename">Polyphon-{{ $version }}.AppImage</span>
+              <span class="download-filename">Polyphon-{{ $version }}-x64.AppImage</span>
               <span class="download-arch">AppImage · x86_64</span>
+            </span>
+          </a>
+          <a class="download-file-btn" href="Polyphon-{{ $version }}-arm64.AppImage">
+            {{ partial "icon.html" (dict "name" "download" "size" 14) }}
+            <span class="download-file-info">
+              <span class="download-filename">Polyphon-{{ $version }}-arm64.AppImage</span>
+              <span class="download-arch">AppImage · arm64</span>
             </span>
           </a>
         </div>
@@ -336,11 +354,18 @@
           </div>
         </div>
         <div class="download-files">
-          <a class="download-file-btn" href="Polyphon Setup.exe">
+          <a class="download-file-btn" href="Polyphon-{{ $version }}-x64-Setup.exe">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
-              <span class="download-filename">Polyphon Setup.exe</span>
-              <span class="download-arch">64-bit installer</span>
+              <span class="download-filename">Polyphon-{{ $version }}-x64-Setup.exe</span>
+              <span class="download-arch">x64 installer</span>
+            </span>
+          </a>
+          <a class="download-file-btn" href="Polyphon-{{ $version }}-arm64-Setup.exe">
+            {{ partial "icon.html" (dict "name" "download" "size" 14) }}
+            <span class="download-file-info">
+              <span class="download-filename">Polyphon-{{ $version }}-arm64-Setup.exe</span>
+              <span class="download-arch">arm64 installer</span>
             </span>
           </a>
         </div>

@@ -23,8 +23,10 @@ Download the latest release for your platform from the [GitHub Releases page](ht
 |---|---|
 | macOS (Apple Silicon) | `Polyphon-*-arm64.dmg` |
 | macOS (Intel) | `Polyphon-*-x64.dmg` |
-| Windows | `Polyphon-*-Setup.exe` |
-| Linux | `Polyphon-*.AppImage` |
+| Windows (x64) | `Polyphon-*-x64-Setup.exe` |
+| Windows (arm64) | `Polyphon-*-arm64-Setup.exe` |
+| Linux (x86_64) | `Polyphon-*-x64.AppImage` |
+| Linux (arm64) | `Polyphon-*-arm64.AppImage` |
 
 ---
 
