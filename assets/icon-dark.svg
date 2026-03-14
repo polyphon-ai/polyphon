@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 680" width="680" height="680">
+  <defs>
+    <clipPath id="ic">
+      <rect x="40" y="40" width="600" height="600" rx="128"/>
+    </clipPath>
+  </defs>
+  <!-- Icon background: dark, clipped to rounded rect -->
+  <rect x="40" y="40" width="600" height="600" rx="128" fill="#0e0f1e"/>
+  <g clip-path="url(#ic)">
+    <!-- Source A: top-right corner (640, 40) — indigo/violet -->
+    <path d="M 490 40 A 150 150 0 0 0 640 190" fill="none" stroke="#4338ca" stroke-width="28" stroke-linecap="round" opacity="0.95"/>
+    <path d="M 370 40 A 270 270 0 0 0 640 310" fill="none" stroke="#4f46e5" stroke-width="25" stroke-linecap="round" opacity="0.85"/>
+    <path d="M 248 40 A 392 392 0 0 0 640 432" fill="none" stroke="#6366f1" stroke-width="22" stroke-linecap="round" opacity="0.75"/>
+    <path d="M 122 40 A 518 518 0 0 0 640 558" fill="none" stroke="#818cf8" stroke-width="19" stroke-linecap="round" opacity="0.60"/>
+    <path d="M  40 118 A 522 522 0 0 0 562 640" fill="none" stroke="#a5b4fc" stroke-width="16" stroke-linecap="round" opacity="0.42"/>
+    <!-- Source B: bottom-left corner (40, 640) — violet/cyan -->
+    <path d="M  40 490 A 150 150 0 0 1 190 640" fill="none" stroke="#7c3aed" stroke-width="28" stroke-linecap="round" opacity="0.92"/>
+    <path d="M  40 368 A 272 272 0 0 1 312 640" fill="none" stroke="#8b5cf6" stroke-width="25" stroke-linecap="round" opacity="0.82"/>
+    <path d="M  40 246 A 394 394 0 0 1 434 640" fill="none" stroke="#06b6d4" stroke-width="22" stroke-linecap="round" opacity="0.70"/>
+    <path d="M  40 122 A 518 518 0 0 1 558 640" fill="none" stroke="#22d3ee" stroke-width="19" stroke-linecap="round" opacity="0.54"/>
+  </g>
+</svg>
