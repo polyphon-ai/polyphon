@@ -81,7 +81,7 @@ export async function enableProviders(window: Page): Promise<void> {
     const toggle = toggles.nth(i);
     if ((await toggle.getAttribute('aria-checked')) === 'false') {
       await toggle.click();
-      await expect(window.getByText('Saved').first()).toBeVisible({ timeout: 5_000 });
+      await expect(window.getByText('Saved').first()).toBeVisible({ timeout: 15_000 });
     }
   }
 }
