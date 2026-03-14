@@ -68,8 +68,10 @@ export async function sendMessage(window: Page, message: string): Promise<void> 
 
 /** Assert a mock voice response is visible and wait for the textarea to re-enable. */
 export async function expectResponse(window: Page, voiceName: string): Promise<void> {
+  // Use .first() to avoid strict-mode errors when the same voice has responded
+  // multiple times in a session (multiple matching bubbles in the DOM).
   await expect(
-    window.getByText(new RegExp(`Mock response from ${voiceName}!`)),
+    window.getByText(new RegExp(`Mock response from ${voiceName}!`)).first(),
   ).toBeVisible({ timeout: 15_000 });
 }
 
