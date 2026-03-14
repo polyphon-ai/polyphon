@@ -47,7 +47,7 @@ Pre-built installers for macOS, Windows, and Linux are available on the [Release
 ```sh
 git clone https://github.com/coreydaley/polyphon.git
 cd polyphon
-npm install
+make install
 make dev
 ```
 
@@ -77,6 +77,18 @@ make test-watch        # Vitest in watch mode
 
 ```sh
 make lint           # TypeScript type-check (no emit)
+```
+
+### Build expiry
+
+Alpha and beta builds expire 28 days after their build timestamp. On launch the app
+checks the current time (via NTP-over-HTTPS with a local high-water mark fallback) and
+shows a full-screen expiry notice if the build is stale. Release builds never expire.
+
+To trigger the expiry screen manually for review or QA:
+
+```sh
+POLYPHON_PREVIEW_EXPIRED=1 make dev
 ```
 
 ---
