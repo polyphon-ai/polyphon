@@ -130,6 +130,7 @@ jobs:
     name: E2E tests (${{ matrix.os }})
     needs: build
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
     strategy:
       fail-fast: false
       matrix:
