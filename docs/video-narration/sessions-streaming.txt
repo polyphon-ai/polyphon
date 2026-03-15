@@ -1,0 +1,4 @@
+When you send a message, all voices in the session respond at the same time.
+Each voice streams its response token by token, independently.
+Because every voice sees the full conversation history, a follow-up message lets them read and respond to each other.
+This is the core of Polyphon: many voices, one conversation.

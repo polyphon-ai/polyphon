@@ -1,0 +1,5 @@
+The Conductor Profile lets voices know who they're talking to.
+On first launch, the welcome dialog prompts you to set up your profile.
+Click the avatar button to open the photo editor — load any image and drag it to reposition within the circular crop.
+Click Apply and your avatar is set. Add your name, then click Get started.
+Your avatar appears in the sidebar throughout the app, and voices can address you by name.

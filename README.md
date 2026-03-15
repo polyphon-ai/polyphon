@@ -93,6 +93,17 @@ POLYPHON_PREVIEW_EXPIRED=1 make dev
 
 ---
 
+## Community
+
+- **Website:** [polyphon.ai](https://polyphon.ai)
+- **X / Twitter:** [@PolyphonAI](https://x.com/PolyphonAI)
+- **GitHub Org:** [github.com/polyphon-ai](https://github.com/polyphon-ai)
+- **GitHub:** [polyphon-ai/polyphon](https://github.com/polyphon-ai/polyphon)
+- **Reddit:** [u/PolyphonAI](https://www.reddit.com/user/PolyphonAI)
+- **Social email:** social@polyphon.ai
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
