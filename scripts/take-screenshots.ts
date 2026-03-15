@@ -56,6 +56,7 @@ function buildEnv(extra: Record<string, string> = {}): Record<string, string> {
     POLYPHON_TEST_USER_DATA: makeTempDir(),
     POLYPHON_E2E: '1',
     POLYPHON_SHOW_WINDOW: '1',
+    POLYPHON_NO_DEVTOOLS: '1',
     ...extra,
   };
 }
@@ -170,9 +171,8 @@ function replacePlaceholder(
   const imgPath = '/' + outputPath.replace(/\\/g, '/');
   const imgRef = `![${alt}](${imgPath})`;
 
-  // Idempotency check
+  // Markdown reference already present — image file was recaptured above, no markdown change needed
   if (content.includes(imgPath)) {
-    skipped.push({ file: filePath, reason: 'already replaced' });
     return;
   }
 
@@ -249,7 +249,9 @@ async function createCustomProvider(window: Page, name: string, baseUrl: string)
 
   await window.getByPlaceholder('Ollama', { exact: true }).fill(name);
   await window.getByPlaceholder(/http:\/\/localhost:11434\/v1/i).fill(baseUrl);
-  // Leave API key env var empty and default model empty
+  const modelInput = window.getByPlaceholder('llama3.2');
+  await modelInput.scrollIntoViewIfNeeded();
+  await modelInput.fill('llama3.2');
   await window.getByRole('button', { name: /^save$/i }).click();
   await window.waitForTimeout(500);
 }
@@ -394,240 +396,228 @@ const MANIFEST: ScreenshotSpec[] = [
   // ── compositions ──────────────────────────────────────────────────────────
   {
     file: 'site/content/docs/compositions.md',
-    placeholder: 'Sidebar with the new composition button highlighted',
+    placeholder: 'Compositions — sidebar showing the New Composition button below the session list',
     output: 'images/screenshots/compositions/sidebar-new-button.webp',
-    alt: 'Sidebar showing the New Composition button',
+    alt: 'Sidebar showing the New Composition button below the session list',
   },
   {
     file: 'site/content/docs/compositions.md',
-    placeholder: 'Composition builder — empty state with name field and "Add Voice" button',
+    placeholder: 'Compositions — Composition Builder in empty state: name field, mode selector (Conductor-Directed / Broadcast buttons), and Add Voice button visible',
     output: 'images/screenshots/compositions/builder-empty.webp',
-    alt: 'Composition builder empty state with name field and Add Voice button',
+    alt: 'Composition Builder in empty state with name field, mode selector, and Add Voice button',
   },
   {
     file: 'site/content/docs/compositions.md',
-    placeholder: 'Voice configuration panel within the Composition Builder fully filled in',
+    placeholder: 'Compositions — Composition Builder showing Broadcast mode selected and the Continuation policy cards (None, Prompt me, Auto) with Auto selected and the Max rounds slider visible',
+    output: 'images/screenshots/compositions/builder-continuation-auto.webp',
+    alt: 'Composition Builder showing Broadcast mode with continuation policy set to Auto and Max rounds slider visible',
+  },
+  {
+    file: 'site/content/docs/compositions.md',
+    placeholder: 'Compositions — voice configuration panel with provider, model, display name, avatar icon, color, and tone all configured',
     output: 'images/screenshots/compositions/builder-voice-config-full.webp',
-    alt: 'Voice configuration panel fully configured with provider, model, display name, and tone',
+    alt: 'Voice configuration panel fully configured with provider, model, display name, avatar icon, color, and tone',
   },
   {
     file: 'site/content/docs/compositions.md',
-    placeholder: 'Voice selector in the Composition Builder with Anthropic selected. The voice type toggle shows both API and CLI buttons. The API button is disabled',
-    output: 'images/screenshots/compositions/builder-type-toggle-disabled.webp',
-    alt: 'Voice type toggle with API button disabled showing no API key configured',
-  },
-  {
-    file: 'site/content/docs/compositions.md',
-    placeholder: 'Voice configuration panel in the Composition Builder with a template attached',
+    placeholder: 'Compositions — voice configuration panel with a system prompt template attached; "Template attached" badge visible next to the template dropdown',
     output: 'images/screenshots/compositions/builder-template-attached.webp',
-    alt: 'Voice configuration panel with Security Reviewer template attached',
+    alt: 'Voice configuration panel with Security Reviewer template attached and Template attached badge visible',
   },
   {
     file: 'site/content/docs/compositions.md',
-    placeholder: 'Voice list in composition builder with drag handles visible',
+    placeholder: 'Compositions — voice list in the Composition Builder showing drag handles on each voice row',
     output: 'images/screenshots/compositions/builder-drag-handles.webp',
-    alt: 'Composition builder voice list with drag handles on each voice row',
+    alt: 'Composition Builder voice list with drag handles on each voice row',
   },
   {
     file: 'site/content/docs/compositions.md',
-    placeholder: 'Composition detail view with the "Start Session" button',
+    placeholder: 'Compositions — saved composition detail view showing name, voice list, mode, continuation policy, and the Start Session button',
     output: 'images/screenshots/compositions/detail-start-session.webp',
-    alt: 'Saved composition detail view showing the Start Session button',
+    alt: 'Saved composition detail view showing name, voice list, mode, continuation policy, and Start Session button',
   },
   {
     file: 'site/content/docs/compositions.md',
-    placeholder: 'Context menu on a composition in the sidebar showing the archive option',
+    placeholder: 'Compositions — right-click context menu on a composition showing Archive and Delete options',
     output: 'images/screenshots/compositions/context-menu.webp',
-    alt: 'Composition card showing archive and delete action buttons',
+    alt: 'Right-click context menu on a composition showing Archive and Delete options',
   },
   // ── concepts ──────────────────────────────────────────────────────────────
   {
     file: 'site/content/docs/concepts.md',
-    placeholder: 'Composition list in the sidebar showing several named compositions',
+    placeholder: 'Concepts — sidebar showing several named compositions in the composition list',
     output: 'images/screenshots/compositions/concepts-composition-list.webp',
     alt: 'Composition list in the sidebar showing several named compositions',
   },
   {
     file: 'site/content/docs/concepts.md',
-    placeholder: 'Active session view with messages from two or three voices',
+    placeholder: 'Concepts — active session with voice message bubbles; each bubble shows the voice name, its avatar icon, and its color',
     output: 'images/screenshots/sessions/concepts-active-session.webp',
-    alt: 'Active session with voice message bubbles labeled with voice names and colors',
+    alt: 'Active session with voice message bubbles showing voice names, avatar icons, and colors',
   },
   // ── conductor-profile ──────────────────────────────────────────────────────
   {
     file: 'site/content/docs/conductor-profile.md',
-    placeholder: 'Settings page scrolled to the Conductor Profile section with all fields visible',
+    placeholder: 'Conductor Profile — Settings → Conductor Profile tab showing avatar button, name, pronouns, default tone, and background fields in their default (empty) state',
     output: 'images/screenshots/settings/conductor-profile-empty.webp',
-    alt: 'Conductor Profile settings section showing all fields in default state',
+    alt: 'Conductor Profile tab showing all fields in default empty state',
   },
   {
     file: 'site/content/docs/conductor-profile.md',
-    placeholder: 'Conductor Profile section with a name, pronouns, and background filled in',
+    placeholder: 'Conductor Profile — AvatarEditor modal open with a photo loaded; circular crop preview visible with drag-to-reposition instructions, zoom slider, and rotate buttons; Cancel and Apply buttons at bottom',
+    output: 'images/screenshots/settings/avatar-editor.webp',
+    alt: 'AvatarEditor modal with circular crop preview, zoom slider, and rotate buttons',
+  },
+  {
+    file: 'site/content/docs/conductor-profile.md',
+    placeholder: 'Conductor Profile — Settings → Conductor Profile tab with avatar photo, name, pronouns, and background context all filled in',
     output: 'images/screenshots/settings/conductor-profile.webp',
-    alt: 'Conductor Profile with name, pronouns, and background context filled in',
+    alt: 'Conductor Profile tab with avatar photo, name, pronouns, and background context filled in',
   },
   // ── custom-providers ──────────────────────────────────────────────────────
   {
     file: 'site/content/docs/custom-providers.md',
-    placeholder: 'Add Custom Provider form fully filled out with: Name "Local Ollama"',
+    placeholder: 'Custom Providers — Add Custom Provider form filled in with Local Ollama name, base URL set to http://localhost:11434/v1, API key env var left blank',
     output: 'images/screenshots/settings/custom-providers-add-form.webp',
     alt: 'Add Custom Provider form filled with Local Ollama details and base URL',
   },
   {
     file: 'site/content/docs/custom-providers.md',
-    placeholder: 'Settings page with the Custom Providers tab selected — showing an existing custom provider',
+    placeholder: 'Custom Providers — Custom Providers tab showing a saved "Local Ollama" provider card with the auth-less badge ("No API key required (auth-less endpoint)") and Edit / Delete buttons',
     output: 'images/screenshots/settings/custom-providers-tab.webp',
-    alt: 'Custom Providers section showing saved Local Ollama provider with Edit and Delete buttons',
+    alt: 'Custom Providers tab showing saved Local Ollama provider with auth-less badge and Edit / Delete buttons',
   },
   {
     file: 'site/content/docs/custom-providers.md',
-    placeholder: 'Composition Builder provider grid showing both built-in providers',
+    placeholder: 'Compositions — Composition Builder provider grid showing built-in providers alongside a custom "Local Ollama" provider with CUSTOM · API label',
     output: 'images/screenshots/compositions/builder-custom-provider-voice.webp',
-    alt: 'Composition Builder provider grid with built-in and Local Ollama custom provider',
+    alt: 'Composition Builder provider grid with built-in providers and Local Ollama custom provider',
   },
   // ── getting-started ────────────────────────────────────────────────────────
   {
     file: 'site/content/docs/getting-started.md',
-    placeholder: 'Main application window on first launch — empty sidebar',
-    output: 'images/screenshots/home/first-launch.webp',
-    alt: 'Polyphon welcome dialog on first launch asking for name and pronouns',
+    placeholder: 'Onboarding — welcome dialog with avatar upload button, name field, pronouns dropdown, and "About me" context textarea visible; "Get started" and "Skip for now" buttons at bottom',
+    output: 'images/screenshots/home/onboarding-welcome.webp',
+    alt: 'Polyphon welcome dialog on first launch showing avatar button, name field, pronouns dropdown, and About me textarea',
   },
   // ── providers ──────────────────────────────────────────────────────────────
   {
     file: 'site/content/docs/providers.md',
-    placeholder: 'Settings page with Anthropic provider card expanded, API key field and Test button visible',
+    placeholder: 'Providers — Anthropic provider card expanded showing the API key status indicator and voice type selector (API / CLI)',
     output: 'images/screenshots/settings/providers-tab-anthropic-expanded.webp',
-    alt: 'Anthropic provider card expanded showing API key status and voice type selector',
+    alt: 'Anthropic provider card expanded showing API key status indicator and voice type selector',
   },
   {
     file: 'site/content/docs/providers.md',
-    placeholder: 'Settings page with Claude CLI provider card, status showing "Available"',
+    placeholder: 'Providers — Claude CLI provider card with "Available" status indicator shown',
     output: 'images/screenshots/settings/providers-tab-cli-available.webp',
     alt: 'Claude CLI provider card with Available status indicator',
   },
   {
     file: 'site/content/docs/providers.md',
-    placeholder: 'Settings page showing provider status cards — one green (Available), one yellow (untested), one gray (not configured)',
+    placeholder: 'Providers — Settings Providers tab showing multiple provider cards in different status states (Available, Key found, Not configured)',
     output: 'images/screenshots/settings/providers-status-cards.webp',
-    alt: 'Provider settings page showing multiple provider cards in different states',
-  },
-  {
-    file: 'site/content/docs/providers.md',
-    placeholder: 'Voice selector in the Composition Builder showing the provider grid with both built-in providers',
-    output: 'images/screenshots/settings/providers-tab-all-cards.webp',
-    alt: 'Settings Providers tab showing all provider cards with enable toggles',
+    alt: 'Provider settings showing multiple cards in different status states',
   },
   // ── sessions ──────────────────────────────────────────────────────────────
   {
     file: 'site/content/docs/sessions.md',
-    placeholder: 'Sidebar with the new session button highlighted',
+    placeholder: 'Sessions — sidebar showing the New Session (+) button at the top',
     output: 'images/screenshots/sessions/new-button.webp',
-    alt: 'Sidebar showing the New Session button',
+    alt: 'Sidebar showing the New Session (+) button at the top',
   },
   {
     file: 'site/content/docs/sessions.md',
-    placeholder: 'New session panel showing composition picker and ad-hoc voice builder',
+    placeholder: 'Sessions — new session panel showing the composition picker and the option to add voices manually',
     output: 'images/screenshots/sessions/new-panel.webp',
-    alt: 'New session panel with composition picker',
+    alt: 'New session panel showing composition picker and option to add voices manually',
   },
   {
     file: 'site/content/docs/sessions.md',
-    placeholder: 'Full session view with labels pointing to message feed, voice panel, and input bar',
+    placeholder: 'Sessions — full session view: message feed with voice bubbles showing avatar icons and colors, voice panel on the right with status indicators, input bar at bottom',
     output: 'images/screenshots/sessions/full-view.webp',
-    alt: 'Full session view showing message feed, voice panel on the right, and input bar at bottom',
+    alt: 'Full session view showing message feed with voice bubbles, voice panel, and input bar',
   },
   {
     file: 'site/content/docs/sessions.md',
-    placeholder: 'Session view mid-response with two voices streaming simultaneously',
-    output: 'images/screenshots/sessions/mid-response-streaming.webp',
-    alt: 'Session view with voices streaming their responses simultaneously',
-  },
-  {
-    file: 'site/content/docs/sessions.md',
-    placeholder: 'Voice panel with conductor mode active, one voice highlighted as the target',
+    placeholder: 'Sessions — session in conductor-directed mode with "Directed" badge visible in the session header and a single voice highlighted in the voice panel',
     output: 'images/screenshots/sessions/conductor-mode-voice-panel.webp',
-    alt: 'Session in conductor mode with Directed badge visible in the input area',
+    alt: 'Session in conductor-directed mode with Directed badge and single voice highlighted',
   },
   {
     file: 'site/content/docs/sessions.md',
-    placeholder: 'Session view with conductor mode active. The message input bar shows "@" typed and a dropdown is open',
-    output: 'images/screenshots/sessions/at-mention-dropdown.webp',
-    alt: 'Session input bar with @ typed and voice name dropdown open',
-  },
-  {
-    file: 'site/content/docs/sessions.md',
-    placeholder: 'Session showing a continuation in progress',
-    output: 'images/screenshots/sessions/continuation-round2.webp',
-    alt: 'Session with continuation round in progress showing Round 2 divider and streaming voices',
-  },
-  {
-    file: 'site/content/docs/sessions.md',
-    placeholder: 'Context menu on a session in the sidebar showing the archive option',
+    placeholder: 'Sessions — right-click context menu on a session in the sidebar showing Archive and Delete options',
     output: 'images/screenshots/sessions/context-menu.webp',
-    alt: 'Session card showing archive and delete action buttons',
+    alt: 'Right-click context menu on a session showing Archive and Delete options',
   },
   // ── settings ──────────────────────────────────────────────────────────────
   {
     file: 'site/content/docs/settings.md',
-    placeholder: 'Full Settings page with all navigation tabs visible',
+    placeholder: 'Settings — full Settings page showing the tab navigation bar with all six tabs visible',
     output: 'images/screenshots/settings/settings-overview.webp',
-    alt: 'Full Settings page with section navigation showing all settings areas',
+    alt: 'Full Settings page showing the tab navigation bar with all six tabs',
   },
   {
     file: 'site/content/docs/settings.md',
-    placeholder: 'Full Settings page showing provider cards for Anthropic, OpenAI, Google, and CLI providers',
+    placeholder: 'Settings — Providers tab showing all provider cards (Anthropic, OpenAI, Google, Claude CLI, Codex CLI, Copilot CLI) in their default states',
     output: 'images/screenshots/settings/providers-tab-all-cards.webp',
-    alt: 'Settings Providers tab showing all provider cards',
+    alt: 'Settings Providers tab showing all provider cards in their default states',
   },
   {
     file: 'site/content/docs/settings.md',
-    placeholder: 'Provider card expanded showing model selector dropdown with available models listed',
+    placeholder: 'Settings — Anthropic provider card expanded showing the voice type selector, API key field, and Fetch Models button',
     output: 'images/screenshots/settings/providers-tab-anthropic-expanded.webp',
-    alt: 'Anthropic provider card expanded showing voice type and API key configuration',
+    alt: 'Anthropic provider card expanded showing voice type selector, API key field, and Fetch Models button',
+  },
+  {
+    file: 'site/content/docs/settings.md',
+    placeholder: 'Settings — About tab showing the version badge, channel badge (e.g. Beta), waveform animation, and build expiry countdown',
+    output: 'images/screenshots/settings/about-page.webp',
+    alt: 'Settings About tab showing version badge, channel badge, waveform animation, and build expiry countdown',
   },
   // ── system-prompt-templates ────────────────────────────────────────────────
   {
     file: 'site/content/docs/system-prompt-templates.md',
-    placeholder: 'Settings page with the Templates tab selected — showing a list of saved system prompt templates',
+    placeholder: 'Templates — Settings → Templates tab showing the saved template list with names and content previews',
     output: 'images/screenshots/settings/templates-tab.webp',
     alt: 'System Prompts settings tab showing saved template list with names and previews',
   },
   {
     file: 'site/content/docs/system-prompt-templates.md',
-    placeholder: 'Template creation/edit form showing the Name field containing "Security Reviewer"',
+    placeholder: 'Templates — template creation form with "Security Reviewer" name and content filled in',
     output: 'images/screenshots/settings/templates-add-form.webp',
     alt: 'Template creation form with Security Reviewer name and content filled in',
   },
   {
     file: 'site/content/docs/system-prompt-templates.md',
-    placeholder: 'Voice configuration panel in the Composition Builder showing the system prompt template dropdown with "Security Reviewer" selected',
+    placeholder: 'Compositions — voice configuration panel with the "Security Reviewer" template attached; "Template attached" badge visible, system prompt textarea pre-filled with template content',
     output: 'images/screenshots/compositions/builder-template-attached.webp',
-    alt: 'Voice configuration panel with Security Reviewer template attached',
+    alt: 'Voice configuration panel with Security Reviewer template attached and textarea pre-filled',
   },
   // ── tones ──────────────────────────────────────────────────────────────────
   {
     file: 'site/content/docs/tones.md',
-    placeholder: 'Settings page with the Tones tab selected — showing the five built-in tone cards',
+    placeholder: 'Tones — Settings → Tones tab showing the five built-in tone cards with names, descriptions, and Edit / Delete buttons',
     output: 'images/screenshots/settings/tones-tab-builtins.webp',
-    alt: 'Tones settings tab showing five built-in tone cards with names and descriptions',
+    alt: 'Tones settings tab showing five built-in tone cards with names, descriptions, and Edit / Delete buttons',
   },
   {
     file: 'site/content/docs/tones.md',
-    placeholder: 'Custom tone creation form with the Name field containing "Socratic"',
+    placeholder: 'Tones — custom tone creation form with "Socratic" as name and a question-first reasoning description filled in',
     output: 'images/screenshots/settings/tones-add-form.webp',
     alt: 'Custom tone creation form with Socratic name and question-first reasoning description',
   },
   {
     file: 'site/content/docs/tones.md',
-    placeholder: 'Settings page with the Tones tab selected — showing both built-in preset tone cards and at least one custom tone card',
+    placeholder: 'Tones — Tones tab showing the five built-in tones plus a custom "Socratic" tone, all with Edit and Delete buttons',
     output: 'images/screenshots/settings/tones-tab-with-custom.webp',
-    alt: 'Tones tab showing built-in tones plus custom Socratic tone with Edit and Delete buttons',
+    alt: 'Tones tab showing five built-in tones plus custom Socratic tone with Edit and Delete buttons',
   },
   {
     file: 'site/content/docs/tones.md',
-    placeholder: 'Voice configuration panel in the Composition Builder with the Tone dropdown open',
+    placeholder: 'Compositions — voice configuration tone dropdown open showing all built-in and custom tones, with "Use conductor default" at the top',
     output: 'images/screenshots/compositions/builder-tone-dropdown.webp',
-    alt: 'Voice configuration tone selector showing built-in and custom tones',
+    alt: 'Voice configuration tone dropdown open showing all built-in and custom tones',
   },
 ];
 
@@ -638,13 +628,9 @@ async function runTrack1(app2: ElectronApplication, window2: Page): Promise<void
   // Onboarding modal is visible on first launch — capture it before dismissing
   const skipBtn = window2.getByRole('button', { name: /skip for now/i });
   await skipBtn.waitFor({ state: 'visible', timeout: 10_000 });
-  // Pre-fill name so the "Get started" button is active and the modal looks realistic
-  await window2.getByPlaceholder('e.g. Alex').fill('Alex');
-  await window2.waitForTimeout(200);
-  // Select they/them pronouns
-  await window2.locator('select').selectOption('they/them');
-  await window2.waitForTimeout(150);
-  await captureWebP(window2, 'images/screenshots/home/first-launch.webp');
+  // Capture the modal in its empty state first — all fields visible but nothing filled
+  await window2.waitForTimeout(300);
+  await captureWebP(window2, 'images/screenshots/home/onboarding-welcome.webp');
   await app2.close();
 }
 
@@ -655,10 +641,57 @@ async function runTrack2(window: Page): Promise<void> {
   await goToSettings(window);
   await captureWebP(window, 'images/screenshots/settings/settings-overview.webp');
 
-  // 2a: Conductor Profile — empty state
+  // 2a: Conductor Profile — empty state (Settings opens on Conductor Profile tab)
   await captureWebP(window, 'images/screenshots/settings/conductor-profile-empty.webp');
 
-  // 2a: Fill conductor profile
+  // 2a-avatar: Open AvatarEditor by intercepting pickAvatarFile with a synthetic image
+  try {
+    // Create a synthetic gradient image data URL and override the IPC call
+    await window.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 400; canvas.height = 400;
+      const ctx = canvas.getContext('2d')!;
+      const grad = ctx.createLinearGradient(0, 0, 400, 400);
+      grad.addColorStop(0, '#4f46e5');
+      grad.addColorStop(1, '#7c3aed');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 400, 400);
+      // Add a circle so it looks like a face silhouette
+      ctx.fillStyle = '#c7d2fe';
+      ctx.beginPath(); ctx.arc(200, 160, 80, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#818cf8';
+      ctx.beginPath(); ctx.arc(200, 320, 140, Math.PI, 0); ctx.fill();
+      // @ts-ignore
+      (window as any).__testAvatarDataUrl = canvas.toDataURL('image/png');
+      // Override pickAvatarFile to return our synthetic image
+      // @ts-ignore
+      (window as any).polyphon.settings.pickAvatarFile = async () =>
+        (window as any).__testAvatarDataUrl;
+    });
+    // Click the avatar button (circular button at the top of the Conductor Profile tab)
+    const avatarBtn = window.locator('button').filter({ has: window.locator('svg') }).first();
+    // Try a more targeted locator — the avatar button typically has a specific test id or aria label
+    const avatarTrigger = window.getByRole('button', { name: /upload|avatar|photo/i }).first();
+    try {
+      await avatarTrigger.waitFor({ state: 'visible', timeout: 3_000 });
+      await avatarTrigger.click();
+    } catch {
+      // Fallback: click the circular avatar button by its position/class
+      await avatarBtn.click();
+    }
+    await window.waitForTimeout(800);
+    // AvatarEditor modal should now be open — capture it
+    const applyBtn = window.getByRole('button', { name: /apply/i });
+    await applyBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await captureWebP(window, 'images/screenshots/settings/avatar-editor.webp');
+    // Apply the crop to proceed
+    await applyBtn.click();
+    await window.waitForTimeout(500);
+  } catch {
+    console.warn('  WARN: AvatarEditor capture failed — skipping avatar-editor.webp');
+  }
+
+  // 2a: Fill conductor profile fields (avatar already applied above if successful)
   try {
     const nameInput = window.getByPlaceholder(/your name/i);
     await nameInput.fill('Alex Rivera');
@@ -706,6 +739,18 @@ async function runTrack2(window: Page): Promise<void> {
   // CLI provider (last card) — capture "Available" state (mock mode reports CLI as available)
   await captureWebP(window, 'images/screenshots/settings/providers-tab-cli-available.webp');
 
+  // 2b-about: Navigate to About tab and capture
+  try {
+    await window.getByRole('tab', { name: /^about$/i }).click();
+    await window.waitForTimeout(500);
+    await captureWebP(window, 'images/screenshots/settings/about-page.webp');
+    // Return to Providers tab for the custom providers section below
+    await window.getByRole('tab', { name: /^providers$/i }).click();
+    await window.waitForTimeout(300);
+  } catch {
+    console.warn('  WARN: About tab capture failed — skipping about-page.webp');
+  }
+
   // 2b: Scroll to Custom Providers section (scroll the actual overflow container, not document.body)
   const addBtn = window.getByRole('button', { name: /add custom provider/i });
   await addBtn.scrollIntoViewIfNeeded();
@@ -717,6 +762,9 @@ async function runTrack2(window: Page): Promise<void> {
   await window.waitForTimeout(300);
   await window.getByPlaceholder('Ollama', { exact: true }).fill('Local Ollama');
   await window.getByPlaceholder(/http:\/\/localhost:11434\/v1/i).fill('http://localhost:11434/v1');
+  const modelInput = window.getByPlaceholder('llama3.2');
+  await modelInput.scrollIntoViewIfNeeded();
+  await modelInput.fill('llama3.2');
   await window.waitForTimeout(200);
   // Clip to the Save button so the full form is visible without blank space below
   await captureClippedWebP(
@@ -786,12 +834,27 @@ async function runTrack3(window: Page): Promise<void> {
   await window.waitForTimeout(300);
   await captureWebP(window, 'images/screenshots/compositions/builder-empty.webp');
 
+  // 3b-continuation: Select Broadcast mode → Auto continuation → capture continuation policy cards
+  try {
+    await window.getByRole('button', { name: /broadcast/i }).first().click();
+    await window.waitForTimeout(300);
+    // Select Auto continuation
+    await window.getByRole('button', { name: /^Auto/i }).click();
+    await window.waitForTimeout(300);
+    await captureWebP(window, 'images/screenshots/compositions/builder-continuation-auto.webp');
+    // Reset back to None for the rest of the track
+    await window.getByRole('button', { name: /^None/i }).click();
+    await window.waitForTimeout(200);
+  } catch {
+    console.warn('  WARN: Continuation policy capture failed — skipping builder-continuation-auto.webp');
+  }
+
   // 3c: Add Anthropic voice with full config
   await window.getByRole('button', { name: 'Anthropic' }).first().click();
   await window.waitForTimeout(200);
 
   // Fill display name
-  const displayNameInput = window.getByPlaceholder('Voice name', { exact: true });
+  const displayNameInput = window.getByPlaceholder('Display name', { exact: true });
   await displayNameInput.fill('Critic');
   await window.waitForTimeout(200);
 
@@ -811,11 +874,6 @@ async function runTrack3(window: Page): Promise<void> {
   await window.waitForTimeout(200);
 
   await captureWebP(window, 'images/screenshots/compositions/builder-voice-config-full.webp');
-
-  // 3d: Type-toggle disabled state — need a fresh composition without API key
-  // In mock mode, API toggle is enabled. We'll capture what's available.
-  // The mock always reports providers as configured; capture as-is.
-  await captureWebP(window, 'images/screenshots/compositions/builder-type-toggle-disabled.webp');
 
   // 3e: Attach Security Reviewer template
   try {
@@ -908,10 +966,9 @@ async function runTrack3(window: Page): Promise<void> {
   await captureWebP(window, 'images/screenshots/compositions/concepts-composition-list.webp');
 
   // 3l: Context menu — show the archive/delete action buttons on a composition card
-  // Hover over first card to reveal actions
-  const firstCard = window.locator('[class*="rounded-xl"]').filter({ hasText: 'Critic Panel' }).first();
-  await firstCard.hover();
-  await window.waitForTimeout(300);
+  // CardActions (Archive/Delete) are always visible in each row — no hover needed
+  const firstCard = window.locator('[class*="rounded-lg"]').filter({ hasText: 'Critic Panel' }).first();
+  await firstCard.waitFor({ state: 'visible', timeout: 5_000 });
   await captureWebP(window, 'images/screenshots/compositions/context-menu.webp');
 
   // Also capture for home/composition-builder
@@ -945,11 +1002,6 @@ async function runTrack4(window: Page): Promise<void> {
 
   await sendMessage(window, 'What is the most important principle of good software design?');
 
-  // 4e: Wait for streaming to begin (input disabled = voices responding), then capture
-  await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
-  await window.waitForTimeout(1_000);
-  await captureWebP(window, 'images/screenshots/sessions/mid-response-streaming.webp');
-
   // Wait for completion
   await waitForSessionIdle(window);
   await window.waitForTimeout(300);
@@ -971,18 +1023,6 @@ async function runTrack4(window: Page): Promise<void> {
   // Capture conductor mode input area (shows "Directed" badge)
   await captureWebP(window, 'images/screenshots/sessions/conductor-mode-voice-panel.webp');
 
-  // 4g: Type @ to open mention dropdown
-  await window.getByPlaceholder('Message the ensemble\u2026').fill('@');
-  await window.waitForTimeout(200);
-  // Type one more char to trigger dropdown (requires @word pattern)
-  await window.getByPlaceholder('Message the ensemble\u2026').type('A');
-  await window.waitForTimeout(300);
-  await captureWebP(window, 'images/screenshots/sessions/at-mention-dropdown.webp');
-
-  // Clear input
-  await window.getByPlaceholder('Message the ensemble\u2026').fill('');
-  await window.waitForTimeout(200);
-
   // 4i: Session context menu — go to sessions list, hover over session card
   await goToSessions(window);
   await window.waitForTimeout(300);
@@ -992,7 +1032,7 @@ async function runTrack4(window: Page): Promise<void> {
   await window.waitForTimeout(300);
   await captureWebP(window, 'images/screenshots/sessions/context-menu.webp');
 
-  // 4h: Continuation round — create broadcast + prompt policy composition
+  // 4h: Continuation nudge — create broadcast + prompt policy composition
   await buildComposition(window, 'Continuation Demo', ['Anthropic', 'OpenAI'], {
     mode: 'broadcast',
     continuationPolicy: 'prompt',
@@ -1000,19 +1040,24 @@ async function runTrack4(window: Page): Promise<void> {
   await startSession(window, 'Continuation Demo', 'Continuation Session');
   await sendMessage(window, 'Explain the CAP theorem briefly.');
 
-  // Wait for round 1 to complete
+  // Wait for round 1 to complete — nudge banner should appear
   await waitForSessionIdle(window);
   await window.waitForTimeout(300);
 
-  // Click Allow to start round 2
-  await window.getByRole('button', { name: 'Allow' }).click();
-  await window.waitForTimeout(300);
-
-  // Capture during/after round 2 (round divider "Round 2" should be visible)
-  await captureWebP(window, 'images/screenshots/sessions/continuation-round2.webp');
-  await captureWebP(window, 'images/screenshots/home/continuation-session.webp');
-
-  await waitForSessionIdle(window);
+  // Capture the continuation nudge banner BEFORE clicking Allow
+  try {
+    const allowBtn = window.getByRole('button', { name: 'Allow' });
+    await allowBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await captureWebP(window, 'images/screenshots/sessions/continuation-nudge.webp');
+    // Now click Allow to start round 2 for the home/continuation-session screenshot
+    await allowBtn.click();
+    await window.waitForTimeout(300);
+    await captureWebP(window, 'images/screenshots/home/continuation-session.webp');
+    await waitForSessionIdle(window);
+  } catch {
+    // nudge banner may not appear in mock mode — skip these captures
+    console.warn('  WARN: Continuation nudge banner not found — skipping continuation-nudge.webp');
+  }
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────

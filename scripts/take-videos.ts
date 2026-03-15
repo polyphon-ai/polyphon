@@ -39,6 +39,19 @@ const DOCS_ONLY = process.argv.includes('--docs-only');
 const WALKTHROUGH_ONLY = process.argv.includes('--walkthrough-only');
 const CUSTOM_PROVIDERS_ONLY = process.argv.includes('--custom-providers-only');
 
+const TRACK_FLAG_IDX = process.argv.indexOf('--track');
+const TRACK_ONLY = TRACK_FLAG_IDX !== -1 ? (process.argv[TRACK_FLAG_IDX + 1] ?? null) : null;
+
+const VALID_TRACKS = [
+  'type-toggle',
+  'streaming',
+  'at-mention',
+  'continuation-nudge',
+  'avatar-upload',
+  'custom-providers',
+  'walkthrough',
+] as const;
+
 // ── Run counters ──────────────────────────────────────────────────────────────
 
 let captured = 0;
@@ -46,6 +59,13 @@ let replaced = 0;
 let injected = 0;
 let narrationWritten = 0;
 const skipped: { label: string; reason: string }[] = [];
+
+// ── Timing scale ──────────────────────────────────────────────────────────────
+// Increase TIMING_SCALE above 1.0 to slow down all recorded interactions uniformly.
+const TIMING_SCALE = 1.5;
+function wait(_page: Page, ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, Math.round(ms * TIMING_SCALE)));
+}
 
 // ── Cue emitter ───────────────────────────────────────────────────────────────
 
@@ -88,15 +108,27 @@ function assertBuildExists(): void {
   }
 }
 
+const REQUIRED_OLLAMA_MODELS = ['llama3.2:1b', 'qwen2.5:0.5b'];
+
 function assertOllamaRunning(): void {
   const result = spawnSync('curl', ['-sf', 'http://localhost:11434/api/tags', '--max-time', '3'], { stdio: 'pipe' });
   if (result.status !== 0) {
     console.error('\nERROR: Ollama is not running at http://localhost:11434.');
-    console.error('Start it with: ollama serve');
-    console.error('Then pull the required models:');
-    console.error('  ollama pull llama3.2:1b');
-    console.error('  ollama pull qwen2.5:0.5b\n');
+    console.error('Start it with: ollama serve\n');
     process.exit(1);
+  }
+
+  // Pull any missing models so the capture doesn't fail mid-run
+  for (const model of REQUIRED_OLLAMA_MODELS) {
+    const check = spawnSync('ollama', ['show', model], { stdio: 'pipe' });
+    if (check.status !== 0) {
+      console.log(`  pulling missing model: ${model}`);
+      const pull = spawnSync('ollama', ['pull', model], { stdio: 'inherit' });
+      if (pull.status !== 0) {
+        console.error(`\nERROR: Failed to pull ${model}.\n`);
+        process.exit(1);
+      }
+    }
   }
 }
 
@@ -153,7 +185,7 @@ async function launchApp(opts: { skipOnboarding?: boolean } = {}): Promise<{
   if (skipOnboarding) {
     await skipOnboardingModal(window);
     await window.getByRole('button', { name: /settings/i }).waitFor({ state: 'visible', timeout: 15_000 });
-    await window.waitForTimeout(300);
+    await wait(window,300);
   }
 
   return { app, window };
@@ -171,21 +203,21 @@ async function skipOnboardingModal(window: Page): Promise<void> {
 }
 
 async function fillOnboarding(window: Page, name: string, pronouns: string, bio: string): Promise<void> {
-  const nameField = window.getByPlaceholder(/e\.g\. Alex/i);
+  const nameField = window.getByPlaceholder(/e\.g\. Corey/i);
   await nameField.waitFor({ state: 'visible', timeout: 10_000 });
 
   // Dwell on the empty form so viewers can read it before anything is typed
-  await window.waitForTimeout(2_500);
+  await wait(window,2_500);
 
   // Type name at a human pace so viewers can follow along
   await nameField.click();
-  await nameField.pressSequentially(name, { delay: 120 });
-  await window.waitForTimeout(2_000);
+  await nameField.pressSequentially(name, { delay: 180 });
+  await wait(window,2_000);
 
   // Select pronouns from the dropdown
   try {
     await window.locator('select').selectOption(pronouns);
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
   } catch {
     // pronouns select shape may differ
   }
@@ -195,20 +227,20 @@ async function fillOnboarding(window: Page, name: string, pronouns: string, bio:
     const bioField = window.getByPlaceholder(/senior backend engineer/i);
     await bioField.waitFor({ state: 'visible', timeout: 3_000 });
     await bioField.click();
-    await bioField.pressSequentially(bio, { delay: 60 });
-    await window.waitForTimeout(2_000);
+    await bioField.pressSequentially(bio, { delay: 90 });
+    await wait(window,2_000);
   } catch {
     // textarea may not be present
   }
 
   // Dwell on the completed form before clicking
-  await window.waitForTimeout(1_500);
+  await wait(window,1_500);
 
   const startBtn = window.getByRole('button', { name: /get started/i });
   await startBtn.waitFor({ state: 'visible', timeout: 3_000 });
   await startBtn.click();
   await window.getByRole('button', { name: /settings/i }).waitFor({ state: 'visible', timeout: 15_000 });
-  await window.waitForTimeout(500);
+  await wait(window,500);
 }
 
 // ── Frame recording ───────────────────────────────────────────────────────────
@@ -330,8 +362,8 @@ function extractPosterFrame(
     '-y', tmpPng,
   ], { stdio: 'pipe' });
 
-  if (result.status !== 0) {
-    console.warn(`  WARNING: poster extraction failed for ${path.basename(inputMp4)}`);
+  if (result.status !== 0 || !fs.existsSync(tmpPng)) {
+    console.warn(`  WARNING: poster extraction failed for ${path.basename(inputMp4)} (offset ${offsetSeconds}s may exceed video duration)`);
     return;
   }
 
@@ -370,13 +402,21 @@ function replacePlaceholder(filePath: string, placeholder: string, shortcode: st
   const blockquotePrefix = '> **Video placeholder:**';
   const lines = content.split('\n');
   let found = false;
+  let skipNext = false;
 
-  const updated = lines.map((line) => {
+  const updated = lines.flatMap((line) => {
+    if (skipNext) {
+      skipNext = false;
+      // Drop the trailing "> See `docs/video-scripts.md`…" line if present
+      if (line.startsWith('> See `docs/video-scripts.md`')) return [];
+      return [line];
+    }
     if (!found && line.startsWith(blockquotePrefix) && line.includes(placeholder)) {
       found = true;
-      return shortcode;
+      skipNext = true;
+      return [shortcode];
     }
-    return line;
+    return [line];
   });
 
   if (!found) {
@@ -429,9 +469,9 @@ function writeNarrationScript(filePath: string, content: string): void {
 
 async function goToSettingsTab(window: Page, tab: string): Promise<void> {
   await window.getByRole('button', { name: /settings/i }).click();
-  await window.waitForTimeout(300);
+  await wait(window,300);
   await window.getByRole('tab', { name: new RegExp(`^${tab}$`, 'i') }).click();
-  await window.waitForTimeout(300);
+  await wait(window,300);
 }
 
 async function enableAllProviders(window: Page): Promise<void> {
@@ -445,18 +485,18 @@ async function enableAllProviders(window: Page): Promise<void> {
       await window.getByText('Saved').first().waitFor({ state: 'visible', timeout: 5_000 });
     }
   }
-  await window.waitForTimeout(300);
+  await wait(window,300);
 }
 
 async function goToCompositions(window: Page): Promise<void> {
   await window.getByRole('button', { name: /compositions/i }).click();
-  await window.waitForTimeout(300);
+  await wait(window,300);
 }
 
 async function openNewComposition(window: Page): Promise<void> {
   await goToCompositions(window);
   await window.getByRole('button', { name: 'New Composition', exact: true }).first().click();
-  await window.waitForTimeout(300);
+  await wait(window,300);
 }
 
 async function buildAndSaveComposition(
@@ -477,18 +517,18 @@ async function buildAndSaveComposition(
   for (const provider of providers) {
     await window.getByRole('button', { name: provider }).first().click();
     await window.getByRole('button', { name: 'Add Voice' }).click();
-    await window.waitForTimeout(200);
+    await wait(window,200);
   }
 
   await window.getByRole('button', { name: 'Save Composition' }).click();
-  await window.waitForTimeout(500);
+  await wait(window,500);
 }
 
 async function startSessionFromComposition(window: Page, compositionName: string): Promise<void> {
   await window.getByRole('button', { name: /^sessions$/i }).click();
-  await window.waitForTimeout(300);
+  await wait(window,300);
   await window.getByRole('button', { name: 'New Session', exact: true }).first().click();
-  await window.waitForTimeout(300);
+  await wait(window,300);
 
   const escaped = compositionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const compBtn = window.getByRole('button', { name: new RegExp(escaped, 'i') }).first();
@@ -498,7 +538,7 @@ async function startSessionFromComposition(window: Page, compositionName: string
   await window.getByPlaceholder('My session').fill(`${compositionName} Session`);
   await window.getByRole('button', { name: 'Start Session' }).click();
   await window.getByPlaceholder('Message the ensemble\u2026').waitFor({ state: 'visible', timeout: 45_000 });
-  await window.waitForTimeout(300);
+  await wait(window,300);
 }
 
 async function sendMessage(window: Page, message: string): Promise<void> {
@@ -513,7 +553,7 @@ async function waitForSessionIdle(window: Page, timeout = 120_000): Promise<void
 // ── Track capture functions ───────────────────────────────────────────────────
 
 async function captureTypeToggle(ffmpegBin: string): Promise<void> {
-  console.log('\n── Track 1: Compositions — build, type toggle, directed messages ─');
+  console.log('\n── Track 1: Compositions — build, type toggle, directed messages ─  [TRACK=type-toggle]');
 
   const { app, window } = await launchApp({ skipOnboarding: true });
   const framesDir = makeTempDir('polyphon-frames-type-toggle-');
@@ -531,29 +571,29 @@ async function captureTypeToggle(ffmpegBin: string): Promise<void> {
     await openNewComposition(window);
     cues.emit('composition-builder-opened', 'New composition builder opened, name field empty');
     await window.getByPlaceholder('My Composition').fill('Research Duo');
-    await window.waitForTimeout(2_500);
+    await wait(window,2_500);
     cues.emit('composition-named', 'Composition named "Research Duo"');
 
     // Select Anthropic — show the voice type toggle before adding
     await window.getByRole('button', { name: 'Anthropic' }).first().click();
-    await window.waitForTimeout(2_500);
+    await wait(window,2_500);
 
     // Scroll the type toggle into view so it isn't cut off
     try {
       const apiBtn = window.getByRole('button', { name: /^api$/i });
       await apiBtn.waitFor({ state: 'visible', timeout: 3_000 });
       await apiBtn.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-      await window.waitForTimeout(1_000);
+      await wait(window,1_000);
       // Hover API to show the "No API key configured" tooltip
       await apiBtn.hover();
-      await window.waitForTimeout(4_500);
+      await wait(window,4_500);
       // Switch to CLI
       const cliBtn = window.getByRole('button', { name: /^cli$/i });
       await cliBtn.waitFor({ state: 'visible', timeout: 2_000 });
       const isDisabled = await cliBtn.getAttribute('disabled');
       if (!isDisabled) {
         await cliBtn.click();
-        await window.waitForTimeout(3_000);
+        await wait(window,3_000);
       }
     } catch {
       // type toggle may not be present if both types unavailable
@@ -562,67 +602,67 @@ async function captureTypeToggle(ffmpegBin: string): Promise<void> {
 
     // Add Anthropic to the composition
     await window.getByRole('button', { name: 'Add Voice' }).click();
-    await window.waitForTimeout(2_500);
+    await wait(window,2_500);
     cues.emit('anthropic-voice-added', 'Anthropic voice added to composition in CLI mode');
 
     // Select OpenAI and add it too
     await window.getByRole('button', { name: 'OpenAI' }).first().click();
-    await window.waitForTimeout(2_500);
+    await wait(window,2_500);
     await window.getByRole('button', { name: 'Add Voice' }).click();
-    await window.waitForTimeout(2_500);
+    await wait(window,2_500);
     cues.emit('openai-voice-added', 'OpenAI voice added to composition');
 
     // Save — composition is already in conductor mode (the default)
     await window.getByRole('button', { name: 'Save Composition' }).click();
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     cues.emit('composition-saved', 'Research Duo composition saved with both voices');
 
     // ── Part 2: Start a session and send directed messages ─────────────────
 
     await startSessionFromComposition(window, 'Research Duo');
-    await window.waitForTimeout(2_500);
+    await wait(window,2_500);
     cues.emit('session-started', 'Session started from Research Duo composition');
 
     // Direct a question to Anthropic using @mention
     await window.getByPlaceholder('Message the ensemble\u2026').click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('@');
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('A');
-    await window.waitForTimeout(3_500);
+    await wait(window,3_500);
     try {
       await window.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 2_000 });
       await window.locator('[role="option"]').first().click();
-      await window.waitForTimeout(1_500);
+      await wait(window,1_500);
     } catch { /* dropdown shape may differ */ }
     cues.emit('at-mention-anthropic', 'At-mention picker used to target Anthropic voice');
     await window.getByPlaceholder('Message the ensemble\u2026').type(' What makes a great API design?');
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.keyboard.press('Enter');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window);
-    await window.waitForTimeout(3_500);
+    await wait(window,3_500);
     cues.emit('anthropic-responded', 'Anthropic voice finished streaming its response');
 
     // Direct a different question to OpenAI using @mention
     await window.getByPlaceholder('Message the ensemble\u2026').click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('@');
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('O');
-    await window.waitForTimeout(3_500);
+    await wait(window,3_500);
     try {
       await window.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 2_000 });
       await window.locator('[role="option"]').first().click();
-      await window.waitForTimeout(1_500);
+      await wait(window,1_500);
     } catch { /* dropdown shape may differ */ }
     cues.emit('at-mention-openai', 'At-mention picker used to target OpenAI voice');
     await window.getByPlaceholder('Message the ensemble\u2026').type(' What makes a great developer experience?');
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.keyboard.press('Enter');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window);
-    await window.waitForTimeout(4_000);
+    await wait(window,4_000);
     cues.emit('openai-responded', 'OpenAI voice finished streaming its response');
 
     await stopRecording();
@@ -642,7 +682,7 @@ async function captureTypeToggle(ffmpegBin: string): Promise<void> {
 }
 
 async function captureStreaming(ffmpegBin: string): Promise<void> {
-  console.log('\n── Track 2: Multi-voice streaming ───────────────────────────────');
+  console.log('\n── Track 2: Multi-voice streaming ───────────────────────────────  [TRACK=streaming]');
 
   const { app, window } = await launchApp({ skipOnboarding: true });
   const framesDir = makeTempDir('polyphon-frames-streaming-');
@@ -656,7 +696,7 @@ async function captureStreaming(ffmpegBin: string): Promise<void> {
     // Start recording at 15fps; dwell on the empty session so viewers can orient
     cues.start();
     const stopRecording = await startFrameRecording(window, framesDir, 15);
-    await window.waitForTimeout(3_000);
+    await wait(window,3_000);
     cues.emit('session-started', 'Streaming Demo session open with Anthropic and OpenAI voices');
 
     // Round 1: open question — each voice answers from its own perspective
@@ -664,7 +704,7 @@ async function captureStreaming(ffmpegBin: string): Promise<void> {
     cues.emit('round1-sent', 'Question sent — both voices begin streaming simultaneously');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window);
-    await window.waitForTimeout(3_000); // hold so viewers can read both responses
+    await wait(window,3_000); // hold so viewers can read both responses
     cues.emit('round1-complete', 'Both voices finished streaming round 1 responses');
 
     // Round 2: ask each voice to engage with what the other said
@@ -672,7 +712,7 @@ async function captureStreaming(ffmpegBin: string): Promise<void> {
     cues.emit('round2-sent', 'Follow-up sent — voices read each other\'s responses');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window);
-    await window.waitForTimeout(4_000); // hold on the final exchange before cut
+    await wait(window,4_000); // hold on the final exchange before cut
     cues.emit('round2-complete', 'Both voices finished their round 2 responses');
 
     await stopRecording();
@@ -693,7 +733,7 @@ async function captureStreaming(ffmpegBin: string): Promise<void> {
 }
 
 async function captureAtMention(ffmpegBin: string): Promise<void> {
-  console.log('\n── Track 3: @mention flow ───────────────────────────────────────');
+  console.log('\n── Track 3: @mention flow ───────────────────────────────────────  [TRACK=at-mention]');
 
   // Fresh launch — do not reuse streaming state
   const { app, window } = await launchApp({ skipOnboarding: true });
@@ -713,20 +753,20 @@ async function captureAtMention(ffmpegBin: string): Promise<void> {
     // Start recording at 15fps; dwell on the session so viewers can orient
     cues.start();
     const stopRecording = await startFrameRecording(window, framesDir, 15);
-    await window.waitForTimeout(3_000);
+    await wait(window,3_000);
     cues.emit('session-started', 'Mention Demo session open in conductor mode');
 
     // Click into the input, pause so viewers see focus, then type "@" deliberately
     await window.getByPlaceholder('Message the ensemble\u2026').click();
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
     cues.emit('input-focused', 'Message input focused, about to type @mention');
     await window.getByPlaceholder('Message the ensemble\u2026').type('@');
-    await window.waitForTimeout(2_500); // hold so viewers see the picker open
+    await wait(window,2_500); // hold so viewers see the picker open
     cues.emit('at-sign-typed', 'At-sign typed, voice picker dropdown opened');
 
     // Type a character to filter; hold so viewers can read the dropdown
     await window.getByPlaceholder('Message the ensemble\u2026').type('A');
-    await window.waitForTimeout(4_500);
+    await wait(window,4_500);
     cues.emit('picker-filtered', 'Picker filtered to Anthropic voice');
 
     // Click the first voice; dwell so viewers see the voice panel highlight
@@ -734,7 +774,7 @@ async function captureAtMention(ffmpegBin: string): Promise<void> {
       const dropdownItem = window.locator('[role="option"]').first();
       await dropdownItem.waitFor({ state: 'visible', timeout: 2_000 });
       await dropdownItem.click();
-      await window.waitForTimeout(2_500); // hold — viewer sees the targeted voice highlighted
+      await wait(window,2_500); // hold — viewer sees the targeted voice highlighted
     } catch {
       // dropdown structure may differ
     }
@@ -742,14 +782,14 @@ async function captureAtMention(ffmpegBin: string): Promise<void> {
 
     // Type the rest of the message and send it — this is the point of the demo
     await window.getByPlaceholder('Message the ensemble\u2026').type(' what is polyphony in one sentence?');
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     cues.emit('message-composed', 'Full directed message composed targeting Anthropic');
     await window.keyboard.press('Enter');
 
     // Wait for the directed voice to stream its response
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window);
-    await window.waitForTimeout(4_000); // hold on the completed response before cut
+    await wait(window,4_000); // hold on the completed response before cut
     cues.emit('voice-responded', 'Anthropic responded to the directed question');
 
     await stopRecording();
@@ -769,8 +809,193 @@ async function captureAtMention(ffmpegBin: string): Promise<void> {
   console.log(`  ✓ videos/docs/sessions-at-mention.mp4 (${mb}MB)`);
 }
 
+async function captureContinuationNudge(ffmpegBin: string): Promise<void> {
+  console.log('\n── Track 4: Continuation nudge (Prompt me) ──────────────────────  [TRACK=continuation-nudge]');
+
+  const { app, window } = await launchApp({ skipOnboarding: true });
+  const framesDir = makeTempDir('polyphon-frames-continuation-nudge-');
+  const cues = new CueEmitter();
+
+  try {
+    await enableAllProviders(window);
+
+    // Create a broadcast composition with "Prompt me" continuation policy
+    await openNewComposition(window);
+    await window.getByPlaceholder('My Composition').fill('Continuation Demo');
+    await window.getByRole('button', { name: /broadcast/i }).first().click();
+    await wait(window,300);
+    // Select "Prompt me" continuation
+    await window.getByRole('button', { name: /prompt me/i }).click();
+    await wait(window,200);
+
+    // Add two voices
+    await window.getByRole('button', { name: 'Anthropic' }).first().click();
+    await wait(window,200);
+    await window.getByRole('button', { name: 'Add Voice' }).click();
+    await wait(window,200);
+    await window.getByRole('button', { name: 'OpenAI' }).first().click();
+    await wait(window,200);
+    await window.getByRole('button', { name: 'Add Voice' }).click();
+    await wait(window,200);
+    await window.getByRole('button', { name: 'Save Composition' }).click();
+    await wait(window,500);
+
+    await startSessionFromComposition(window, 'Continuation Demo');
+
+    cues.start();
+    const stopRecording = await startFrameRecording(window, framesDir, 15);
+    await wait(window,2_500);
+    cues.emit('session-started', 'Continuation Demo session open in broadcast + Prompt me mode');
+
+    await sendMessage(window, 'What are the key tradeoffs between REST and GraphQL APIs?');
+    cues.emit('message-sent', 'Question sent — both voices begin streaming round 1');
+    await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
+    await waitForSessionIdle(window);
+    await wait(window,3_000);
+    cues.emit('round1-complete', 'Round 1 complete — continuation nudge banner appears');
+
+    // Wait for the nudge banner; dwell so viewers can read it
+    try {
+      const allowBtn = window.getByRole('button', { name: 'Allow' });
+      await allowBtn.waitFor({ state: 'visible', timeout: 5_000 });
+      await wait(window,4_000); // hold on the amber nudge banner
+      cues.emit('nudge-visible', '"Agents have more to say — let them continue?" nudge banner visible with Allow and Dismiss');
+      await allowBtn.click();
+      await wait(window,500);
+      cues.emit('allow-clicked', 'Allow clicked — round 2 begins');
+      await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
+      await waitForSessionIdle(window);
+      await wait(window,3_000);
+      cues.emit('round2-complete', 'Round 2 complete');
+    } catch {
+      // nudge may not appear in mock mode
+    }
+
+    await stopRecording();
+  } finally {
+    try { await app.close(); } catch { /* ignore */ }
+  }
+
+  const outputMp4 = path.join(SITE_STATIC, 'videos', 'docs', 'continuation-nudge.mp4');
+  compileFramesToMp4(ffmpegBin, framesDir, outputMp4, 15);
+  cues.save(path.join(SITE_STATIC, 'videos', 'docs', 'continuation-nudge-cues.json'));
+  // Poster at the nudge banner moment — approximately 3s dwell + round 1 duration; use 20s as a safe estimate
+  extractPosterFrame(ffmpegBin, outputMp4, path.join(SITE_STATIC, 'images', 'video-posters', 'docs', 'continuation-nudge.webp'), 20);
+  assertOutputWithinBudget(outputMp4, 25);
+  captured++;
+  const mb = (fs.statSync(outputMp4).size / (1024 * 1024)).toFixed(1);
+  console.log(`  ✓ videos/docs/continuation-nudge.mp4 (${mb}MB)`);
+}
+
+async function captureAvatarUpload(ffmpegBin: string): Promise<void> {
+  console.log('\n── Track 5: Avatar upload ───────────────────────────────────────  [TRACK=avatar-upload]');
+
+  // Launch without skipping onboarding — show the full flow from the welcome modal
+  const { app, window } = await launchApp({ skipOnboarding: false });
+  const framesDir = makeTempDir('polyphon-frames-avatar-upload-');
+  const cues = new CueEmitter();
+
+  try {
+    await window.waitForLoadState('domcontentloaded');
+    // Wait for the onboarding modal
+    const skipBtn = window.getByRole('button', { name: /skip for now/i });
+    await skipBtn.waitFor({ state: 'visible', timeout: 10_000 });
+
+    // Override pickAvatarFile with a synthetic gradient image so the file picker is bypassed
+    await window.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 400; canvas.height = 400;
+      const ctx = canvas.getContext('2d')!;
+      const grad = ctx.createLinearGradient(0, 0, 400, 400);
+      grad.addColorStop(0, '#4f46e5');
+      grad.addColorStop(1, '#7c3aed');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 400, 400);
+      ctx.fillStyle = '#c7d2fe';
+      ctx.beginPath(); ctx.arc(200, 160, 80, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#818cf8';
+      ctx.beginPath(); ctx.arc(200, 320, 140, Math.PI, 0); ctx.fill();
+      // @ts-ignore
+      (window as any).__testAvatarDataUrl = canvas.toDataURL('image/png');
+      // @ts-ignore
+      (window as any).polyphon.settings.pickAvatarFile = async () =>
+        (window as any).__testAvatarDataUrl;
+    });
+
+    cues.start();
+    const stopRecording = await startFrameRecording(window, framesDir, 15);
+    await wait(window,2_500);
+    cues.emit('onboarding-visible', 'Welcome modal open — avatar button, name, pronouns, About me fields visible');
+
+    // Click the avatar button to open the AvatarEditor
+    try {
+      const avatarTrigger = window.getByRole('button', { name: /upload|avatar|photo/i }).first();
+      await avatarTrigger.click();
+    } catch {
+      // Fallback: click the first button-like element near the top of the modal
+      await window.locator('button').first().click();
+    }
+    await wait(window,800);
+    cues.emit('avatar-editor-opened', 'AvatarEditor modal opened with synthetic image loaded');
+
+    // Interact with the editor: drag to reposition, zoom in, then apply
+    const applyBtn = window.getByRole('button', { name: /apply/i });
+    await applyBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await wait(window,3_000); // hold so viewers see the editor
+    cues.emit('avatar-editor-dwell', 'AvatarEditor showing circular crop preview, zoom slider, rotate buttons');
+
+    // Simulate a drag to reposition
+    const canvas = window.locator('canvas').first();
+    const canvasBox = await canvas.boundingBox();
+    if (canvasBox) {
+      const cx = canvasBox.x + canvasBox.width / 2;
+      const cy = canvasBox.y + canvasBox.height / 2;
+      await window.mouse.move(cx, cy);
+      await window.mouse.down();
+      await window.mouse.move(cx + 30, cy - 20, { steps: 10 });
+      await window.mouse.up();
+      await wait(window,1_500);
+      cues.emit('avatar-repositioned', 'Image dragged to reposition within the crop circle');
+    }
+
+    await wait(window,1_500);
+    await applyBtn.click();
+    await wait(window,1_000);
+    cues.emit('avatar-applied', 'Apply clicked — cropped avatar saved, AvatarEditor closes');
+
+    // Avatar should now appear in the modal; fill in name and click Get started
+    await wait(window,1_500);
+    cues.emit('avatar-in-modal', 'Avatar preview appears in the welcome modal');
+
+    const nameField = window.getByPlaceholder(/e\.g\. Corey/i);
+    await nameField.pressSequentially('Corey', { delay: 180 });
+    await wait(window,1_500);
+    cues.emit('name-entered', 'Name "Corey" entered in the name field');
+
+    const startBtn = window.getByRole('button', { name: /get started/i });
+    await startBtn.click();
+    await window.getByRole('button', { name: /settings/i }).waitFor({ state: 'visible', timeout: 15_000 });
+    await wait(window,2_500);
+    cues.emit('onboarding-complete', 'Get started clicked — avatar appears in the sidebar');
+
+    await stopRecording();
+  } finally {
+    try { await app.close(); } catch { /* ignore */ }
+  }
+
+  const outputMp4 = path.join(SITE_STATIC, 'videos', 'docs', 'conductor-profile-avatar-upload.mp4');
+  compileFramesToMp4(ffmpegBin, framesDir, outputMp4, 15);
+  cues.save(path.join(SITE_STATIC, 'videos', 'docs', 'conductor-profile-avatar-upload-cues.json'));
+  // Poster at ~8s: after AvatarEditor interaction, showing the circular crop editor
+  extractPosterFrame(ffmpegBin, outputMp4, path.join(SITE_STATIC, 'images', 'video-posters', 'docs', 'conductor-profile-avatar-upload.webp'), 8);
+  assertOutputWithinBudget(outputMp4, 20);
+  captured++;
+  const mb = (fs.statSync(outputMp4).size / (1024 * 1024)).toFixed(1);
+  console.log(`  ✓ videos/docs/conductor-profile-avatar-upload.mp4 (${mb}MB)`);
+}
+
 async function captureWalkthrough(ffmpegBin: string): Promise<void> {
-  console.log('\n── Track 4: Full walkthrough ────────────────────────────────────');
+  console.log('\n── Track 4: Full walkthrough ────────────────────────────────────  [TRACK=walkthrough]');
 
   assertOllamaRunning();
 
@@ -789,57 +1014,58 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
 
     // ── Step 1: Onboarding ────────────────────────────────────────────────────
 
-    await fillOnboarding(window, 'Alex', 'they/them', 'Software engineer exploring AI-assisted development.');
-    await window.waitForTimeout(2_500);
-    cues.emit('onboarding-complete', 'Conductor profile set — name Alex, pronouns they/them, software engineer bio');
+    await fillOnboarding(window, 'Corey', 'they/them', 'Software engineer exploring AI-assisted development.');
+    await wait(window,2_500);
+    cues.emit('onboarding-complete', 'Conductor profile set — name Corey, pronouns they/them, software engineer bio');
 
     // ── Step 2: Settings tour ─────────────────────────────────────────────────
 
     await window.getByRole('button', { name: /settings/i }).click();
-    await window.waitForTimeout(5_000); // Conductor tab (the default) — viewer reads the filled profile
+    await wait(window,5_000); // Conductor tab (the default) — viewer reads the filled profile
     cues.emit('settings-conductor-tab', 'Settings open on Conductor tab — filled profile visible');
 
     await window.getByRole('tab', { name: /^Tones$/i }).click();
-    await window.waitForTimeout(5_000);
+    await wait(window,5_000);
     cues.emit('settings-tones-tab', 'Tones tab — preset tones like Professional, Collaborative, Concise visible');
 
     await window.getByRole('tab', { name: /^System Prompts$/i }).click();
-    await window.waitForTimeout(5_000);
+    await wait(window,5_000);
     cues.emit('settings-system-prompts-tab', 'System Prompts tab — reusable prompt templates for voices');
 
     await window.getByRole('tab', { name: /^General$/i }).click();
-    await window.waitForTimeout(5_000);
+    await wait(window,5_000);
     cues.emit('settings-general-tab', 'General tab — theme and app-level preferences');
 
     // ── Providers — detailed walkthrough ──────────────────────────────────────
 
     await window.getByRole('tab', { name: /^Providers$/i }).click();
-    await window.waitForTimeout(4_000); // dwell on the full provider list before touching anything
+    await wait(window,4_000); // dwell on the full provider list before touching anything
     cues.emit('settings-providers-tab', 'Providers tab — all built-in providers listed, none yet enabled');
 
     // --- Anthropic ---
-    // Enable it; the card expands in API mode by default — let the viewer read it
+    // Provider cards now have separate API and CLI toggle rows (no card-level switch).
+    // Switch order: nth(0)=Anthropic API, nth(1)=Anthropic CLI,
+    //               nth(2)=OpenAI API,    nth(3)=OpenAI CLI,
+    //               nth(4)=Gemini API,    nth(5)=Copilot CLI
     const providerSwitches = window.getByRole('switch');
     await providerSwitches.nth(0).click();
     await window.getByText('Saved').first().waitFor({ state: 'visible', timeout: 5_000 });
-    await window.waitForTimeout(4_000); // hold on API mode so viewers see the API key section + model list
-    cues.emit('anthropic-api-enabled', 'Anthropic enabled in API mode — API key section and model list visible');
+    await wait(window,4_000); // hold — viewers see the API key section + model list
+    cues.emit('anthropic-api-enabled', 'Anthropic API enabled — API key section and model list visible');
 
-    // Switch to CLI to show how it works differently
-    const firstCliBtn = window.getByRole('button', { name: /^CLI$/i }).first();
-    await firstCliBtn.waitFor({ state: 'visible', timeout: 3_000 });
-    await firstCliBtn.click();
+    // Enable CLI too — shows the command/args fields alongside the API section
+    await providerSwitches.nth(1).click();
     await window.getByText('Saved').first().waitFor({ state: 'visible', timeout: 5_000 });
-    await window.waitForTimeout(4_500); // hold on CLI config — viewer sees command/args fields
-    cues.emit('anthropic-cli-mode', 'Anthropic switched to CLI mode — command and args fields visible');
+    await wait(window,4_500); // hold — viewer sees CLI command and args fields
+    cues.emit('anthropic-cli-mode', 'Anthropic CLI enabled — command and args fields visible below API section');
 
     // --- OpenAI ---
     // Scroll the OpenAI card into view, then enable it in API mode
-    await providerSwitches.nth(1).evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-    await window.waitForTimeout(1_200);
-    await providerSwitches.nth(1).click();
+    await providerSwitches.nth(2).evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    await wait(window,1_200);
+    await providerSwitches.nth(2).click();
     await window.getByText('Saved').first().waitFor({ state: 'visible', timeout: 5_000 });
-    await window.waitForTimeout(3_000); // hold on API mode — show API key badge + model dropdown
+    await wait(window,3_000); // hold on API mode — show API key badge + model dropdown
     cues.emit('openai-enabled', 'OpenAI enabled in API mode — API key badge and model dropdown visible');
 
     // Click Refresh to demonstrate the live model fetch
@@ -847,164 +1073,164 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
       const refreshBtn = window.getByRole('button', { name: /refresh models for openai/i });
       await refreshBtn.waitFor({ state: 'visible', timeout: 3_000 });
       await refreshBtn.click();
-      await window.waitForTimeout(4_500); // watch the model list populate
+      await wait(window,4_500); // watch the model list populate
     } catch { /* no API key or button not found — skip */ }
-    await window.waitForTimeout(3_500); // hold on the populated model dropdown
+    await wait(window,3_500); // hold on the populated model dropdown
     cues.emit('openai-models-fetched', 'OpenAI model list refreshed from the API');
 
     // --- Gemini ---
     // Scroll down, enable it — Gemini is API-only so there's no CLI toggle to show
-    await providerSwitches.nth(2).evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-    await window.waitForTimeout(1_200);
-    await providerSwitches.nth(2).click();
+    await providerSwitches.nth(4).evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    await wait(window,1_200);
+    await providerSwitches.nth(4).click();
     await window.getByText('Saved').first().waitFor({ state: 'visible', timeout: 5_000 });
-    await window.waitForTimeout(4_000); // dwell — viewer sees Gemini has no CLI option
+    await wait(window,4_000); // dwell — viewer sees Gemini has no CLI option
     cues.emit('gemini-enabled', 'Gemini enabled — API-only, no CLI option');
 
-    await window.waitForTimeout(2_500); // final hold on the configured providers screen
+    await wait(window,2_500); // final hold on the configured providers screen
 
     // ── Custom Providers — add two Ollama-backed providers ────────────────────
 
     // Scroll the Add Custom Provider button into view
     const addCustomBtn = window.getByRole('button', { name: /Add Custom Provider/i }).first();
     await addCustomBtn.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-    await window.waitForTimeout(2_500); // hold — viewers read the Custom Providers heading
+    await wait(window,2_500); // hold — viewers read the Custom Providers heading
     cues.emit('custom-providers-section', 'Custom Providers section visible — Add Custom Provider button shown');
 
     // Provider 1: Llama 3.2
     await addCustomBtn.click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     // Scroll the form into view so viewers can see every field being filled
     const nameField1 = window.getByRole('textbox', { name: /^Name/ });
     await nameField1.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
     await nameField1.fill('Llama 3.2');
-    await window.waitForTimeout(800);
+    await wait(window,800);
     await window.getByPlaceholder('http://localhost:11434/v1').fill('http://localhost:11434/v1');
-    await window.waitForTimeout(800);
+    await wait(window,800);
     await window.getByPlaceholder('llama3.2').fill('llama3.2:1b');
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
     cues.emit('llama-form-filled', 'Llama 3.2 custom provider form filled — name, base URL http://localhost:11434/v1, model llama3.2:1b');
     const saveBtn1 = window.getByRole('button', { name: 'Save', exact: true }).first();
     await saveBtn1.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-    await window.waitForTimeout(800);
+    await wait(window,800);
     await saveBtn1.click();
-    await window.waitForTimeout(2_500); // hold — viewers see the Llama 3.2 card saved
+    await wait(window,2_500); // hold — viewers see the Llama 3.2 card saved
     cues.emit('llama-provider-saved', 'Llama 3.2 custom provider saved and card visible');
 
     // Provider 2: Qwen 2.5
     const addCustomBtn2 = window.getByRole('button', { name: /Add Custom Provider/i }).first();
     await addCustomBtn2.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-    await window.waitForTimeout(800);
+    await wait(window,800);
     await addCustomBtn2.click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     // Scroll the form into view so viewers can see every field being filled
     const nameField2 = window.getByRole('textbox', { name: /^Name/ });
     await nameField2.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
     await nameField2.fill('Qwen 2.5');
-    await window.waitForTimeout(800);
+    await wait(window,800);
     await window.getByPlaceholder('http://localhost:11434/v1').fill('http://localhost:11434/v1');
-    await window.waitForTimeout(800);
+    await wait(window,800);
     await window.getByPlaceholder('llama3.2').fill('qwen2.5:0.5b');
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
     cues.emit('qwen-form-filled', 'Qwen 2.5 custom provider form filled — same Ollama base URL, model qwen2.5:0.5b');
     const saveBtn2 = window.getByRole('button', { name: 'Save', exact: true }).first();
     await saveBtn2.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-    await window.waitForTimeout(800);
+    await wait(window,800);
     await saveBtn2.click();
-    await window.waitForTimeout(3_000); // hold — viewers see both custom provider cards
+    await wait(window,3_000); // hold — viewers see both custom provider cards
     cues.emit('qwen-provider-saved', 'Qwen 2.5 custom provider saved — both Ollama providers now listed');
 
     // ── Step 3: Create three compositions ────────────────────────────────────
 
     // Composition 1 — broadcast: both voices answer every message in parallel
     await window.getByRole('button', { name: /compositions/i }).click();
-    await window.waitForTimeout(2_000); // hold — viewers see the compositions list
+    await wait(window,2_000); // hold — viewers see the compositions list
     await window.getByRole('button', { name: 'New Composition', exact: true }).first().click();
-    await window.waitForTimeout(2_500); // hold — viewers see the empty builder appear
+    await wait(window,2_500); // hold — viewers see the empty builder appear
     cues.emit('composition-builder-opened-1', 'Composition builder opened for first composition');
     await window.getByPlaceholder('My Composition').fill('Research Panel');
-    await window.waitForTimeout(2_500); // hold — viewers read the name
+    await wait(window,2_500); // hold — viewers read the name
     cues.emit('composition-named-broadcast', 'Composition named "Research Panel"');
     await window.getByRole('button', { name: /broadcast/i }).first().click();
-    await window.waitForTimeout(3_000); // hold — viewers see the mode switch to Broadcast
+    await wait(window,3_000); // hold — viewers see the mode switch to Broadcast
     cues.emit('composition-mode-broadcast', 'Mode set to Broadcast — all voices answer every message');
     await window.getByRole('button', { name: 'Anthropic' }).first().click();
-    await window.waitForTimeout(3_000); // hold — viewers see the Anthropic voice config form
+    await wait(window,3_000); // hold — viewers see the Anthropic voice config form
     await window.getByRole('button', { name: 'Add Voice' }).click();
-    await window.waitForTimeout(2_500); // hold — voice appears in the order list
+    await wait(window,2_500); // hold — voice appears in the order list
     cues.emit('composition-anthropic-added', 'Anthropic voice added to Research Panel');
     await window.getByRole('button', { name: 'OpenAI' }).first().click();
-    await window.waitForTimeout(3_000); // hold — viewers see the OpenAI voice config form
+    await wait(window,3_000); // hold — viewers see the OpenAI voice config form
     await window.getByRole('button', { name: 'Add Voice' }).click();
-    await window.waitForTimeout(2_500); // hold — both voices listed
+    await wait(window,2_500); // hold — both voices listed
     cues.emit('composition-openai-added', 'OpenAI voice added to Research Panel');
     await window.getByRole('button', { name: 'Save Composition' }).click();
-    await window.waitForTimeout(3_000); // hold — viewers see the saved composition
+    await wait(window,3_000); // hold — viewers see the saved composition
     cues.emit('composition-broadcast-saved', 'Research Panel broadcast composition saved');
 
     // Composition 2 — conductor: direct messages to individual voices
     await window.getByRole('button', { name: /compositions/i }).click();
-    await window.waitForTimeout(2_000); // hold — viewers see both compositions listed
+    await wait(window,2_000); // hold — viewers see both compositions listed
     await window.getByRole('button', { name: 'New Composition', exact: true }).first().click();
-    await window.waitForTimeout(2_500); // hold — viewers see the empty builder appear
+    await wait(window,2_500); // hold — viewers see the empty builder appear
     cues.emit('composition-builder-opened-2', 'Composition builder opened for second composition');
     await window.getByPlaceholder('My Composition').fill('Directed Q&A');
-    await window.waitForTimeout(3_000); // hold — viewers read the name; conductor is the default mode
+    await wait(window,3_000); // hold — viewers read the name; conductor is the default mode
     cues.emit('composition-named-conductor', 'Composition named "Directed Q&A" — conductor mode is default');
     await window.getByRole('button', { name: 'Anthropic' }).first().click();
-    await window.waitForTimeout(3_000); // hold — viewers see the Anthropic voice config form
+    await wait(window,3_000); // hold — viewers see the Anthropic voice config form
     await window.getByRole('button', { name: 'Add Voice' }).click();
-    await window.waitForTimeout(2_500); // hold — voice appears in the order list
+    await wait(window,2_500); // hold — voice appears in the order list
     cues.emit('composition-conductor-anthropic-added', 'Anthropic voice added to Directed Q&A');
     await window.getByRole('button', { name: 'OpenAI' }).first().click();
-    await window.waitForTimeout(3_000); // hold — viewers see the OpenAI voice config form
+    await wait(window,3_000); // hold — viewers see the OpenAI voice config form
     await window.getByRole('button', { name: 'Add Voice' }).click();
-    await window.waitForTimeout(2_500); // hold — both voices listed
+    await wait(window,2_500); // hold — both voices listed
     cues.emit('composition-conductor-openai-added', 'OpenAI voice added to Directed Q&A');
     await window.getByRole('button', { name: 'Save Composition' }).click();
-    await window.waitForTimeout(3_000); // hold — viewers see the saved composition
+    await wait(window,3_000); // hold — viewers see the saved composition
     cues.emit('composition-conductor-saved', 'Directed Q&A conductor composition saved');
 
     // Composition 3 — conductor: two local Ollama models
     await window.getByRole('button', { name: /compositions/i }).click();
-    await window.waitForTimeout(2_000); // hold — viewers see all three compositions listed
+    await wait(window,2_000); // hold — viewers see all three compositions listed
     await window.getByRole('button', { name: 'New Composition', exact: true }).first().click();
-    await window.waitForTimeout(2_500); // hold — viewers see the empty builder appear
+    await wait(window,2_500); // hold — viewers see the empty builder appear
     cues.emit('composition-builder-opened-3', 'Composition builder opened for Ollama Duo composition');
     await window.getByPlaceholder('My Composition').fill('Ollama Duo');
-    await window.waitForTimeout(2_500); // hold — viewers read the name
+    await wait(window,2_500); // hold — viewers read the name
     cues.emit('composition-named-ollama', 'Composition named "Ollama Duo" — conductor mode');
     await window.getByRole('button', { name: /Llama 3\.2/i }).first().click();
-    await window.waitForTimeout(3_000); // hold — viewers see the Llama 3.2 voice config form
+    await wait(window,3_000); // hold — viewers see the Llama 3.2 voice config form
     await window.getByRole('button', { name: 'Add Voice' }).click();
-    await window.waitForTimeout(2_500); // hold — voice appears in the order list
+    await wait(window,2_500); // hold — voice appears in the order list
     cues.emit('composition-ollama-llama-added', 'Llama 3.2 local voice added to Ollama Duo');
     await window.getByRole('button', { name: /Qwen 2\.5/i }).first().click();
-    await window.waitForTimeout(3_000); // hold — viewers see the Qwen 2.5 voice config form
+    await wait(window,3_000); // hold — viewers see the Qwen 2.5 voice config form
     await window.getByRole('button', { name: 'Add Voice' }).click();
-    await window.waitForTimeout(2_500); // hold — both voices listed
+    await wait(window,2_500); // hold — both voices listed
     cues.emit('composition-ollama-qwen-added', 'Qwen 2.5 local voice added to Ollama Duo');
     await window.getByRole('button', { name: 'Save Composition' }).click();
-    await window.waitForTimeout(3_000); // hold — viewers see the saved composition
+    await wait(window,3_000); // hold — viewers see the saved composition
     cues.emit('composition-ollama-saved', 'Ollama Duo composition saved with both local voices');
 
     // ── Step 4: Broadcast session — both voices research a topic together ─────
 
     await window.getByRole('button', { name: /^sessions$/i }).click();
-    await window.waitForTimeout(2_000); // hold — viewers see the sessions list
+    await wait(window,2_000); // hold — viewers see the sessions list
     await window.getByRole('button', { name: 'New Session', exact: true }).first().click();
-    await window.waitForTimeout(2_500); // hold — viewers see the composition picker
+    await wait(window,2_500); // hold — viewers see the composition picker
     await window.getByRole('button', { name: /Research Panel/i }).first().waitFor({ state: 'visible', timeout: 10_000 });
     await window.getByRole('button', { name: /Research Panel/i }).first().click();
-    await window.waitForTimeout(2_000); // hold — viewers see the composition selected
+    await wait(window,2_000); // hold — viewers see the composition selected
     await window.getByPlaceholder('My session').waitFor({ state: 'visible', timeout: 5_000 });
     await window.getByPlaceholder('My session').fill('Research Panel Session');
-    await window.waitForTimeout(2_000); // hold — viewers read the session name
+    await wait(window,2_000); // hold — viewers read the session name
     await window.getByRole('button', { name: 'Start Session' }).click();
     await window.getByPlaceholder('Message the ensemble\u2026').waitFor({ state: 'visible', timeout: 45_000 });
-    await window.waitForTimeout(3_000); // hold — viewers orient to the session view
+    await wait(window,3_000); // hold — viewers orient to the session view
     cues.emit('session-broadcast-started', 'Research Panel broadcast session started — both voices ready');
 
     // Round 1 — ask a research question; both voices respond simultaneously
@@ -1012,7 +1238,7 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     cues.emit('broadcast-round1-sent', 'Research question sent — Anthropic and OpenAI stream simultaneously');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 180_000);
-    await window.waitForTimeout(4_000);
+    await wait(window,4_000);
     cues.emit('broadcast-round1-complete', 'Both voices finished round 1 — parallel responses visible');
 
     // Round 2 — ask voices to engage with each other's response
@@ -1020,125 +1246,125 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     cues.emit('broadcast-round2-sent', 'Follow-up sent — voices read and respond to each other');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 180_000);
-    await window.waitForTimeout(4_000);
+    await wait(window,4_000);
     cues.emit('broadcast-round2-complete', 'Round 2 complete — voices have engaged with each other\'s answers');
 
     // ── Step 5: Conductor session — direct different questions to each voice ──
 
     await window.getByRole('button', { name: /^sessions$/i }).click();
-    await window.waitForTimeout(2_000); // hold — viewers see the sessions list
+    await wait(window,2_000); // hold — viewers see the sessions list
     await window.getByRole('button', { name: 'New Session', exact: true }).first().click();
-    await window.waitForTimeout(2_500); // hold — viewers see the composition picker
+    await wait(window,2_500); // hold — viewers see the composition picker
     await window.getByRole('button', { name: /Directed Q&A/i }).first().waitFor({ state: 'visible', timeout: 10_000 });
     await window.getByRole('button', { name: /Directed Q&A/i }).first().click();
-    await window.waitForTimeout(2_000); // hold — viewers see the composition selected
+    await wait(window,2_000); // hold — viewers see the composition selected
     await window.getByPlaceholder('My session').waitFor({ state: 'visible', timeout: 5_000 });
     await window.getByPlaceholder('My session').fill('Directed Q&A Session');
-    await window.waitForTimeout(2_000); // hold — viewers read the session name
+    await wait(window,2_000); // hold — viewers read the session name
     await window.getByRole('button', { name: 'Start Session' }).click();
     await window.getByPlaceholder('Message the ensemble\u2026').waitFor({ state: 'visible', timeout: 45_000 });
-    await window.waitForTimeout(3_000); // hold — viewers orient to the session view
+    await wait(window,3_000); // hold — viewers orient to the session view
     cues.emit('session-conductor-started', 'Directed Q&A conductor session started');
 
     // Direct a question to Anthropic
     await window.getByPlaceholder('Message the ensemble\u2026').click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('@');
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('A');
-    await window.waitForTimeout(3_500);
+    await wait(window,3_500);
     try {
       await window.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 2_000 });
       await window.locator('[role="option"]').first().click();
-      await window.waitForTimeout(1_500);
+      await wait(window,1_500);
     } catch { /* dropdown shape may differ */ }
     cues.emit('directed-anthropic-targeted', 'Anthropic targeted via @mention for the first question');
     await window.getByPlaceholder('Message the ensemble\u2026').type(' What\'s your top tip for a junior developer trying to grow quickly?');
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
     await window.keyboard.press('Enter');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 180_000);
-    await window.waitForTimeout(4_000);
+    await wait(window,4_000);
     cues.emit('directed-anthropic-responded', 'Anthropic answered — only this voice responded');
 
     // Direct OpenAI to engage with Anthropic's answer
     await window.getByPlaceholder('Message the ensemble\u2026').click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('@');
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('O');
-    await window.waitForTimeout(3_500);
+    await wait(window,3_500);
     try {
       await window.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 2_000 });
       await window.locator('[role="option"]').first().click();
-      await window.waitForTimeout(1_500);
+      await wait(window,1_500);
     } catch { /* dropdown shape may differ */ }
     cues.emit('directed-openai-targeted', 'OpenAI targeted via @mention to respond to Anthropic\'s answer');
     await window.getByPlaceholder('Message the ensemble\u2026').type(' What do you think of that advice? Would you add or change anything?');
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
     await window.keyboard.press('Enter');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 180_000);
-    await window.waitForTimeout(4_000);
+    await wait(window,4_000);
     cues.emit('directed-openai-responded', 'OpenAI responded — a direct reply to Anthropic\'s answer');
 
     // ── Step 6: Ollama Duo — local models with directed questions ─────────────
 
     await window.getByRole('button', { name: /^sessions$/i }).click();
-    await window.waitForTimeout(2_000); // hold — viewers see the sessions list
+    await wait(window,2_000); // hold — viewers see the sessions list
     await window.getByRole('button', { name: 'New Session', exact: true }).first().click();
-    await window.waitForTimeout(2_500); // hold — viewers see the composition picker
+    await wait(window,2_500); // hold — viewers see the composition picker
     await window.getByRole('button', { name: /Ollama Duo/i }).first().waitFor({ state: 'visible', timeout: 10_000 });
     await window.getByRole('button', { name: /Ollama Duo/i }).first().click();
-    await window.waitForTimeout(2_000); // hold — viewers see the composition selected
+    await wait(window,2_000); // hold — viewers see the composition selected
     await window.getByPlaceholder('My session').waitFor({ state: 'visible', timeout: 5_000 });
     await window.getByPlaceholder('My session').fill('Ollama Duo Session');
-    await window.waitForTimeout(2_000); // hold — viewers read the session name
+    await wait(window,2_000); // hold — viewers read the session name
     await window.getByRole('button', { name: 'Start Session' }).click();
     await window.getByPlaceholder('Message the ensemble\u2026').waitFor({ state: 'visible', timeout: 45_000 });
-    await window.waitForTimeout(3_000); // hold — viewers orient to the session view
+    await wait(window,3_000); // hold — viewers orient to the session view
     cues.emit('session-ollama-started', 'Ollama Duo session started — two local models ready');
 
     // Direct a simple question to Llama 3.2
     await window.getByPlaceholder('Message the ensemble\u2026').click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('@');
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('L');
-    await window.waitForTimeout(3_500);
+    await wait(window,3_500);
     try {
       await window.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 2_000 });
       await window.locator('[role="option"]').first().click();
-      await window.waitForTimeout(1_500);
+      await wait(window,1_500);
     } catch { /* dropdown shape may differ */ }
     cues.emit('directed-llama-targeted', 'Llama 3.2 targeted with a simple question');
     await window.getByPlaceholder('Message the ensemble\u2026').type(' What is the capital of France?');
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
     await window.keyboard.press('Enter');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 120_000);
-    await window.waitForTimeout(4_000);
+    await wait(window,4_000);
     cues.emit('directed-llama-responded', 'Llama 3.2 answered locally — no cloud required');
 
     // Direct a simple question to Qwen 2.5
     await window.getByPlaceholder('Message the ensemble\u2026').click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('@');
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('Q');
-    await window.waitForTimeout(3_500);
+    await wait(window,3_500);
     try {
       await window.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 2_000 });
       await window.locator('[role="option"]').first().click();
-      await window.waitForTimeout(1_500);
+      await wait(window,1_500);
     } catch { /* dropdown shape may differ */ }
     cues.emit('directed-qwen-targeted', 'Qwen 2.5 targeted with a different simple question');
     await window.getByPlaceholder('Message the ensemble\u2026').type(' What color is the sky?');
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
     await window.keyboard.press('Enter');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 120_000);
-    await window.waitForTimeout(4_000);
+    await wait(window,4_000);
     cues.emit('directed-qwen-responded', 'Qwen 2.5 answered — two local models, one conversation');
 
     await stopRecording();
@@ -1149,6 +1375,7 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
   const outputMp4 = path.join(SITE_STATIC, 'videos', 'home', 'full-walkthrough.mp4');
   compileFramesToMp4(ffmpegBin, framesDir, outputMp4, 15);
   cues.save(path.join(SITE_STATIC, 'videos', 'home', 'full-walkthrough-cues.json'));
+  extractPosterFrame(ffmpegBin, outputMp4, path.join(SITE_STATIC, 'images', 'video-posters', 'home', 'full-walkthrough.webp'), 180);
   assertOutputWithinBudget(outputMp4, 100);
   captured++;
   const mb = (fs.statSync(outputMp4).size / (1024 * 1024)).toFixed(1);
@@ -1156,7 +1383,7 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
 }
 
 async function captureCustomProviders(ffmpegBin: string): Promise<void> {
-  console.log('\n── Track 5: Custom providers — Ollama ──────────────────────────');
+  console.log('\n── Track 5: Custom providers — Ollama ──────────────────────────  [TRACK=custom-providers]');
 
   const { app, window } = await launchApp({ skipOnboarding: true });
   const framesDir = makeTempDir('polyphon-frames-custom-providers-');
@@ -1165,7 +1392,7 @@ async function captureCustomProviders(ffmpegBin: string): Promise<void> {
   try {
     cues.start();
     const stopRecording = await startFrameRecording(window, framesDir, 15);
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     cues.emit('app-launched', 'App open, navigating to Settings Providers tab');
 
     // ── Step 1: Add first custom provider — Llama 3.2 ────────────────────
@@ -1175,129 +1402,129 @@ async function captureCustomProviders(ffmpegBin: string): Promise<void> {
     // Scroll the Add Custom Provider button into view so viewers see the section
     const addBtn = window.getByRole('button', { name: /Add Custom Provider/i }).first();
     await addBtn.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-    await window.waitForTimeout(2_500); // hold — viewers read the Custom Providers heading
+    await wait(window,2_500); // hold — viewers read the Custom Providers heading
     cues.emit('custom-providers-section', 'Custom Providers section visible');
 
     await addBtn.click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     // Scroll the form into view so viewers can see every field being filled
     const nameField1 = window.getByRole('textbox', { name: /^Name/ });
     await nameField1.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
 
     await nameField1.fill('Llama 3.2');
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('http://localhost:11434/v1').fill('http://localhost:11434/v1');
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('llama3.2').fill('llama3.2:1b');
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     cues.emit('llama-form-filled', 'Llama 3.2 form filled — Ollama base URL and model name');
 
     const saveBtn1 = window.getByRole('button', { name: 'Save', exact: true }).first();
     await saveBtn1.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-    await window.waitForTimeout(800);
+    await wait(window,800);
     await saveBtn1.click();
-    await window.waitForTimeout(2_500); // hold — viewers see the saved provider card
+    await wait(window,2_500); // hold — viewers see the saved provider card
     cues.emit('llama-provider-saved', 'Llama 3.2 provider saved');
 
     // ── Step 2: Add second custom provider — Qwen 2.5 ────────────────────
 
     const addBtn2 = window.getByRole('button', { name: /Add Custom Provider/i }).first();
     await addBtn2.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
 
     await addBtn2.click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     // Scroll the form into view so viewers can see every field being filled
     const nameField2 = window.getByRole('textbox', { name: /^Name/ });
     await nameField2.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
 
     await nameField2.fill('Qwen 2.5');
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('http://localhost:11434/v1').fill('http://localhost:11434/v1');
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('llama3.2').fill('qwen2.5:0.5b');
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     cues.emit('qwen-form-filled', 'Qwen 2.5 form filled — same Ollama URL, different model');
 
     const saveBtn2 = window.getByRole('button', { name: 'Save', exact: true }).first();
     await saveBtn2.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
-    await window.waitForTimeout(800);
+    await wait(window,800);
     await saveBtn2.click();
-    await window.waitForTimeout(3_000); // hold — viewers see both provider cards
+    await wait(window,3_000); // hold — viewers see both provider cards
     cues.emit('qwen-provider-saved', 'Both Ollama providers saved');
 
     // ── Step 3: Build a directed composition with both ────────────────────
 
     await openNewComposition(window);
     await window.getByPlaceholder('My Composition').fill('Ollama Duo');
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
 
     // Conductor mode is the default — no toggle needed
 
     // Add Llama 3.2 voice
     await window.getByRole('button', { name: /Llama 3\.2/i }).first().click();
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     await window.getByRole('button', { name: 'Add Voice' }).click();
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
 
     // Add Qwen 2.5 voice
     await window.getByRole('button', { name: /Qwen 2\.5/i }).first().click();
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     await window.getByRole('button', { name: 'Add Voice' }).click();
-    await window.waitForTimeout(1_500);
+    await wait(window,1_500);
 
     await window.getByRole('button', { name: 'Save Composition' }).click();
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     cues.emit('composition-saved', 'Ollama Duo conductor composition saved with both local voices');
 
     // ── Step 4: Start a session and direct easy questions ─────────────────
 
     await startSessionFromComposition(window, 'Ollama Duo');
-    await window.waitForTimeout(2_500);
+    await wait(window,2_500);
     cues.emit('session-started', 'Ollama Duo session started');
 
     // Ask Llama 3.2 a simple question
     await window.getByPlaceholder('Message the ensemble\u2026').click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('@');
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('L');
-    await window.waitForTimeout(3_500);
+    await wait(window,3_500);
     try {
       await window.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 2_000 });
       await window.locator('[role="option"]').first().click();
-      await window.waitForTimeout(1_500);
+      await wait(window,1_500);
     } catch { /* dropdown shape may differ */ }
     cues.emit('directed-llama-targeted', 'Llama 3.2 targeted');
     await window.getByPlaceholder('Message the ensemble\u2026').type(' What is the capital of France?');
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.keyboard.press('Enter');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 120_000);
-    await window.waitForTimeout(3_500);
+    await wait(window,3_500);
     cues.emit('directed-llama-responded', 'Llama 3.2 answered');
 
     // Ask Qwen 2.5 a simple question
     await window.getByPlaceholder('Message the ensemble\u2026').click();
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('@');
-    await window.waitForTimeout(2_000);
+    await wait(window,2_000);
     await window.getByPlaceholder('Message the ensemble\u2026').type('Q');
-    await window.waitForTimeout(3_500);
+    await wait(window,3_500);
     try {
       await window.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 2_000 });
       await window.locator('[role="option"]').first().click();
-      await window.waitForTimeout(1_500);
+      await wait(window,1_500);
     } catch { /* dropdown shape may differ */ }
     cues.emit('directed-qwen-targeted', 'Qwen 2.5 targeted');
     await window.getByPlaceholder('Message the ensemble\u2026').type(' What color is the sky?');
-    await window.waitForTimeout(1_000);
+    await wait(window,1_000);
     await window.keyboard.press('Enter');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 120_000);
-    await window.waitForTimeout(4_000);
+    await wait(window,4_000);
     cues.emit('directed-qwen-responded', 'Qwen 2.5 answered');
 
     await stopRecording();
@@ -1343,6 +1570,20 @@ We create a directed composition and use the at-mention picker to address each m
 Two local models, one conversation, under your control.
 `;
 
+const NARRATION_CONTINUATION_NUDGE = `Broadcast mode sends your message to every voice at the same time.
+With the "Prompt me" continuation policy, voices don't just stop after one round — when they have more to say, a nudge banner appears asking whether to continue.
+Here, both voices respond to a question about API design tradeoffs. Once they finish, the banner asks: let them continue?
+Click Allow and a second round begins — voices read each other's answers and build on them.
+You stay in control of when the conversation goes deeper.
+`;
+
+const NARRATION_AVATAR_UPLOAD = `The Conductor Profile lets voices know who they're talking to.
+On first launch, the welcome dialog prompts you to set up your profile.
+Click the avatar button to open the photo editor — load any image and drag it to reposition within the circular crop.
+Click Apply and your avatar is set. Add your name, then click Get started.
+Your avatar appears in the sidebar throughout the app, and voices can address you by name.
+`;
+
 const NARRATION_WALKTHROUGH = `Polyphon is a desktop app for orchestrating conversations between multiple AI voices.
 
 Settings gives you full control over your setup. The Conductor profile lets voices address you personally. Tones shape how every voice communicates — from concise to collaborative. System prompt templates save reusable instructions you can attach to any voice in a composition.
@@ -1370,6 +1611,28 @@ async function main(): Promise<void> {
   const ffmpegBin = assertFfmpegInstalled();
   console.log(`ffmpeg: ${ffmpegBin}`);
 
+  // ── Single-track mode (--track <name>) ───────────────────────────────────
+  if (TRACK_ONLY !== null) {
+    if (!(VALID_TRACKS as readonly string[]).includes(TRACK_ONLY)) {
+      console.error(`\nERROR: Unknown track "${TRACK_ONLY}".`);
+      console.error(`Valid tracks: ${VALID_TRACKS.join(', ')}\n`);
+      process.exit(1);
+    }
+    const trackMap: Record<string, () => Promise<void>> = {
+      'type-toggle':        async () => { await captureTypeToggle(ffmpegBin);       writeNarrationScript('docs/video-narration/compositions-type-toggle.txt',        NARRATION_TYPE_TOGGLE); },
+      'streaming':          async () => { await captureStreaming(ffmpegBin);         writeNarrationScript('docs/video-narration/sessions-streaming.txt',               NARRATION_STREAMING); },
+      'at-mention':         async () => { await captureAtMention(ffmpegBin);         writeNarrationScript('docs/video-narration/sessions-at-mention.txt',              NARRATION_AT_MENTION); },
+      'continuation-nudge': async () => { await captureContinuationNudge(ffmpegBin); writeNarrationScript('docs/video-narration/continuation-nudge.txt',               NARRATION_CONTINUATION_NUDGE); },
+      'avatar-upload':      async () => { await captureAvatarUpload(ffmpegBin);      writeNarrationScript('docs/video-narration/conductor-profile-avatar-upload.txt',  NARRATION_AVATAR_UPLOAD); },
+      'custom-providers':   async () => { assertOllamaRunning(); await captureCustomProviders(ffmpegBin); writeNarrationScript('docs/video-narration/custom-providers-ollama.txt', NARRATION_CUSTOM_PROVIDERS); },
+      'walkthrough':        async () => { await captureWalkthrough(ffmpegBin);       writeNarrationScript('docs/video-narration/full-walkthrough.txt',                 NARRATION_WALKTHROUGH); },
+    };
+    console.log(`\n── Running single track: ${TRACK_ONLY} ─────────────────────────────`);
+    await trackMap[TRACK_ONLY]();
+    console.log(`\n✓ Track "${TRACK_ONLY}" complete. Captured: ${captured}\n`);
+    return;
+  }
+
   const runDocs = !WALKTHROUGH_ONLY && !CUSTOM_PROVIDERS_ONLY;
   const runWalkthrough = !DOCS_ONLY && !CUSTOM_PROVIDERS_ONLY;
   const runCustomProviders = CUSTOM_PROVIDERS_ONLY;
@@ -1379,6 +1642,15 @@ async function main(): Promise<void> {
   // ── Docs clips (processed per-asset — each failure is independent) ────────
 
   if (runDocs) {
+    try {
+      await captureAvatarUpload(ffmpegBin);
+      writeNarrationScript('docs/video-narration/conductor-profile-avatar-upload.txt', NARRATION_AVATAR_UPLOAD);
+    } catch (err) {
+      console.error('\nERROR in avatar-upload capture:', err);
+      docErrors.push({ label: 'conductor-profile-avatar-upload', error: err });
+      skipped.push({ label: 'conductor-profile-avatar-upload', reason: String(err) });
+    }
+
     try {
       await captureTypeToggle(ffmpegBin);
       writeNarrationScript('docs/video-narration/compositions-type-toggle.txt', NARRATION_TYPE_TOGGLE);
@@ -1405,6 +1677,15 @@ async function main(): Promise<void> {
       docErrors.push({ label: 'sessions-at-mention', error: err });
       skipped.push({ label: 'sessions-at-mention', reason: String(err) });
     }
+
+    try {
+      await captureContinuationNudge(ffmpegBin);
+      writeNarrationScript('docs/video-narration/continuation-nudge.txt', NARRATION_CONTINUATION_NUDGE);
+    } catch (err) {
+      console.error('\nERROR in continuation-nudge capture:', err);
+      docErrors.push({ label: 'continuation-nudge', error: err });
+      skipped.push({ label: 'continuation-nudge', reason: String(err) });
+    }
   }
 
   // ── Walkthrough (separate failure domain) ────────────────────────────────
@@ -1419,7 +1700,7 @@ async function main(): Promise<void> {
     }
   }
 
-  // ── Custom providers standalone (separate failure domain) ─────────────────
+  // ── Custom providers explicit standalone (--custom-providers-only) ──────────
 
   if (runCustomProviders) {
     assertOllamaRunning();
@@ -1437,41 +1718,64 @@ async function main(): Promise<void> {
   console.log('\n── Applying markdown replacements ─────────────────────────────────');
 
   if (runDocs) {
-    const docsReplacements: Array<{ file: string; placeholder: string; src: string }> = [
+    const docsReplacements: Array<{ file: string; placeholder: string; src: string; poster: string }> = [
       {
         file: 'site/content/docs/compositions.md',
-        placeholder: 'Short screen recording (5–8 seconds) showing the voice type toggle interaction',
+        placeholder: 'Voice type toggle — selecting a provider shows the API/CLI toggle with available and unavailable states',
         src: '/videos/docs/compositions-type-toggle.mp4',
+        poster: '/images/video-posters/docs/compositions-type-toggle.webp',
       },
       {
         file: 'site/content/docs/sessions.md',
-        placeholder: 'Short screen recording (8–12 seconds) showing multi-voice streaming',
+        placeholder: 'Sessions — message streaming — voices respond in parallel with tokens appearing in real time',
         src: '/videos/docs/sessions-streaming.mp4',
+        poster: '/images/video-posters/docs/sessions-streaming.webp',
       },
       {
         file: 'site/content/docs/sessions.md',
-        placeholder: 'Short screen recording (5–8 seconds) of the @mention flow',
+        placeholder: 'Sessions — @-mention targeting — typing @ opens the voice picker, selecting a voice directs the message',
         src: '/videos/docs/sessions-at-mention.mp4',
+        poster: '/images/video-posters/docs/sessions-at-mention.webp',
+      },
+      {
+        file: 'site/content/docs/sessions.md',
+        placeholder: 'Continuation policy nudge — show "Prompt me" banner appearing between rounds, user clicking Continue',
+        src: '/videos/docs/continuation-nudge.mp4',
+        poster: '/images/video-posters/docs/continuation-nudge.webp',
+      },
+      {
+        file: 'site/content/docs/conductor-profile.md',
+        placeholder: 'Avatar upload — pick photo → crop in AvatarEditor → avatar appears in sidebar',
+        src: '/videos/docs/conductor-profile-avatar-upload.mp4',
+        poster: '/images/video-posters/docs/conductor-profile-avatar-upload.webp',
+      },
+      {
+        file: 'site/content/docs/custom-providers.md',
+        placeholder: 'Custom provider setup — add Ollama end-to-end: fill form, fetch models, save, launch session',
+        src: '/videos/docs/custom-provider-ollama.mp4',
+        poster: '/images/video-posters/docs/custom-provider-ollama.webp',
       },
     ];
 
-    for (const { file, placeholder, src } of docsReplacements) {
+    for (const { file, placeholder, src, poster } of docsReplacements) {
       const outputPath = path.join(SITE_STATIC, src.slice(1));
       if (!fs.existsSync(outputPath)) {
         skipped.push({ label: file, reason: `capture missing: ${src}` });
         continue;
       }
-      replacePlaceholder(file, placeholder, `{{< video src="${src}" >}}`);
+      const shortcode = poster
+        ? `{{< video src="${src}" poster="${poster}" >}}`
+        : `{{< video src="${src}" >}}`;
+      replacePlaceholder(file, placeholder, shortcode);
     }
   }
 
   if (runWalkthrough) {
     const walkthroughMp4 = path.join(SITE_STATIC, 'videos', 'home', 'full-walkthrough.mp4');
     if (fs.existsSync(walkthroughMp4)) {
-      injectHomepageVideo(
-        'site/content/_index.md',
-        '{{< video src="/videos/home/full-walkthrough.mp4" >}}',
-      );
+      const walkthroughShortcode = '{{< video src="/videos/home/full-walkthrough.mp4" poster="/images/video-posters/home/full-walkthrough.webp" >}}';
+      injectHomepageVideo('site/content/_index.md', walkthroughShortcode);
+      injectHomepageVideo('site/content/docs/walkthrough.md', walkthroughShortcode);
     } else {
       skipped.push({ label: 'homepage', reason: 'walkthrough capture missing' });
     }

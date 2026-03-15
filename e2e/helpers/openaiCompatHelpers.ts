@@ -26,7 +26,9 @@ export async function addCustomProvider(
   await pause();
   await window.getByPlaceholder('http://localhost:11434/v1').fill(OLLAMA_BASE_URL);
   await pause();
-  await window.getByPlaceholder('llama3.2').fill(OLLAMA_MODEL);
+  const modelInput = window.getByPlaceholder('llama3.2');
+  await modelInput.scrollIntoViewIfNeeded();
+  await modelInput.fill(OLLAMA_MODEL);
   await pause();
   await window.getByRole('button', { name: /^save$/i }).click();
   await longPause();
@@ -70,8 +72,8 @@ export async function buildComposition(
     await pause();
 
     if (continuationPolicy && continuationPolicy !== 'none') {
-      const labelMap = { prompt: /prompt me/i, auto: /^auto$/i } as const;
-      await window.getByRole('button', { name: labelMap[continuationPolicy] }).click();
+      const labelMap = { prompt: 'Prompt me', auto: 'Auto' } as const;
+      await window.getByRole('button', { name: labelMap[continuationPolicy], exact: true }).click();
       await pause();
     }
 

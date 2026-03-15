@@ -311,20 +311,21 @@ icons: icon-generate icon-light-generate ## Generate all platform icons for both
 # Run `cd site && npm install` once before using site-search.
 
 .PHONY: screenshots
-screenshots: ## Capture site screenshots and replace screenshot placeholders
-	npx tsx scripts/take-screenshots.ts
+screenshots: ## Build a clean e2e bundle then capture site screenshots
+	npm run build:e2e && npx tsx scripts/take-screenshots.ts
 
 .PHONY: videos
-videos: ## Capture site videos, generate narration scripts, replace video placeholders
-	npx tsx scripts/take-videos.ts
+videos: ## Build a clean e2e bundle then capture site videos
+	npm run build:e2e && npx tsx scripts/take-videos.ts
 
 .PHONY: videos-docs
-videos-docs: ## Capture only the three documentation video clips
-	npx tsx scripts/take-videos.ts --docs-only
+videos-docs: ## Build a clean e2e bundle then capture documentation video clips
+	npm run build:e2e && npx tsx scripts/take-videos.ts --docs-only
 
 .PHONY: videos-walkthrough
-videos-walkthrough: ## Capture only the full-product walkthrough video (starts/stops Ollama automatically)
-	@OLLAMA_STARTED=0; \
+videos-walkthrough: ## Build a clean e2e bundle then capture the full-product walkthrough video (starts/stops Ollama automatically)
+	@npm run build:e2e; \
+	OLLAMA_STARTED=0; \
 	OLLAMA_PID=0; \
 	if ! curl -sf http://localhost:11434/api/tags --max-time 2 > /dev/null 2>&1; then \
 		echo "Starting Ollama..."; \
@@ -340,6 +341,15 @@ videos-walkthrough: ## Capture only the full-product walkthrough video (starts/s
 		kill $$OLLAMA_PID 2>/dev/null || true; \
 	fi; \
 	exit $$EXIT_CODE
+
+.PHONY: videos-track
+videos-track: ## Rerecord a single video track by name (skips rebuild): make videos-track TRACK=<name>
+	@if [ -z "$(TRACK)" ]; then \
+		echo "Usage: make videos-track TRACK=<name>"; \
+		echo "Valid tracks: type-toggle, streaming, at-mention, continuation-nudge, avatar-upload, custom-providers, walkthrough"; \
+		exit 1; \
+	fi
+	npx tsx scripts/take-videos.ts --track $(TRACK)
 
 .PHONY: videos-custom-providers
 videos-custom-providers: ## Capture only the custom providers (Ollama) video clip (starts/stops Ollama automatically)
