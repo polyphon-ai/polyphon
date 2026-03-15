@@ -12,6 +12,7 @@ export interface MessageBubbleProps {
   voiceColor?: string;
   voiceName?: string;
   voiceProvider?: string;
+  voiceType?: 'api' | 'cli';
   voiceSide?: 'left' | 'right';
 }
 
@@ -33,6 +34,7 @@ export default function MessageBubble({
   voiceColor,
   voiceName,
   voiceProvider,
+  voiceType,
   voiceSide = 'left',
 }: MessageBubbleProps): React.JSX.Element {
   const [expanded, setExpanded] = useState(false);
@@ -152,6 +154,11 @@ export default function MessageBubble({
           {voiceProvider && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
               {voiceProvider}
+            </span>
+          )}
+          {voiceProvider && (
+            <span className="text-[10px] px-1 py-px rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 font-medium">
+              {voiceProvider === 'openai-compat' ? 'Custom' : voiceType === 'cli' ? 'CLI' : 'API'}
             </span>
           )}
           {isStreaming && (
