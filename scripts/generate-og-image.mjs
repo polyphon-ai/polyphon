@@ -81,7 +81,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" widt
   <text x="1140" y="606"
         font-family="Geist Sans, system-ui, sans-serif"
         font-size="22" font-weight="400"
-        fill="#4b5563" text-anchor="end">polyphon.dev</text>
+        fill="#4b5563" text-anchor="end">polyphon.ai</text>
 </svg>`;
 
 const outDir = join(root, 'site/static/images');

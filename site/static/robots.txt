@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://polyphon.dev/sitemap.xml
+Sitemap: https://polyphon.ai/sitemap.xml
