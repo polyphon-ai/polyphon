@@ -228,10 +228,16 @@ export function registerIpcHandlers(
 
   ipcMain.handle(IPC.EXPIRY_CHECK, () => expiryStatus);
 
+  const ALLOWED_EXTERNAL_HOSTS = new Set([
+    'polyphon.ai',
+    'github.com',
+    'x.com',
+  ]);
+
   ipcMain.handle(IPC.SHELL_OPEN_EXTERNAL, (_event, url: string) => {
     try {
       const parsed = new URL(url);
-      if (parsed.protocol !== 'https:' || parsed.hostname !== 'polyphon.ai') {
+      if (parsed.protocol !== 'https:' || !ALLOWED_EXTERNAL_HOSTS.has(parsed.hostname)) {
         console.warn(`shell:openExternal blocked — not in allowlist: ${url}`);
         return;
       }
