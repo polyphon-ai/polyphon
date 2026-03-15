@@ -3,22 +3,73 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "site/**"
-      - "docs/**"
-      - "**.md"
+    paths:
+      - "src/**"
+      - "e2e/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "index.html"
+      - "vite.*.config.ts"
+      - "vitest.*.config.ts"
+      - "forge.config.ts"
+      - "playwright.config.ts"
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "site/**"
-      - "docs/**"
-      - "**.md"
+    paths:
+      - "src/**"
+      - "e2e/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "index.html"
+      - "vite.*.config.ts"
+      - "vitest.*.config.ts"
+      - "forge.config.ts"
+      - "playwright.config.ts"
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # ── 0. Detect changed paths ────────────────────────────────────────────────
+  # Runs first (in parallel with lint) and classifies what changed so
+  # downstream jobs can skip work that isn't relevant to the diff.
+  #
+  # unit  → true when src/, package files, tsconfig, or vitest configs change.
+  #         Triggers: test-unit, test-integration.
+  # e2e   → true when src/, e2e/, build configs, or playwright configs change.
+  #         Triggers: build, test-e2e.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      unit: ${{ steps.filter.outputs.unit }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            unit:
+              - "src/**"
+              - "package.json"
+              - "package-lock.json"
+              - "tsconfig.json"
+              - "vitest.*.config.ts"
+            e2e:
+              - "src/**"
+              - "e2e/**"
+              - "package.json"
+              - "package-lock.json"
+              - "index.html"
+              - "vite.*.config.ts"
+              - "forge.config.ts"
+              - "playwright.config.ts"
+
   # ── 1. Lint ────────────────────────────────────────────────────────────────
   # Runs once on Linux — type-checking is deterministic across OSes.
   # All subsequent jobs are gated on this passing.
@@ -49,7 +100,8 @@ jobs:
   # ── 2. Unit tests ─────────────────────────────────────────────────────────
   test-unit:
     name: Unit tests (${{ matrix.os }})
-    needs: lint
+    needs: [lint, changes]
+    if: needs.changes.outputs.unit == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -79,7 +131,8 @@ jobs:
   # ── 3. Integration tests ───────────────────────────────────────────────────
   test-integration:
     name: Integration tests (${{ matrix.os }})
-    needs: lint
+    needs: [lint, changes]
+    if: needs.changes.outputs.unit == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -109,9 +162,11 @@ jobs:
   # ── 4. Build ───────────────────────────────────────────────────────────────
   # Verifies the Electron app packages on all three platforms.
   # E2E is gated on this — no point running Playwright if the app doesn't build.
+  # Skipped when only unit-test-related files changed (no need to rebuild the app).
   build:
     name: Build (${{ matrix.os }})
-    needs: [test-unit, test-integration]
+    needs: [test-unit, test-integration, changes]
+    if: needs.changes.outputs.e2e == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -156,7 +211,8 @@ jobs:
   # paths without hitting the API.
   test-e2e:
     name: E2E tests (${{ matrix.os }})
-    needs: build
+    needs: [build, changes]
+    if: needs.changes.outputs.e2e == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     strategy:
