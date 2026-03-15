@@ -84,28 +84,35 @@ test-docker-e2e: ## Run e2e tests in Docker (Playwright + Electron + Xvfb)
 	docker compose -f docker/compose.yml run --rm e2e
 
 # ─── VM Test Targets ──────────────────────────────────────────────────────────
-# Runs the full test suite on remote Ubuntu Server and Windows Server 2022 VMs.
+# Runs the full test suite on remote Linux Server and Windows Server 2022 VMs.
 # Mirrors the GitHub CI matrix as closely as possible without using CI credits.
 #
 # Usage:
-#   make test-vm-ubuntu  UBUNTU_VM_USER=corey  UBUNTU_VM_HOST=192.168.64.10
-#   make test-vm-windows WINDOWS_VM_USER=corey WINDOWS_VM_HOST=192.168.64.20
-#   make test-vm         UBUNTU_VM_USER=...    WINDOWS_VM_USER=...   # both
+#   make vm-linux-test  LINUX_VM_USER=corey  LINUX_VM_HOST=192.168.64.10
+#   make vm-windows-test WINDOWS_VM_USER=corey WINDOWS_VM_HOST=192.168.64.20
+#   make test-vm         LINUX_VM_USER=...    WINDOWS_VM_USER=...   # both
+#
+# Auto-start/suspend (UTM only — requires utmctl in PATH):
+#   Set LINUX_VM_NAME / WINDOWS_VM_NAME to the exact VM name shown in UTM.
+#   When set, the target starts the VM, waits for SSH, runs tests, then suspends.
+#   Standalone targets: vm-linux-start, vm-linux-stop, vm-windows-start, vm-windows-stop
 #
 # Prerequisites:
 #   - SSH key auth configured on both VMs (no password prompts).
-#   - Run `make vm-ubuntu-provision` / `make vm-windows-provision` once first.
+#   - Run `make vm-linux-provision` / `make vm-windows-provision` once first.
 #   - Windows: Git for Windows must be installed before provisioning.
 
-UBUNTU_VM_USER  ?= corey
-UBUNTU_VM_HOST  ?= 192.168.64.4
-UBUNTU_VM_PATH  ?= ~/polyphon
+LINUX_VM_USER  ?= corey
+LINUX_VM_HOST  ?= 192.168.64.7
+LINUX_VM_PATH  ?= ~/polyphon
+LINUX_VM_NAME  ?= "Polyphon CI - Linux"
 
 WINDOWS_VM_USER ?= corey
 WINDOWS_VM_HOST ?= 192.168.64.6
 WINDOWS_VM_PATH ?= ~/polyphon
+WINDOWS_VM_NAME ?= "Polyphon CI - Windows"
 
-_UBUNTU_VM  := $(UBUNTU_VM_USER)@$(UBUNTU_VM_HOST)
+_LINUX_VM  := $(LINUX_VM_USER)@$(LINUX_VM_HOST)
 _WINDOWS_VM := $(WINDOWS_VM_USER)@$(WINDOWS_VM_HOST)
 
 _VM_RSYNC_OPTS := -az --delete \
@@ -117,40 +124,89 @@ _VM_RSYNC_OPTS := -az --delete \
 	--exclude=test-results \
 	--exclude=playwright-report
 
-# ── Ubuntu ────────────────────────────────────────────────────────────────────
+# ── UTM VM lifecycle ──────────────────────────────────────────────────────────
 
-.PHONY: vm-ubuntu-provision
-vm-ubuntu-provision: ## Provision Ubuntu VM: install Node 22 + system deps for Electron and Playwright
-	@echo "==> Checking SSH connectivity ($(_UBUNTU_VM))..."
-	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_UBUNTU_VM) true 2>/dev/null || \
-		{ echo "ERROR: SSH failed. Verify UBUNTU_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+.PHONY: vm-linux-start
+vm-linux-start: ## Start the UTM Linux VM and wait for SSH (requires LINUX_VM_NAME)
+	@[ -n "$(LINUX_VM_NAME)" ] || { echo "ERROR: Set LINUX_VM_NAME to the UTM VM name."; exit 1; }
+	@echo "==> Starting UTM VM '$(LINUX_VM_NAME)'..."
+	@utmctl start "$(LINUX_VM_NAME)" 2>/dev/null || true
+	@printf "==> Waiting for SSH ($(_LINUX_VM))"; \
+	for i in $$(seq 1 60); do \
+		ssh -o ConnectTimeout=3 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null \
+			&& printf " ready.\n" && exit 0; \
+		printf "."; sleep 3; \
+	done; echo ""; echo "ERROR: VM did not become reachable after 3 minutes."; exit 1
+
+.PHONY: vm-linux-stop
+vm-linux-stop: ## Suspend the UTM Linux VM (requires LINUX_VM_NAME)
+	@[ -n "$(LINUX_VM_NAME)" ] || { echo "ERROR: Set LINUX_VM_NAME to the UTM VM name."; exit 1; }
+	@echo "==> Suspending UTM VM '$(LINUX_VM_NAME)'..."
+	@utmctl suspend "$(LINUX_VM_NAME)" 2>/dev/null || true
+
+.PHONY: vm-windows-start
+vm-windows-start: ## Start the UTM Windows VM and wait for SSH (requires WINDOWS_VM_NAME)
+	@[ -n "$(WINDOWS_VM_NAME)" ] || { echo "ERROR: Set WINDOWS_VM_NAME to the UTM VM name."; exit 1; }
+	@echo "==> Starting UTM VM '$(WINDOWS_VM_NAME)'..."
+	@utmctl start "$(WINDOWS_VM_NAME)" 2>/dev/null || true
+	@printf "==> Waiting for SSH ($(_WINDOWS_VM))"; \
+	for i in $$(seq 1 60); do \
+		ssh -o ConnectTimeout=3 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok \
+			&& printf " ready.\n" && exit 0; \
+		printf "."; sleep 3; \
+	done; echo ""; echo "ERROR: VM did not become reachable after 3 minutes."; exit 1
+
+.PHONY: vm-windows-stop
+vm-windows-stop: ## Suspend the UTM Windows VM (requires WINDOWS_VM_NAME)
+	@[ -n "$(WINDOWS_VM_NAME)" ] || { echo "ERROR: Set WINDOWS_VM_NAME to the UTM VM name."; exit 1; }
+	@echo "==> Suspending UTM VM '$(WINDOWS_VM_NAME)'..."
+	@utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
+
+# ── Linux ─────────────────────────────────────────────────────────────────────
+
+.PHONY: vm-linux-provision
+vm-linux-provision: ## Provision Linux VM: install Node 24 + system deps for Electron and Playwright
+	@echo "==> Checking SSH connectivity ($(_LINUX_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify LINUX_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
 	@echo "==> Installing system packages..."
-	@ssh $(_UBUNTU_VM) 'sudo apt-get update -y && sudo apt-get install -y \
-		curl libgtk-3-0 libgbm1 libnss3 libasound2t64 libxshmfence1 xvfb'
-	@echo "==> Checking Node.js 22..."
-	@ssh $(_UBUNTU_VM) 'node --version 2>/dev/null | grep -q "^v22" || { \
-		curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && \
+	@ssh $(_LINUX_VM) 'sudo apt-get update -y && sudo apt-get install -y \
+		curl rsync libgtk-3-0 libgbm1 libnss3 libasound2t64 libxshmfence1 xvfb'
+	@echo "==> Checking Node.js 24..."
+	@ssh $(_LINUX_VM) 'node --version 2>/dev/null | grep -q "^v24" || { \
+		curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash - && \
 		sudo apt-get install -y nodejs; }'
 	@echo "==> Updating npm to latest..."
-	@ssh $(_UBUNTU_VM) 'sudo npm install -g npm@latest'
-	@echo "==> Ubuntu VM provisioned."
+	@ssh $(_LINUX_VM) 'sudo npm install -g npm@latest'
+	@echo "==> Linux VM provisioned."
 
-.PHONY: test-vm-ubuntu
-test-vm-ubuntu: ## Sync project to Ubuntu VM and run lint + unit + integration + e2e
-	@echo "==> Checking SSH connectivity ($(_UBUNTU_VM))..."
-	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_UBUNTU_VM) true 2>/dev/null || \
-		{ echo "ERROR: SSH failed. Verify UBUNTU_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
-	@echo "==> Checking Node 22 (run 'make vm-ubuntu-provision' if missing)..."
-	@ssh $(_UBUNTU_VM) 'node --version 2>/dev/null | grep -q "^v22"' || \
-		{ echo "ERROR: Node 22 not found on Ubuntu VM. Run: make vm-ubuntu-provision"; exit 1; }
+.PHONY: vm-linux-test
+vm-linux-test: ## Sync project to Linux VM and run lint + unit + integration + e2e
+	@[ -z "$(LINUX_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(LINUX_VM_NAME)'..."; \
+		utmctl start "$(LINUX_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_LINUX_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_LINUX_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify LINUX_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-linux-provision' if missing)..."
+	@ssh $(_LINUX_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
+		{ echo "ERROR: Node 24 not found on Linux VM. Run: make vm-linux-provision"; exit 1; }
 	@echo "==> Syncing project..."
-	@rsync $(_VM_RSYNC_OPTS) . $(_UBUNTU_VM):$(UBUNTU_VM_PATH)/
-	@ssh $(_UBUNTU_VM) 'cd $(UBUNTU_VM_PATH) && npm ci'
-	@ssh $(_UBUNTU_VM) 'cd $(UBUNTU_VM_PATH) && npm run lint'
-	@ssh $(_UBUNTU_VM) 'cd $(UBUNTU_VM_PATH) && npm run test:unit'
-	@ssh $(_UBUNTU_VM) 'cd $(UBUNTU_VM_PATH) && npm run test:integration'
-	@ssh $(_UBUNTU_VM) 'cd $(UBUNTU_VM_PATH) && npm run build:e2e'
-	@ssh $(_UBUNTU_VM) 'cd $(UBUNTU_VM_PATH) && xvfb-run --auto-servernum --server-args="-screen 0 1280x720x16" npx playwright test'
+	@rsync $(_VM_RSYNC_OPTS) . $(_LINUX_VM):$(LINUX_VM_PATH)/
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm ci'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run lint'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run test:unit'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run test:integration'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run build:e2e'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && CI=1 xvfb-run --auto-servernum --server-args="-screen 0 1280x720x16" npx playwright test'
+	@[ -z "$(LINUX_VM_NAME)" ] || utmctl suspend "$(LINUX_VM_NAME)" 2>/dev/null || true
 
 # ── Windows ───────────────────────────────────────────────────────────────────
 # Provision configures Git Bash as the OpenSSH default shell so that all
@@ -158,42 +214,56 @@ test-vm-ubuntu: ## Sync project to Ubuntu VM and run lint + unit + integration +
 # Git for Windows must be installed manually before running vm-windows-provision.
 
 .PHONY: vm-windows-provision
-vm-windows-provision: ## Provision Windows VM: verify Node 22 + Git for Windows, configure Git Bash as SSH shell
+vm-windows-provision: ## Provision Windows VM: verify Node 24 + Git for Windows, configure Git Bash as SSH shell
 	@echo "==> Checking SSH connectivity ($(_WINDOWS_VM))..."
 	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok || \
 		{ echo "ERROR: SSH failed. Verify WINDOWS_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
-	@echo "==> Checking Node.js 22..."
-	@ssh $(_WINDOWS_VM) "node --version" 2>/dev/null | grep -q "v22" || \
-		{ echo "ERROR: Node 22 not found. Install via: winget install OpenJS.NodeJS.LTS"; exit 1; }
+	@echo "==> Checking Node.js 24..."
+	@ssh $(_WINDOWS_VM) "node --version" 2>/dev/null | grep -q "v24" || \
+		{ echo "ERROR: Node 24 not found. Install via: winget install OpenJS.NodeJS.LTS"; exit 1; }
 	@echo "==> Checking Git for Windows (required for rsync and bash)..."
 	@ssh $(_WINDOWS_VM) "git --version" 2>/dev/null | grep -q "git version" || \
 		{ echo "ERROR: Git for Windows not found. Install from https://git-scm.com/download/win"; exit 1; }
+	@echo "==> Checking rsync (bundled with Git for Windows)..."
+	@ssh $(_WINDOWS_VM) "rsync --version" 2>/dev/null | grep -q "rsync" || \
+		{ echo "ERROR: rsync not found. Ensure Git for Windows is installed and includes rsync."; exit 1; }
 	@echo "==> Configuring Git Bash as the OpenSSH default shell..."
 	@ssh $(_WINDOWS_VM) "powershell -NoProfile -Command \"New-ItemProperty -Path 'HKLM:\\SOFTWARE\\OpenSSH' -Name DefaultShell -Value 'C:\\Program Files\\Git\\bin\\bash.exe' -PropertyType String -Force\""
 	@echo "==> Windows VM provisioned. Future SSH connections will use Git Bash."
 
-.PHONY: test-vm-windows
-test-vm-windows: ## Sync project to Windows VM and run lint + unit + integration + e2e (requires vm-windows-provision)
+.PHONY: vm-windows-test
+vm-windows-test: ## Sync project to Windows VM and run lint + unit + integration + e2e (requires vm-windows-provision)
+	@[ -z "$(WINDOWS_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(WINDOWS_VM_NAME)'..."; \
+		utmctl start "$(WINDOWS_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_WINDOWS_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
 	@echo "==> Checking SSH connectivity ($(_WINDOWS_VM))..."
 	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok || \
 		{ echo "ERROR: SSH failed. Verify WINDOWS_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
-	@echo "==> Checking Node 22 (run 'make vm-windows-provision' if missing)..."
-	@ssh $(_WINDOWS_VM) "node --version" 2>/dev/null | grep -q "v22" || \
-		{ echo "ERROR: Node 22 not found on Windows VM. Run: make vm-windows-provision"; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-windows-provision' if missing)..."
+	@ssh $(_WINDOWS_VM) "node --version" 2>/dev/null | grep -q "v24" || \
+		{ echo "ERROR: Node 24 not found on Windows VM. Run: make vm-windows-provision"; exit 1; }
 	@echo "==> Syncing project..."
 	@rsync $(_VM_RSYNC_OPTS) . $(_WINDOWS_VM):$(WINDOWS_VM_PATH)/
-	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm ci'
+	@ssh $(_WINDOWS_VM) 'taskkill //F //IM electron.exe 2>/dev/null; cd $(WINDOWS_VM_PATH) && rm -rf node_modules && npm ci'
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npx playwright install --with-deps chromium'
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm run lint'
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm run test:unit'
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm run test:integration'
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm run build:e2e'
-	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npx playwright test'
+	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && CI=1 npx playwright test'
+	@[ -z "$(WINDOWS_VM_NAME)" ] || utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
 
 # ── Both ──────────────────────────────────────────────────────────────────────
 
-.PHONY: test-vm
-test-vm: test-vm-ubuntu test-vm-windows ## Run full test suite on both Ubuntu and Windows VMs (sequential)
+.PHONY: vm-test
+vm-test: vm-linux-test vm-windows-test ## Run full test suite on both Linux and Windows VMs (sequential)
 
 # ─── Lint & Type-check ────────────────────────────────────────────────────────
 
