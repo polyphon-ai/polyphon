@@ -17,7 +17,7 @@ This guide walks you through downloading, installing, and launching Polyphon for
 
 ## Download
 
-Download the latest release for your platform from the [GitHub Releases page](https://github.com/coreydaley/polyphon/releases).
+Download the latest release for your platform from the [GitHub Releases page](https://github.com/polyphon-ai/polyphon/releases).
 
 | Platform | File |
 |---|---|
@@ -73,7 +73,7 @@ See [Voice Providers](../providers/) for step-by-step instructions.
 If you prefer to build Polyphon yourself:
 
 ```bash
-git clone https://github.com/coreydaley/polyphon.git
+git clone https://github.com/polyphon-ai/polyphon.git
 cd polyphon
 npm install
 make dev        # run in development mode

@@ -4,7 +4,7 @@
 
 Please do not report security vulnerabilities through public GitHub issues.
 
-Instead, open a [GitHub Security Advisory](https://github.com/coreydaley/polyphon/security/advisories/new) or email the maintainer directly. Include as much detail as you can:
+Instead, open a [GitHub Security Advisory](https://github.com/polyphon-ai/polyphon/security/advisories/new) or email the maintainer directly. Include as much detail as you can:
 
 - Description of the vulnerability
 - Steps to reproduce

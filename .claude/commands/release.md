@@ -96,4 +96,4 @@ git push origin <new-version>
 
 After pushing, tell the user the tag has been pushed and that the GitHub Actions
 release workflow will now build and publish installers for Linux, macOS, and Windows.
-Include the expected Actions URL: `https://github.com/coreydaley/polyphon/actions`.
+Include the expected Actions URL: `https://github.com/polyphon-ai/polyphon/actions`.

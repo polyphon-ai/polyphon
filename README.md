@@ -38,14 +38,14 @@ API keys are read from your shell environment — set them in `.zshrc` / `.bash_
 
 ### Download
 
-Pre-built installers for macOS, Windows, and Linux are available on the [Releases](https://github.com/coreydaley/polyphon/releases) page.
+Pre-built installers for macOS, Windows, and Linux are available on the [Releases](https://github.com/polyphon-ai/polyphon/releases) page.
 
 ### Build from source
 
 **Prerequisites:** Node.js 22+, npm
 
 ```sh
-git clone https://github.com/coreydaley/polyphon.git
+git clone https://github.com/polyphon-ai/polyphon.git
 cd polyphon
 make install
 make dev
