@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ExternalLink, Download, Music2 } from 'lucide-react';
+import { ExternalLink, Download, Music2, Bug, Lightbulb, MessageSquare, ShieldAlert } from 'lucide-react';
 import type { ExpiryStatus } from '../../../shared/types';
 import wordmarkLightUrl from '../../../../assets/wordmark-light.svg?url';
 import wordmarkDarkUrl from '../../../../assets/wordmark-dark.svg?url';
@@ -91,6 +91,22 @@ const GLOSSARY: Array<{ term: string; description: string }> = [
   {
     term: 'Conductor',
     description: 'You. The human directing the ensemble, setting the tone, and guiding the conversation.',
+  },
+  {
+    term: 'Tone',
+    description: 'A personality preset that shapes how a voice communicates — its style, formality, and approach. Applied per-voice in a composition.',
+  },
+  {
+    term: 'Broadcast',
+    description: 'A session mode where your message is sent to all voices at once. The alternative is directing a message at a specific voice.',
+  },
+  {
+    term: 'Directed',
+    description: 'A session mode where you address one voice at a time. Only the targeted voice responds, keeping the conversation focused.',
+  },
+  {
+    term: 'Provider',
+    description: 'The AI service powering a voice — Anthropic, OpenAI, Gemini, a local CLI tool, or a custom OpenAI-compatible endpoint.',
   },
 ];
 
@@ -322,6 +338,104 @@ export default function AboutPage({ status }: { status: ExpiryStatus | null }) {
           <ExternalLink size={13} strokeWidth={1.75} />
         </button>
       </div>
+
+      {/* ── Community ────────────────────────────────────────────────── */}
+      <div>
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{ border: '1px solid var(--color-border)' }}
+        >
+          {[
+            {
+              icon: <Bug size={14} strokeWidth={1.75} />,
+              label: 'File a bug',
+              description: 'Report unexpected behavior or crashes',
+              url: 'https://github.com/polyphon-ai/releases/issues/new?template=bug_report.md',
+            },
+            {
+              icon: <Lightbulb size={14} strokeWidth={1.75} />,
+              label: 'Request a feature',
+              description: 'Suggest improvements or new capabilities',
+              url: 'https://github.com/polyphon-ai/releases/issues/new?template=feature_request.md',
+            },
+            {
+              icon: <MessageSquare size={14} strokeWidth={1.75} />,
+              label: 'Join the discussion',
+              description: 'Ask questions, share ideas, and connect with others',
+              url: 'https://github.com/polyphon-ai/releases/discussions',
+            },
+            {
+              icon: <ShieldAlert size={14} strokeWidth={1.75} />,
+              label: 'Report a vulnerability',
+              description: 'Privately disclose a security issue',
+              url: 'https://github.com/polyphon-ai/releases/security/advisories/new',
+            },
+          ].map((item, i) => (
+            <button
+              key={item.label}
+              onClick={() => window.polyphon.shell.openExternal(item.url)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors focus-ring"
+              style={{
+                background: i % 2 === 0 ? 'var(--color-surface-raised)' : 'var(--color-surface)',
+                borderTop: i > 0 ? '1px solid var(--color-border)' : undefined,
+                color: 'var(--color-text-primary)',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-brand-light)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  i % 2 === 0 ? 'var(--color-surface-raised)' : 'var(--color-surface)';
+              }}
+            >
+              <span style={{ color: 'var(--color-text-muted)' }}>{item.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                  {item.label}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  {item.description}
+                </p>
+              </div>
+              <ExternalLink size={13} strokeWidth={1.75} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Social ───────────────────────────────────────────────────── */}
+      <button
+        onClick={() => window.polyphon.shell.openExternal('https://x.com/PolyphonAI')}
+        className="w-full flex items-center gap-2 rounded-xl px-4 py-3 transition-colors focus-ring"
+        style={{
+          background: 'var(--color-surface-raised)',
+          border: '1px solid var(--color-border)',
+          color: 'var(--color-text-primary)',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-brand-light)';
+          (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-brand)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface-raised)';
+          (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)';
+        }}
+      >
+        <span style={{ color: 'var(--color-text-muted)' }}>
+          <svg viewBox="0 0 24 24" fill="currentColor" width={14} height={14} aria-hidden>
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+        </span>
+        <div className="text-left min-w-0">
+          <p className="text-xs font-medium leading-none" style={{ color: 'var(--color-text-primary)' }}>
+            @PolyphonAI
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+            X / Twitter
+          </p>
+        </div>
+        <ExternalLink size={12} strokeWidth={1.75} style={{ color: 'var(--color-text-muted)', marginLeft: 'auto', flexShrink: 0 }} />
+      </button>
 
       {/* ── Build info / expiry ──────────────────────────────────────── */}
       {status.channel === 'release' || status.channel === 'dev' ? (
