@@ -36,8 +36,10 @@ For built-in providers (Anthropic, OpenAI, Google, Claude CLI, Codex, Copilot), 
 5. Click **Save**.
 
 ![Add Custom Provider form filled with Local Ollama details and base URL](/images/screenshots/settings/custom-providers-add-form.webp)
+<!-- Prerequisites: Settings → Custom Providers tab, Add Custom Provider form open | Platform: any | Theme: any | Window: default -->
 
-![Custom Providers section showing saved Local Ollama provider with Edit and Delete buttons](/images/screenshots/settings/custom-providers-tab.webp)
+![Custom Providers tab showing saved Local Ollama provider with auth-less badge and Edit / Delete buttons](/images/screenshots/settings/custom-providers-tab.webp)
+<!-- Prerequisites: Local Ollama custom provider saved with no API key env var | Platform: any | Theme: any | Window: default -->
 
 ---
 
@@ -45,13 +47,13 @@ For built-in providers (Anthropic, OpenAI, Google, Claude CLI, Codex, Copilot), 
 
 Custom providers do not accept a raw API key in the UI. Instead, enter the **name** of an environment variable that contains the key — for example, `MY_PRIVATE_KEY`. Polyphon reads the variable from your login shell environment at startup (the same way it resolves built-in provider keys).
 
-If your endpoint requires no authentication (Ollama running locally with default settings), leave the field blank. The status badge on the provider card will show "No API key required (auth-less endpoint)".
-
-*Verification source: `src/renderer/components/Settings/SettingsPage.tsx` — the field label is "API key env var (optional)"; the `CustomProviderApiKeyBadge` component renders "No API key required (auth-less endpoint)" when `apiKeyEnvVar` is empty.*
+If your endpoint requires no authentication (Ollama running locally with default settings), leave the field blank. The status badge on the provider card will show **"No API key required (auth-less endpoint)"**.
 
 ---
 
 ## Ollama Setup Example
+
+{{< video src="/videos/docs/custom-provider-ollama.mp4" poster="/images/video-posters/docs/custom-provider-ollama.webp" >}}
 
 [Ollama](https://ollama.com) runs large language models locally with no API key required.
 
@@ -92,7 +94,8 @@ Once a custom provider is added in Settings, it appears in the provider grid ins
 
 Custom provider voices are labelled **CUSTOM · API** in the provider grid.
 
-![Composition Builder provider grid with built-in and Local Ollama custom provider](/images/screenshots/compositions/builder-custom-provider-voice.webp)
+![Composition Builder provider grid with built-in providers and Local Ollama custom provider](/images/screenshots/compositions/builder-custom-provider-voice.webp)
+<!-- Prerequisites: Local Ollama custom provider saved; Composition Builder open | Platform: any | Theme: any | Window: default -->
 
 ---
 

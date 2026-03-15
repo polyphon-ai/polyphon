@@ -1,7 +1,7 @@
 ---
 title: "Core Concepts"
 weight: 20
-description: "Understand Polyphon's core vocabulary: voices, compositions, sessions, rounds, and broadcast vs. conductor modes."
+description: "Understand Polyphon's core vocabulary: voices, compositions, sessions, rounds, continuation, and broadcast vs. conductor modes."
 ---
 
 Polyphon uses a small set of specific terms consistently throughout the application. Understanding them makes everything else click.
@@ -13,8 +13,10 @@ Polyphon uses a small set of specific terms consistently throughout the applicat
 A **voice** is a single AI participant in a session. Each voice has:
 
 - A **provider** (Anthropic, OpenAI, Gemini, or a CLI tool)
-- A **model** (e.g. `claude-opus-4-5`, `gpt-4o`, `gemini-2.0-flash`)
-- An optional **name** — how it identifies itself in the conversation
+- A **model** (e.g. `claude-sonnet-4-6`, `gpt-4o`, `gemini-2.0-flash`)
+- An optional **display name** — how it identifies itself in the conversation
+- An optional **avatar icon** — a small emoji or symbol shown beside voice messages in the feed
+- A **color** — used to visually distinguish voice messages in the feed
 - An optional **system prompt** that shapes its personality or role
 - A **tone** preset — professional, collaborative, concise, exploratory, or teaching
 
@@ -31,6 +33,7 @@ For example, you might have a composition called *"Code Review Panel"* with thre
 Compositions can be created from the sidebar and launched as many times as you like. Each launch creates a new independent session.
 
 ![Composition list in the sidebar showing several named compositions](/images/screenshots/compositions/concepts-composition-list.webp)
+<!-- Prerequisites: at least 3 compositions saved | Platform: any | Theme: any | Window: default -->
 
 ---
 
@@ -40,11 +43,12 @@ A **session** is a live conversation thread. It has:
 
 - A set of voices (either from a composition or configured ad-hoc)
 - A message history
-- A mode: **broadcast** or **conductor**
+- A mode: **broadcast** or **conductor-directed**
 
 Sessions are persistent — they are saved to your local database and can be resumed. Archived sessions are hidden from the sidebar but not deleted.
 
-![Active session with voice message bubbles labeled with voice names and colors](/images/screenshots/sessions/concepts-active-session.webp)
+![Active session with voice message bubbles showing voice names, avatar icons, and colors](/images/screenshots/sessions/concepts-active-session.webp)
+<!-- Prerequisites: session with 2+ voices that have responded; voice icons and colors set | Platform: any | Theme: any | Window: default -->
 
 ---
 
@@ -52,17 +56,31 @@ Sessions are persistent — they are saved to your local database and can be res
 
 A **round** is one full cycle of all voices responding. When you send a message, Polyphon dispatches it to all active voices. Once every voice has finished generating its response, one round is complete.
 
-With continuation enabled, voices can automatically trigger additional rounds after their response, allowing voices to build on each other without you sending another message.
+With continuation enabled (see below), voices can automatically trigger additional rounds, allowing voices to build on each other without you sending another message.
 
 ---
 
-## Broadcast vs. Conductor Mode
+## Continuation Policy
+
+The **continuation policy** controls what happens after the first round completes. It is set at the composition level in the Composition Builder, and applies only in broadcast mode. There are three options:
+
+- **None** — voices respond once and wait. No further rounds start automatically.
+- **Prompt me** — after each round, a nudge banner appears asking whether you want to continue. Click **Allow** to start the next round or **Dismiss** to stop.
+- **Auto** — voices continue responding automatically for up to the configured number of rounds (1–3). A "Max rounds" slider sets the limit.
+
+The continuation nudge (used in "Prompt me" mode) appears as an amber banner between rounds in the session view.
+
+See [Compositions](../compositions/#continuation-policy) for how to configure this and [Sessions](../sessions/#continuation-rounds) for how it looks during a session.
+
+---
+
+## Broadcast vs. Conductor-Directed Mode
 
 ### Broadcast mode
 
 Your message is sent to **all voices simultaneously**. This is the default. Use it when you want every voice to weigh in on the same question.
 
-### Conductor mode
+### Conductor-directed mode
 
 You can direct your message to a **specific voice**. The other voices see the exchange but only the targeted voice responds. Use this when you want to follow up with one voice without interrupting the others.
 
@@ -92,6 +110,6 @@ See [Custom Providers](../custom-providers/) for setup instructions.
 
 ## Conductor Profile
 
-The **conductor profile** is information about *you* that gets injected into every voice's system prompt. Set your name, pronouns, background context, and preferred default tone once — every voice in every session will know who it's talking to.
+The **conductor profile** is information about *you* that gets injected into every voice's system prompt. Set your name, pronouns, background context, avatar, and preferred default tone once — every voice in every session will know who it's talking to.
 
 See [Conductor Profile](../conductor-profile/) for details.

@@ -1,14 +1,15 @@
 ---
 title: "Settings"
 weight: 60
-description: "Configure voice providers, manage tones and system prompt templates, and set up your Conductor Profile in Polyphon."
+description: "Configure voice providers, manage tones and system prompt templates, set up your Conductor Profile, and view app info in Polyphon."
 ---
 
-The Settings page lets you configure voice providers, manage tones and system prompt templates, and set up your Conductor Profile. Open it by clicking the **gear icon** in the bottom-left corner of the main window.
+The Settings page lets you configure voice providers, manage tones and system prompt templates, set up your Conductor Profile, and view app information. Open it by clicking the **gear icon** in the bottom-left corner of the main window.
 
-Settings is organized into tabs: **Providers**, **Custom Providers**, **Tones**, **Templates**, and **Conductor Profile**.
+Settings is organized into tabs: **Providers**, **Custom Providers**, **Tones**, **Templates**, **Conductor Profile**, and **About**.
 
-![Full Settings page with section navigation showing all settings areas](/images/screenshots/settings/settings-overview.webp)
+![Full Settings page showing the tab navigation bar with all six tabs](/images/screenshots/settings/settings-overview.webp)
+<!-- Prerequisites: Settings open | Platform: any | Theme: any | Window: default -->
 
 ---
 
@@ -16,7 +17,8 @@ Settings is organized into tabs: **Providers**, **Custom Providers**, **Tones**,
 
 Each supported voice provider has its own settings card. The card shows the provider's current status and lets you enter or update credentials.
 
-![Settings Providers tab showing all provider cards](/images/screenshots/settings/providers-tab-all-cards.webp)
+![Settings Providers tab showing all provider cards in their default states](/images/screenshots/settings/providers-tab-all-cards.webp)
+<!-- Prerequisites: Settings → Providers tab open, no keys configured | Platform: any | Theme: any | Window: default -->
 
 ### API key providers
 
@@ -47,7 +49,8 @@ For API providers, you can select which model to use as the default when adding 
 
 Click **Fetch Models** to retrieve the current list of available models from the provider's API.
 
-![Anthropic provider card expanded showing voice type and API key configuration](/images/screenshots/settings/providers-tab-anthropic-expanded.webp)
+![Anthropic provider card expanded showing voice type selector, API key field, and Fetch Models button](/images/screenshots/settings/providers-tab-anthropic-expanded.webp)
+<!-- Prerequisites: Settings → Providers tab, Anthropic card expanded | Platform: any | Theme: any | Window: default -->
 
 ---
 
@@ -61,7 +64,7 @@ See [Custom Providers](../custom-providers/) for the full setup flow.
 
 ## Tones
 
-The **Tones** tab lets you create and manage tone presets — reusable voice-behavior configurations that shape how a voice communicates. Polyphon ships five built-in tones (Professional, Collaborative, Concise, Exploratory, Teaching), which can also be edited and deleted.
+The **Tones** tab lets you create and manage tone presets — reusable voice-behavior configurations that shape how a voice communicates. Polyphon ships five built-in tones (Professional, Collaborative, Concise, Exploratory, Teaching), which can be edited and deleted.
 
 See [Tones](../tones/) for details on creating custom tones and assigning them to voices.
 
@@ -77,7 +80,24 @@ See [System Prompt Templates](../system-prompt-templates/) for details on creati
 
 ## Conductor Profile
 
-The Conductor Profile section of Settings stores information about you that is shared with all voices. See [Conductor Profile](../conductor-profile/) for the full details.
+The **Conductor Profile** tab stores information about you that is shared with all voices — your avatar, name, pronouns, background context, and default tone. See [Conductor Profile](../conductor-profile/) for the full details.
+
+---
+
+## About
+
+The **About** tab shows information about your current installation:
+
+- **Version** — the installed version number (e.g. `v0.2.0`)
+- **Channel badge** — shown for pre-release builds: Alpha, Beta, or Dev
+- **Build expiry** — for alpha and beta builds, an animated countdown shows how many days remain before the build expires. Expired alpha/beta builds stop working; download the latest release to continue.
+- **Glossary** — a quick-reference list of Polyphon's domain vocabulary (Voice, Session, Composition, Round, etc.)
+- **Documentation** — a link to [polyphon.ai/docs](https://polyphon.ai/docs)
+- **Community links** — file a bug, request a feature, join the discussion, report a vulnerability (all link to GitHub)
+- **Social** — link to [@PolyphonAI on X](https://x.com/PolyphonAI)
+
+![Settings About tab showing version badge, channel badge, waveform animation, and build expiry countdown](/images/screenshots/settings/about-page.webp)
+<!-- Prerequisites: Settings → About tab open; use a beta or alpha build to show the expiry countdown and waveform | Platform: any | Theme: any | Window: default -->
 
 ---
 

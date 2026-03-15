@@ -1,7 +1,7 @@
 ---
 title: "Conductor Profile"
 weight: 70
-description: "Set your name, pronouns, and background context so every voice in every session knows who they're talking to."
+description: "Set your avatar, name, pronouns, and background context so every voice in every session knows who they're talking to."
 ---
 
 The **Conductor Profile** is information about you that Polyphon injects into the system prompt of every voice in every session. Set it once, and all your voices will know who they are talking to.
@@ -10,9 +10,33 @@ The **Conductor Profile** is information about you that Polyphon injects into th
 
 ## Setting Your Profile
 
-Open **Settings** (gear icon, bottom-left) and scroll to the **Conductor Profile** section.
+Open **Settings** (gear icon, bottom-left) and click the **Conductor Profile** tab.
 
-![Conductor Profile settings section showing all fields in default state](/images/screenshots/settings/conductor-profile-empty.webp)
+![Conductor Profile tab showing all fields in default empty state](/images/screenshots/settings/conductor-profile-empty.webp)
+<!-- Prerequisites: Settings open on Conductor Profile tab with no profile set | Platform: any | Theme: any | Window: default -->
+
+---
+
+## Avatar
+
+The circular avatar button at the top of the Conductor Profile section shows your photo (or an empty placeholder if none is set). To upload a photo:
+
+1. Click the avatar button.
+2. A file picker opens. Select an image file (PNG, JPG, GIF, or WebP).
+3. The **Avatar Editor** opens with your selected image.
+
+![AvatarEditor modal with circular crop preview, zoom slider, and rotate buttons](/images/screenshots/settings/avatar-editor.webp)
+<!-- Prerequisites: photo selected from file picker, AvatarEditor modal open | Platform: any | Theme: any | Window: default -->
+
+In the Avatar Editor you can:
+
+- **Drag** the image to reposition it within the circular crop area.
+- **Scroll** (or use the zoom slider) to zoom in or out (0.2× to 6×).
+- **Rotate** the image in 90° increments using the rotate buttons.
+
+Click **Apply** to confirm the crop. The cropped avatar (200×200 px) is saved to your profile and appears next to your name in the sidebar.
+
+To remove your avatar, click the **×** button on the avatar preview.
 
 ---
 
@@ -24,11 +48,13 @@ How voices should address you. If left blank, voices will not use a name when ad
 
 **Example:** `Alex`
 
+(Max 25 characters)
+
 ### Pronouns
 
-Your preferred pronouns. Voices will use these when referring to you.
+Your preferred pronouns. Voices will use these when referring to you. Choose from the dropdown or leave blank.
 
-**Example:** `they/them`, `she/her`, `he/him`
+**Options:** she/her, he/him, they/them, she/they, he/they, ze/zir, xe/xem, any/all, prefer not to say
 
 ### Background
 
@@ -36,6 +62,8 @@ Free-form context about who you are, your role, or what you typically use Polyph
 
 **Example:**
 > I'm a backend engineer with 10 years of experience, primarily working in Go and Python. I'm currently exploring AI tooling and agent orchestration.
+
+(Max 250 characters)
 
 ### Default Tone
 
@@ -73,4 +101,11 @@ Your conductor profile is stored locally in your Polyphon database. It is sent t
 
 The Conductor Profile saves automatically when you leave a field (on blur). There is no explicit save button — your changes take effect immediately for the next session you start.
 
-![Conductor Profile with name, pronouns, and background context filled in](/images/screenshots/settings/conductor-profile.webp)
+![Conductor Profile tab with avatar photo, name, pronouns, and background context filled in](/images/screenshots/settings/conductor-profile.webp)
+<!-- Prerequisites: all profile fields populated, avatar photo uploaded and cropped | Platform: any | Theme: any | Window: default -->
+
+---
+
+## Video Walkthrough
+
+{{< video src="/videos/docs/conductor-profile-avatar-upload.mp4" poster="/images/video-posters/docs/conductor-profile-avatar-upload.webp" >}}

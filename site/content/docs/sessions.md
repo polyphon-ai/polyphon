@@ -1,7 +1,7 @@
 ---
 title: "Sessions"
 weight: 40
-description: "Start a session, send messages in broadcast or conductor mode, and manage conversation history in Polyphon."
+description: "Start a session, send messages in broadcast or conductor-directed mode, continue multi-round conversations, and manage session history in Polyphon."
 ---
 
 A **session** is a live conversation with one or more voices. This page covers how to start, use, and manage sessions.
@@ -12,14 +12,16 @@ A **session** is a live conversation with one or more voices. This page covers h
 
 Click the **+** button at the top of the sidebar to open the new session panel.
 
-![Sidebar showing the New Session button](/images/screenshots/sessions/new-button.webp)
+![Sidebar showing the New Session (+) button at the top](/images/screenshots/sessions/new-button.webp)
+<!-- Prerequisites: app open | Platform: any | Theme: any | Window: default -->
 
 You can start a session in two ways:
 
 1. **From a composition** — select a saved composition and click **Start Session**. The session launches with the composition's voices pre-configured.
 2. **Ad-hoc** — add voices manually without a composition. Configure each voice's provider, model, name, and system prompt inline.
 
-![New session panel with composition picker](/images/screenshots/sessions/new-panel.webp)
+![New session panel showing composition picker and option to add voices manually](/images/screenshots/sessions/new-panel.webp)
+<!-- Prerequisites: at least one saved composition | Platform: any | Theme: any | Window: default -->
 
 ---
 
@@ -27,11 +29,12 @@ You can start a session in two ways:
 
 Once a session starts, you see the session view:
 
-- **Message feed** — the full conversation history, with messages grouped by voice
-- **Voice panel** — shows each active voice and its status (waiting, generating, done, error)
+- **Message feed** — the full conversation history, with messages grouped by round. Each voice's messages show the voice's avatar icon and color.
+- **Voice panel** — shows each active voice, its avatar icon, and its current status (waiting, generating, done, error)
 - **Input bar** — where you type and send messages
 
-![Full session view showing message feed, voice panel on the right, and input bar at bottom](/images/screenshots/sessions/full-view.webp)
+![Full session view showing message feed with voice bubbles, voice panel, and input bar](/images/screenshots/sessions/full-view.webp)
+<!-- Prerequisites: active session with 2+ voices that have responded at least once | Platform: any | Theme: any | Window: default -->
 
 ---
 
@@ -45,19 +48,22 @@ Each voice's response streams in as it is generated. You can read responses as t
 
 ---
 
-## Broadcast vs. Conductor Mode
+## Broadcast vs. Conductor-Directed Mode
 
 Sessions have two modes, selectable from the voice panel header:
 
 **Broadcast mode** — your message goes to every voice. This is the default.
 
-**Conductor mode** — direct your message to a specific voice. The other voices see the exchange but stay silent.
+**Conductor-directed mode** — direct your message to a specific voice. The other voices see the exchange but stay silent.
 
-![Session in conductor mode with Directed badge visible in the input area](/images/screenshots/sessions/conductor-mode-voice-panel.webp)
+The current mode is shown as a badge in the session header: **Broadcast** or **Directed**.
 
-### Targeting a voice in conductor mode
+![Session in conductor-directed mode with Directed badge and single voice highlighted](/images/screenshots/sessions/conductor-mode-voice-panel.webp)
+<!-- Prerequisites: session open, conductor-directed mode active, a voice targeted | Platform: any | Theme: any | Window: default -->
 
-There are two ways to target a voice in conductor mode:
+### Targeting a voice in conductor-directed mode
+
+There are two ways to target a voice in conductor-directed mode:
 
 1. **Click the voice** in the voice panel. The selected voice is highlighted.
 2. **Type `@` in the message input** to open a voice picker dropdown. The dropdown lists all active voices by display name. Select a voice from the dropdown to direct your next message to that voice; the voice panel updates to highlight the selection.
@@ -68,13 +74,19 @@ There are two ways to target a voice in conductor mode:
 
 ## Continuation Rounds
 
-Each voice can be configured to automatically send additional rounds after its initial response. This lets voices respond to each other without you sending another message.
+The continuation policy is set on the composition, not on individual voices. It controls what happens after each round of responses. There are three modes:
 
-To enable continuation on a voice, expand its settings in the voice panel and set the **Continuation rounds** value (1–3).
+**None** — voices respond once and wait. This is the default for new compositions.
 
-When a continuation is triggered, you'll see a system message in the feed indicating a new round has started.
+**Prompt me** — after each round completes, a nudge banner appears at the bottom of the message feed asking whether to continue:
 
-![Session with continuation round in progress showing Round 2 divider and streaming voices](/images/screenshots/sessions/continuation-round2.webp)
+{{< video src="/videos/docs/continuation-nudge.mp4" poster="/images/video-posters/docs/continuation-nudge.webp" >}}
+
+Click **Allow** to start the next round, or **Dismiss** to stop without continuing.
+
+**Auto** — voices continue responding automatically up to the configured max rounds (1–3). A round divider appears in the message feed each time a new round starts.
+
+See [Compositions → Continuation Policy](../compositions/#continuation-policy) for how to configure these modes.
 
 ---
 
@@ -94,4 +106,5 @@ All messages in a session are saved automatically to your local database. To vie
 
 To hide a session from the sidebar without deleting it, right-click the session in the sidebar and select **Archive**. Archived sessions are not shown by default but can be retrieved if needed.
 
-![Session card showing archive and delete action buttons](/images/screenshots/sessions/context-menu.webp)
+![Right-click context menu on a session showing Archive and Delete options](/images/screenshots/sessions/context-menu.webp)
+<!-- Prerequisites: at least one session in the sidebar | Platform: any | Theme: any | Window: default -->
