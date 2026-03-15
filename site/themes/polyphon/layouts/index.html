@@ -296,14 +296,14 @@
           </div>
         </div>
         <div class="download-files">
-          <a class="download-file-btn" href="Polyphon-{{ $version }}-arm64.dmg">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-arm64.dmg" onclick="gtag('event', 'download_click', { platform: 'macos', arch: 'arm64', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
               <span class="download-filename">Polyphon-{{ $version }}-arm64.dmg</span>
               <span class="download-arch">Apple Silicon</span>
             </span>
           </a>
-          <a class="download-file-btn" href="Polyphon-{{ $version }}-x64.dmg">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-x64.dmg" onclick="gtag('event', 'download_click', { platform: 'macos', arch: 'x64', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
               <span class="download-filename">Polyphon-{{ $version }}-x64.dmg</span>
@@ -325,14 +325,14 @@
           </div>
         </div>
         <div class="download-files">
-          <a class="download-file-btn" href="Polyphon-{{ $version }}-x64.AppImage">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-x64.AppImage" onclick="gtag('event', 'download_click', { platform: 'linux', arch: 'x64', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
               <span class="download-filename">Polyphon-{{ $version }}-x64.AppImage</span>
               <span class="download-arch">AppImage · x86_64</span>
             </span>
           </a>
-          <a class="download-file-btn" href="Polyphon-{{ $version }}-arm64.AppImage">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-arm64.AppImage" onclick="gtag('event', 'download_click', { platform: 'linux', arch: 'arm64', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
               <span class="download-filename">Polyphon-{{ $version }}-arm64.AppImage</span>
@@ -354,14 +354,14 @@
           </div>
         </div>
         <div class="download-files">
-          <a class="download-file-btn" href="Polyphon-{{ $version }}-x64-Setup.exe">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-x64-Setup.exe" onclick="gtag('event', 'download_click', { platform: 'windows', arch: 'x64', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
               <span class="download-filename">Polyphon-{{ $version }}-x64-Setup.exe</span>
               <span class="download-arch">x64 installer</span>
             </span>
           </a>
-          <a class="download-file-btn" href="Polyphon-{{ $version }}-arm64-Setup.exe">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-arm64-Setup.exe" onclick="gtag('event', 'download_click', { platform: 'windows', arch: 'arm64', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
               <span class="download-filename">Polyphon-{{ $version }}-arm64-Setup.exe</span>
