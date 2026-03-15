@@ -1,0 +1,42 @@
+[
+  {
+    "t": 3.75,
+    "label": "onboarding-visible",
+    "context": "Welcome modal open — avatar button, name, pronouns, About me fields visible"
+  },
+  {
+    "t": 5.42,
+    "label": "avatar-editor-opened",
+    "context": "AvatarEditor modal opened with synthetic image loaded"
+  },
+  {
+    "t": 12.28,
+    "label": "avatar-editor-dwell",
+    "context": "AvatarEditor showing circular crop preview, zoom slider, rotate buttons"
+  },
+  {
+    "t": 14.71,
+    "label": "avatar-repositioned",
+    "context": "Image dragged to reposition within the crop circle"
+  },
+  {
+    "t": 18.52,
+    "label": "avatar-applied",
+    "context": "Apply clicked — cropped avatar saved, AvatarEditor closes"
+  },
+  {
+    "t": 20.77,
+    "label": "avatar-in-modal",
+    "context": "Avatar preview appears in the welcome modal"
+  },
+  {
+    "t": 23.96,
+    "label": "name-entered",
+    "context": "Name \"Corey\" entered in the name field"
+  },
+  {
+    "t": 27.74,
+    "label": "onboarding-complete",
+    "context": "Get started clicked — avatar appears in the sidebar"
+  }
+]

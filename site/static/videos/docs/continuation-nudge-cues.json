@@ -1,0 +1,32 @@
+[
+  {
+    "t": 3.75,
+    "label": "session-started",
+    "context": "Continuation Demo session open in broadcast + Prompt me mode"
+  },
+  {
+    "t": 3.77,
+    "label": "message-sent",
+    "context": "Question sent — both voices begin streaming round 1"
+  },
+  {
+    "t": 34.74,
+    "label": "round1-complete",
+    "context": "Round 1 complete — continuation nudge banner appears"
+  },
+  {
+    "t": 40.79,
+    "label": "nudge-visible",
+    "context": "\"Agents have more to say — let them continue?\" nudge banner visible with Allow and Dismiss"
+  },
+  {
+    "t": 41.56,
+    "label": "allow-clicked",
+    "context": "Allow clicked — round 2 begins"
+  },
+  {
+    "t": 63.58,
+    "label": "round2-complete",
+    "context": "Round 2 complete"
+  }
+]

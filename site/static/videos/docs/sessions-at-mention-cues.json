@@ -1,0 +1,37 @@
+[
+  {
+    "t": 4.5,
+    "label": "session-started",
+    "context": "Mention Demo session open in conductor mode"
+  },
+  {
+    "t": 6.76,
+    "label": "input-focused",
+    "context": "Message input focused, about to type @mention"
+  },
+  {
+    "t": 10.53,
+    "label": "at-sign-typed",
+    "context": "At-sign typed, voice picker dropdown opened"
+  },
+  {
+    "t": 17.29,
+    "label": "picker-filtered",
+    "context": "Picker filtered to Anthropic voice"
+  },
+  {
+    "t": 21.09,
+    "label": "voice-selected",
+    "context": "Anthropic voice selected from picker, input shows @mention tag"
+  },
+  {
+    "t": 22.95,
+    "label": "message-composed",
+    "context": "Full directed message composed targeting Anthropic"
+  },
+  {
+    "t": 37.31,
+    "label": "voice-responded",
+    "context": "Anthropic responded to the directed question"
+  }
+]

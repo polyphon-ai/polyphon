@@ -1,0 +1,242 @@
+[
+  {
+    "t": 0,
+    "label": "app-launched",
+    "context": "App launched, onboarding screen visible"
+  },
+  {
+    "t": 28.16,
+    "label": "onboarding-complete",
+    "context": "Conductor profile set — name Corey, pronouns they/them, software engineer bio"
+  },
+  {
+    "t": 36.66,
+    "label": "settings-conductor-tab",
+    "context": "Settings open on Conductor tab — filled profile visible"
+  },
+  {
+    "t": 44.22,
+    "label": "settings-tones-tab",
+    "context": "Tones tab — preset tones like Professional, Collaborative, Concise visible"
+  },
+  {
+    "t": 51.74,
+    "label": "settings-system-prompts-tab",
+    "context": "System Prompts tab — reusable prompt templates for voices"
+  },
+  {
+    "t": 59.26,
+    "label": "settings-general-tab",
+    "context": "General tab — theme and app-level preferences"
+  },
+  {
+    "t": 65.28,
+    "label": "settings-providers-tab",
+    "context": "Providers tab — all built-in providers listed, none yet enabled"
+  },
+  {
+    "t": 71.38,
+    "label": "anthropic-api-enabled",
+    "context": "Anthropic API enabled — API key section and model list visible"
+  },
+  {
+    "t": 78.17,
+    "label": "anthropic-cli-mode",
+    "context": "Anthropic CLI enabled — command and args fields visible below API section"
+  },
+  {
+    "t": 84.58,
+    "label": "openai-enabled",
+    "context": "OpenAI enabled in API mode — API key badge and model dropdown visible"
+  },
+  {
+    "t": 96.61,
+    "label": "openai-models-fetched",
+    "context": "OpenAI model list refreshed from the API"
+  },
+  {
+    "t": 104.5,
+    "label": "gemini-enabled",
+    "context": "Gemini enabled — API-only, no CLI option"
+  },
+  {
+    "t": 112.01,
+    "label": "custom-providers-section",
+    "context": "Custom Providers section visible — Add Custom Provider button shown"
+  },
+  {
+    "t": 120.58,
+    "label": "llama-form-filled",
+    "context": "Llama 3.2 custom provider form filled — name, base URL http://localhost:11434/v1, model llama3.2:1b"
+  },
+  {
+    "t": 125.62,
+    "label": "llama-provider-saved",
+    "context": "Llama 3.2 custom provider saved and card visible"
+  },
+  {
+    "t": 135.29,
+    "label": "qwen-form-filled",
+    "context": "Qwen 2.5 custom provider form filled — same Ollama base URL, model qwen2.5:0.5b"
+  },
+  {
+    "t": 141.08,
+    "label": "qwen-provider-saved",
+    "context": "Qwen 2.5 custom provider saved — both Ollama providers now listed"
+  },
+  {
+    "t": 147.92,
+    "label": "composition-builder-opened-1",
+    "context": "Composition builder opened for first composition"
+  },
+  {
+    "t": 151.7,
+    "label": "composition-named-broadcast",
+    "context": "Composition named \"Research Panel\""
+  },
+  {
+    "t": 156.26,
+    "label": "composition-mode-broadcast",
+    "context": "Mode set to Broadcast — all voices answer every message"
+  },
+  {
+    "t": 164.64,
+    "label": "composition-anthropic-added",
+    "context": "Anthropic voice added to Research Panel"
+  },
+  {
+    "t": 172.93,
+    "label": "composition-openai-added",
+    "context": "OpenAI voice added to Research Panel"
+  },
+  {
+    "t": 177.48,
+    "label": "composition-broadcast-saved",
+    "context": "Research Panel broadcast composition saved"
+  },
+  {
+    "t": 184.3,
+    "label": "composition-builder-opened-2",
+    "context": "Composition builder opened for second composition"
+  },
+  {
+    "t": 188.82,
+    "label": "composition-named-conductor",
+    "context": "Composition named \"Directed Q&A\" — conductor mode is default"
+  },
+  {
+    "t": 197.17,
+    "label": "composition-conductor-anthropic-added",
+    "context": "Anthropic voice added to Directed Q&A"
+  },
+  {
+    "t": 205.52,
+    "label": "composition-conductor-openai-added",
+    "context": "OpenAI voice added to Directed Q&A"
+  },
+  {
+    "t": 210.04,
+    "label": "composition-conductor-saved",
+    "context": "Directed Q&A conductor composition saved"
+  },
+  {
+    "t": 216.84,
+    "label": "composition-builder-opened-3",
+    "context": "Composition builder opened for Ollama Duo composition"
+  },
+  {
+    "t": 220.6,
+    "label": "composition-named-ollama",
+    "context": "Composition named \"Ollama Duo\" — conductor mode"
+  },
+  {
+    "t": 228.94,
+    "label": "composition-ollama-llama-added",
+    "context": "Llama 3.2 local voice added to Ollama Duo"
+  },
+  {
+    "t": 237.24,
+    "label": "composition-ollama-qwen-added",
+    "context": "Qwen 2.5 local voice added to Ollama Duo"
+  },
+  {
+    "t": 241.75,
+    "label": "composition-ollama-saved",
+    "context": "Ollama Duo composition saved with both local voices"
+  },
+  {
+    "t": 259.19,
+    "label": "session-broadcast-started",
+    "context": "Research Panel broadcast session started — both voices ready"
+  },
+  {
+    "t": 259.21,
+    "label": "broadcast-round1-sent",
+    "context": "Research question sent — Anthropic and OpenAI stream simultaneously"
+  },
+  {
+    "t": 277.06,
+    "label": "broadcast-round1-complete",
+    "context": "Both voices finished round 1 — parallel responses visible"
+  },
+  {
+    "t": 277.08,
+    "label": "broadcast-round2-sent",
+    "context": "Follow-up sent — voices read and respond to each other"
+  },
+  {
+    "t": 295.48,
+    "label": "broadcast-round2-complete",
+    "context": "Round 2 complete — voices have engaged with each other's answers"
+  },
+  {
+    "t": 312.84,
+    "label": "session-conductor-started",
+    "context": "Directed Q&A conductor session started"
+  },
+  {
+    "t": 324.9,
+    "label": "directed-anthropic-targeted",
+    "context": "Anthropic targeted via @mention for the first question"
+  },
+  {
+    "t": 342.19,
+    "label": "directed-anthropic-responded",
+    "context": "Anthropic answered — only this voice responded"
+  },
+  {
+    "t": 354.27,
+    "label": "directed-openai-targeted",
+    "context": "OpenAI targeted via @mention to respond to Anthropic's answer"
+  },
+  {
+    "t": 366.33,
+    "label": "directed-openai-responded",
+    "context": "OpenAI responded — a direct reply to Anthropic's answer"
+  },
+  {
+    "t": 383.84,
+    "label": "session-ollama-started",
+    "context": "Ollama Duo session started — two local models ready"
+  },
+  {
+    "t": 395.91,
+    "label": "directed-llama-targeted",
+    "context": "Llama 3.2 targeted with a simple question"
+  },
+  {
+    "t": 407.68,
+    "label": "directed-llama-responded",
+    "context": "Llama 3.2 answered locally — no cloud required"
+  },
+  {
+    "t": 419.83,
+    "label": "directed-qwen-targeted",
+    "context": "Qwen 2.5 targeted with a different simple question"
+  },
+  {
+    "t": 430.29,
+    "label": "directed-qwen-responded",
+    "context": "Qwen 2.5 answered — two local models, one conversation"
+  }
+]

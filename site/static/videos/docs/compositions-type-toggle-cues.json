@@ -1,0 +1,62 @@
+[
+  {
+    "t": 0,
+    "label": "app-launched",
+    "context": "App open, all providers enabled, Compositions section visible"
+  },
+  {
+    "t": 1.03,
+    "label": "composition-builder-opened",
+    "context": "New composition builder opened, name field empty"
+  },
+  {
+    "t": 4.82,
+    "label": "composition-named",
+    "context": "Composition named \"Research Duo\""
+  },
+  {
+    "t": 21.5,
+    "label": "voice-type-toggle",
+    "context": "Voice type toggle shown — API disabled (no key), switching to CLI"
+  },
+  {
+    "t": 25.28,
+    "label": "anthropic-voice-added",
+    "context": "Anthropic voice added to composition in CLI mode"
+  },
+  {
+    "t": 32.84,
+    "label": "openai-voice-added",
+    "context": "OpenAI voice added to composition"
+  },
+  {
+    "t": 35.88,
+    "label": "composition-saved",
+    "context": "Research Duo composition saved with both voices"
+  },
+  {
+    "t": 41.08,
+    "label": "session-started",
+    "context": "Session started from Research Duo composition"
+  },
+  {
+    "t": 53.24,
+    "label": "at-mention-anthropic",
+    "context": "At-mention picker used to target Anthropic voice"
+  },
+  {
+    "t": 78.27,
+    "label": "anthropic-responded",
+    "context": "Anthropic voice finished streaming its response"
+  },
+  {
+    "t": 90.44,
+    "label": "at-mention-openai",
+    "context": "At-mention picker used to target OpenAI voice"
+  },
+  {
+    "t": 103.38,
+    "label": "openai-responded",
+    "context": "OpenAI voice finished streaming its response"
+  }
+]
