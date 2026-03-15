@@ -34,10 +34,106 @@ jobs:
       - name: Integration tests
         run: npm run test:integration
 
-  # ── 2a. Build Linux x64 AppImage ────────────────────────────────────────────
+  # ── 2. E2E tests (mocked) ──────────────────────────────────────────────────
+  # Runs on all three platforms before any installer is built.
+  # All voice providers are mocked — no real API calls are made.
+  test-e2e:
+    name: E2E tests (${{ matrix.os }})
+    needs: test
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v5
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Cache Playwright browsers (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@v5
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install npm dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - uses: samypr100/setup-dev-drive@v4
+        if: runner.os == 'Windows'
+        with:
+          drive-size: 4GB
+          workspace-copy: true
+          native-dev-drive: true
+
+      - name: Install Electron system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            libgtk-3-0 \
+            libgbm1 \
+            libnss3 \
+            libasound2t64 \
+            libxshmfence1 \
+            xvfb
+
+      - name: Install Playwright dependencies (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ${{ env.DEV_DRIVE_WORKSPACE }}
+        run: npx playwright install --with-deps chromium
+
+      - name: Build app for e2e (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ${{ env.DEV_DRIVE_WORKSPACE }}
+        run: npm run build:e2e
+
+      - name: Build app for e2e (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: npm run build:e2e
+
+      - name: Run GUI e2e tests (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum --server-args='-screen 0 1280x720x16' npx playwright test
+
+      - name: Run GUI e2e tests (macOS)
+        if: runner.os == 'macOS'
+        run: npx playwright test
+
+      - name: Run GUI e2e tests (Windows)
+        if: runner.os == 'Windows'
+        working-directory: ${{ env.DEV_DRIVE_WORKSPACE }}
+        run: npx playwright test
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-artifacts-${{ matrix.os }}-${{ github.ref_name }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+  # ── 3a. Build Linux x64 AppImage ────────────────────────────────────────────
   make-linux-x64:
     name: Make (Linux x64)
-    needs: test
+    needs: [test, test-e2e]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -72,10 +168,10 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # ── 2b. Build Linux arm64 AppImage ───────────────────────────────────────────
+  # ── 3b. Build Linux arm64 AppImage ───────────────────────────────────────────
   make-linux-arm64:
     name: Make (Linux arm64)
-    needs: test
+    needs: [test, test-e2e]
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v6
@@ -110,10 +206,10 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # ── 2b. Build macOS arm64 installer ─────────────────────────────────────────
+  # ── 3c. Build macOS arm64 installer ─────────────────────────────────────────
   make-macos-arm64:
     name: Make (macOS arm64)
-    needs: test
+    needs: [test, test-e2e]
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
@@ -137,10 +233,10 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # ── 2c. Build macOS x64 installer ────────────────────────────────────────────
+  # ── 3d. Build macOS x64 installer ────────────────────────────────────────────
   make-macos-x64:
     name: Make (macOS x64)
-    needs: test
+    needs: [test, test-e2e]
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
@@ -164,10 +260,10 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # ── 2d. Build Windows x64 installer ──────────────────────────────────────────
+  # ── 3e. Build Windows x64 installer ──────────────────────────────────────────
   make-windows-x64:
     name: Make (Windows x64)
-    needs: test
+    needs: [test, test-e2e]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
@@ -193,10 +289,10 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # ── 2e. Build Windows arm64 installer ────────────────────────────────────────
+  # ── 3f. Build Windows arm64 installer ────────────────────────────────────────
   make-windows-arm64:
     name: Make (Windows arm64)
-    needs: test
+    needs: [test, test-e2e]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
@@ -222,7 +318,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # ── 3. Create GitHub Release ─────────────────────────────────────────────────
+  # ── 4. Create GitHub Release ─────────────────────────────────────────────────
   # Downloads all platform artifacts and attaches them to a release for the tag.
   release:
     name: Publish Release
