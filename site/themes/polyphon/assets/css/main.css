@@ -487,14 +487,16 @@ a:hover {
   padding: 5rem 0 4rem;
   text-align: center;
   background:
-    radial-gradient(ellipse 60% 50% at 85% 0%, oklch(50% 0.22 264 / 0.07) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 50% at 15% 100%, oklch(55% 0.13 212 / 0.06) 0%, transparent 70%);
+    radial-gradient(ellipse 60% 55% at 88% 0%,   oklch(50% 0.22 264 / 0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 60% at 12% 100%,  oklch(55% 0.13 212 / 0.14) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 45% at 50% 60%,   oklch(48% 0.26 298 / 0.07) 0%, transparent 70%);
 }
 
 .dark .hero {
   background:
-    radial-gradient(ellipse 60% 50% at 85% 0%, oklch(50% 0.22 264 / 0.14) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 50% at 15% 100%, oklch(55% 0.13 212 / 0.12) 0%, transparent 70%);
+    radial-gradient(ellipse 60% 55% at 88% 0%,   oklch(50% 0.22 264 / 0.30) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 60% at 12% 100%,  oklch(55% 0.13 212 / 0.24) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 45% at 50% 60%,   oklch(48% 0.26 298 / 0.16) 0%, transparent 70%);
 }
 
 .hero-logo {
@@ -574,8 +576,18 @@ a:hover {
 /* Features grid */
 .features {
   padding: 4rem 0;
-  background: var(--color-surface-raised);
+  background:
+    radial-gradient(ellipse 70% 60% at 100% 50%, oklch(48% 0.26 298 / 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 0% 50%,   oklch(52% 0.13 212 / 0.06) 0%, transparent 60%),
+    var(--color-surface-raised);
   border-top: 1px solid var(--color-border);
+}
+
+.dark .features {
+  background:
+    radial-gradient(ellipse 70% 60% at 100% 50%, oklch(48% 0.26 298 / 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 0% 50%,   oklch(52% 0.13 212 / 0.12) 0%, transparent 60%),
+    var(--color-surface-raised);
 }
 
 .features-heading {
@@ -588,6 +600,10 @@ a:hover {
   font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 0.5rem;
+  background: linear-gradient(120deg, var(--color-brand) 0%, var(--color-brand-secondary) 60%, var(--color-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .features-heading p {
@@ -600,12 +616,21 @@ a:hover {
   gap: 1.25rem;
 }
 
+/* Feature card per-card accent colors (rotate through brand palette) */
+.feature-card:nth-child(1) { --fc: oklch(50% 0.22 264); --fc-bg: oklch(95% 0.05 264); --fc-dk: oklch(70% 0.18 264); --fc-dk-bg: oklch(20% 0.06 264); }
+.feature-card:nth-child(2) { --fc: oklch(46% 0.26 298); --fc-bg: oklch(95% 0.05 298); --fc-dk: oklch(70% 0.18 298); --fc-dk-bg: oklch(20% 0.07 298); }
+.feature-card:nth-child(3) { --fc: oklch(50% 0.14 212); --fc-bg: oklch(95% 0.05 212); --fc-dk: oklch(70% 0.14 212); --fc-dk-bg: oklch(20% 0.05 212); }
+.feature-card:nth-child(4) { --fc: oklch(50% 0.18 148); --fc-bg: oklch(95% 0.05 148); --fc-dk: oklch(68% 0.16 148); --fc-dk-bg: oklch(20% 0.06 148); }
+.feature-card:nth-child(5) { --fc: oklch(58% 0.18 58);  --fc-bg: oklch(95% 0.05 58);  --fc-dk: oklch(78% 0.16 58);  --fc-dk-bg: oklch(22% 0.06 58);  }
+.feature-card:nth-child(6) { --fc: oklch(50% 0.22 340); --fc-bg: oklch(95% 0.05 340); --fc-dk: oklch(70% 0.18 340); --fc-dk-bg: oklch(20% 0.06 340); }
+
 .feature-card {
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   background: var(--color-surface);
+  border-top: 3px solid var(--fc, var(--color-brand));
 }
 
 .feature-card-header {
@@ -617,18 +642,18 @@ a:hover {
 .feature-icon {
   width: 2.5rem;
   height: 2.5rem;
-  background: var(--color-brand-light);
+  background: var(--fc-bg, var(--color-brand-light));
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-brand);
+  color: var(--fc, var(--color-brand));
   flex-shrink: 0;
 }
 
 .dark .feature-icon {
-  background: oklch(20% 0.06 264);
-  color: oklch(70% 0.18 264);
+  background: var(--fc-dk-bg, oklch(20% 0.06 264));
+  color: var(--fc-dk, oklch(70% 0.18 264));
 }
 
 .feature-card h3 {
@@ -647,18 +672,29 @@ a:hover {
 /* Providers section */
 .providers {
   padding: 4rem 0;
-  background: var(--color-surface-raised);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, oklch(50% 0.22 264 / 0.06) 0%, transparent 60%),
+    var(--color-surface-raised);
   border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
   text-align: center;
 }
 
+.dark .providers {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, oklch(50% 0.22 264 / 0.16) 0%, transparent 60%),
+    var(--color-surface-raised);
+}
+
 .providers h2 {
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--color-text-primary);
   margin-bottom: 2rem;
   letter-spacing: -0.02em;
+  background: linear-gradient(120deg, var(--color-brand) 0%, var(--color-brand-secondary) 50%, var(--color-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .providers-grid {
@@ -691,8 +727,12 @@ a:hover {
 }
 
 /* Logo arc: indigo → violet → teal across the three provider groups */
+.provider-group:nth-child(1) {
+  background: linear-gradient(160deg, oklch(97% 0.05 264) 0%, var(--color-surface-raised) 55%);
+}
 .provider-group:nth-child(2) {
   border-top-color: var(--color-brand-secondary);
+  background: linear-gradient(160deg, oklch(97% 0.05 298) 0%, var(--color-surface-raised) 55%);
 }
 .provider-group:nth-child(2) .provider-group-label,
 .provider-group:nth-child(2) .provider-group-list li svg {
@@ -700,10 +740,21 @@ a:hover {
 }
 .provider-group:nth-child(3) {
   border-top-color: var(--color-accent);
+  background: linear-gradient(160deg, oklch(97% 0.04 212) 0%, var(--color-surface-raised) 55%);
 }
 .provider-group:nth-child(3) .provider-group-label,
 .provider-group:nth-child(3) .provider-group-list li svg {
   color: var(--color-accent);
+}
+
+.dark .provider-group:nth-child(1) {
+  background: linear-gradient(160deg, oklch(21% 0.06 264) 0%, var(--color-surface-raised) 55%);
+}
+.dark .provider-group:nth-child(2) {
+  background: linear-gradient(160deg, oklch(21% 0.07 298) 0%, var(--color-surface-raised) 55%);
+}
+.dark .provider-group:nth-child(3) {
+  background: linear-gradient(160deg, oklch(21% 0.05 212) 0%, var(--color-surface-raised) 55%);
 }
 
 .provider-group-list {
@@ -741,8 +792,18 @@ a:hover {
 /* Principles section */
 .principles {
   padding: 4rem 0;
-  background: var(--color-surface);
+  background:
+    radial-gradient(ellipse 55% 70% at 80% 50%, oklch(50% 0.22 264 / 0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 60% at 20% 50%, oklch(52% 0.13 212 / 0.07) 0%, transparent 65%),
+    linear-gradient(135deg, oklch(97% 0.04 264) 0%, oklch(97% 0.03 298) 50%, oklch(97% 0.04 212) 100%);
   border-top: 1px solid var(--color-border);
+}
+
+.dark .principles {
+  background:
+    radial-gradient(ellipse 55% 70% at 80% 50%, oklch(50% 0.22 264 / 0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 60% at 20% 50%, oklch(52% 0.13 212 / 0.15) 0%, transparent 65%),
+    linear-gradient(135deg, oklch(16% 0.05 264) 0%, oklch(15% 0.04 298) 50%, oklch(15% 0.04 212) 100%);
 }
 
 .principles-inner {
@@ -788,6 +849,25 @@ a:hover {
   color: var(--color-brand);
   flex-shrink: 0;
 }
+
+/* Cycle icons through the brand palette for visual variety */
+.principles-item:nth-child(1) svg { color: oklch(50% 0.22 264); }
+.principles-item:nth-child(2) svg { color: oklch(50% 0.14 212); }
+.principles-item:nth-child(3) svg { color: oklch(46% 0.26 298); }
+.principles-item:nth-child(4) svg { color: oklch(50% 0.18 148); }
+.principles-item:nth-child(5) svg { color: oklch(50% 0.22 264); }
+.principles-item:nth-child(6) svg { color: oklch(58% 0.18 58); }
+.principles-item:nth-child(7) svg { color: oklch(50% 0.22 340); }
+.principles-item:nth-child(8) svg { color: oklch(50% 0.14 212); }
+
+.dark .principles-item:nth-child(1) svg { color: oklch(70% 0.18 264); }
+.dark .principles-item:nth-child(2) svg { color: oklch(70% 0.14 212); }
+.dark .principles-item:nth-child(3) svg { color: oklch(70% 0.18 298); }
+.dark .principles-item:nth-child(4) svg { color: oklch(68% 0.16 148); }
+.dark .principles-item:nth-child(5) svg { color: oklch(70% 0.18 264); }
+.dark .principles-item:nth-child(6) svg { color: oklch(78% 0.16 58); }
+.dark .principles-item:nth-child(7) svg { color: oklch(70% 0.18 340); }
+.dark .principles-item:nth-child(8) svg { color: oklch(70% 0.14 212); }
 
 @media (max-width: 640px) {
   .principles-inner {
@@ -2512,9 +2592,19 @@ a:hover {
 
 .downloads {
   padding: 4.5rem 0;
-  background: var(--color-surface);
+  background:
+    radial-gradient(ellipse 65% 60% at 15% 0%,   oklch(50% 0.22 264 / 0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 55% at 85% 100%,  oklch(48% 0.26 298 / 0.07) 0%, transparent 65%),
+    var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   overflow-x: hidden;
+}
+
+.dark .downloads {
+  background:
+    radial-gradient(ellipse 65% 60% at 15% 0%,   oklch(50% 0.22 264 / 0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 55% at 85% 100%,  oklch(48% 0.26 298 / 0.18) 0%, transparent 65%),
+    var(--color-surface);
 }
 
 .downloads-heading {
@@ -2527,6 +2617,10 @@ a:hover {
   font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 0.5rem;
+  background: linear-gradient(120deg, var(--color-brand) 0%, var(--color-brand-secondary) 60%, var(--color-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .downloads-heading p {
