@@ -5,28 +5,28 @@ items:
     description: "End-to-end encrypted sync of your sessions, compositions, and settings across all your devices. Your data stays private — we can't read it."
     pricing: paid
     status: planned
-    discussion:
+    discussion: https://github.com/polyphon-ai/releases/discussions/5
     feature_request:
 
   - title: "Session Export"
     description: "Export full conversation transcripts in multiple formats — Markdown, JSON, or plain text."
     pricing: free
     status: planned
-    discussion:
+    discussion: https://github.com/polyphon-ai/releases/discussions/2
     feature_request:
 
   - title: "Plugins"
     description: "Extend Polyphon with community and first-party plugins. Add new voice providers, custom session behaviors, output formatters, and more — without touching core."
     pricing: free
     status: planned
-    discussion:
+    discussion: https://github.com/polyphon-ai/releases/discussions/3
     feature_request:
 
   - title: "Extensions"
     description: "Build and install extensions that hook into the Polyphon UI — custom panels, session widgets, and integrations with external tools and workflows."
     pricing: free
     status: planned
-    discussion:
+    discussion: https://github.com/polyphon-ai/releases/discussions/4
     feature_request:
 
   # ── Released ───────────────────────────────────────────────
