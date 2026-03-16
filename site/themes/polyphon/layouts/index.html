@@ -406,6 +406,17 @@
             </span>
           </a>
         </div>
+        <div class="download-gatekeeper-note">
+          <span class="gatekeeper-label">
+            {{ partial "icon.html" (dict "name" "terminal" "size" 11) }}
+            macOS tip
+          </span>
+          <div class="gatekeeper-command">
+            <span class="gatekeeper-prompt" aria-hidden="true">$</span>
+            <code>xattr -cr /Applications/Polyphon.app</code>
+          </div>
+          <p class="gatekeeper-desc">Run in Terminal if macOS says the app is damaged, then open it again.</p>
+        </div>
       </div>
 
       <!-- Linux -->

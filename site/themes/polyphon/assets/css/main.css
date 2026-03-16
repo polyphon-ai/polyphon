@@ -2654,6 +2654,70 @@ a:hover {
   transition: color 0.12s;
 }
 
+.download-gatekeeper-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.gatekeeper-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.gatekeeper-label > svg {
+  flex-shrink: 0;
+}
+
+.gatekeeper-command {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: oklch(13% 0.008 255);
+  border: 1px solid oklch(24% 0.01 255);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  overflow: hidden;
+}
+
+.gatekeeper-prompt {
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: oklch(60% 0.17 148);
+  flex-shrink: 0;
+  user-select: none;
+  line-height: 1;
+}
+
+.gatekeeper-command code {
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.75rem;
+  color: oklch(84% 0.025 90);
+  background: none;
+  border: none;
+  padding: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  line-height: 1;
+}
+
+.gatekeeper-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
 .download-file-btn:hover > svg {
   color: var(--color-brand);
 }
