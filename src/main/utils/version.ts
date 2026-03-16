@@ -5,8 +5,8 @@ export function isNewerVersion(current: string, candidate: string): boolean {
   const n = VERSION_RE.exec(candidate);
   if (!c || !n) return false;
 
-  const [, cMajor, cMinor, cPatch] = c.map(Number);
-  const [, nMajor, nMinor, nPatch] = n.map(Number);
+  const [, cMajor = 0, cMinor = 0, cPatch = 0] = c.map(Number);
+  const [, nMajor = 0, nMinor = 0, nPatch = 0] = n.map(Number);
 
   if (nMajor !== cMajor) return nMajor > cMajor;
   if (nMinor !== cMinor) return nMinor > cMinor;

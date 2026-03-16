@@ -20,7 +20,7 @@ export default function UpdateBanner() {
       setUpdateAvailable(info);
     });
 
-    return unsubscribe;
+    return () => { unsubscribe(); };
   }, [setUpdateAvailable]);
 
   if (!updateAvailable) return null;
