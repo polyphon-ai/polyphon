@@ -5,12 +5,32 @@ import { MakerAppImage } from '@reforged/maker-appimage';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import { renameSync, writeFileSync, chmodSync } from 'fs';
+import { join } from 'path';
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: 'assets/icons/icon',
     executableName: 'polyphon',
+    // On Linux, rename the electron binary and replace it with a wrapper shell
+    // script that passes --no-sandbox. The SUID sandbox check in chrome's zygote
+    // fires before JS runs, so app.commandLine.appendSwitch is too late to stop it.
+    afterComplete: [
+      (buildPath, electronVersion, platform, arch, done) => {
+        if (platform !== 'linux') return done();
+        try {
+          const bin = join(buildPath, 'polyphon');
+          const real = join(buildPath, 'polyphon.bin');
+          renameSync(bin, real);
+          writeFileSync(bin, '#!/bin/sh\nexec "$APPDIR/usr/lib/polyphon/polyphon.bin" --no-sandbox "$@"\n');
+          chmodSync(bin, 0o755);
+          done();
+        } catch (err) {
+          done(err as Error);
+        }
+      },
+    ],
   },
   rebuildConfig: {},
   makers: [
