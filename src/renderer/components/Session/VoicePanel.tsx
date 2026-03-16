@@ -38,7 +38,7 @@ function VoiceAvatar({
             borderRadius: '50%',
             border: isStreaming
               ? `2px solid ${voice.color}`
-              : '2px dashed #f59e0b',
+              : `2px dashed ${voice.color}99`,
             boxShadow: isStreaming ? `0 0 7px ${voice.color}70` : undefined,
             animation: isStreaming
               ? 'pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite'
@@ -145,7 +145,7 @@ export default function VoicePanel({
             <span
               key={i}
               className="inline-block w-1.5 h-1.5 rounded-full animate-bounce"
-              style={{ backgroundColor: '#f59e0b', opacity: 0.7, animationDelay: `${i * 0.15}s` }}
+              style={{ backgroundColor: voice.color, opacity: 0.5, animationDelay: `${i * 0.15}s` }}
             />
           ))}
         </div>

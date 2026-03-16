@@ -1,5 +1,5 @@
 import React from 'react';
-import { User } from 'lucide-react';
+import { Wand2 } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
 
 export interface ConductorPanelProps {
@@ -18,7 +18,7 @@ export default function ConductorPanel({ expanded }: ConductorPanelProps): React
     conductorAvatar ? (
       <img src={conductorAvatar} alt="" className="w-full h-full object-cover" />
     ) : (
-      <User size={size} strokeWidth={1.75} style={{ color }} />
+      <Wand2 size={size} strokeWidth={1.75} style={{ color }} />
     );
 
   if (!expanded) {

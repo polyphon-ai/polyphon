@@ -55,7 +55,7 @@ describe('ConductorInput', () => {
       expect(screen.queryByText('@Alice')).toBeNull();
     });
 
-    it('shows dropdown when @ followed by at least 1 char', async () => {
+    it('shows all voices immediately when @ is typed', async () => {
       const onSubmit = vi.fn();
       render(
         <ConductorInput
@@ -65,11 +65,13 @@ describe('ConductorInput', () => {
         />,
       );
       const textarea = screen.getByPlaceholderText('Message the ensemble…');
-      await user.type(textarea, '@A');
+      await user.type(textarea, '@');
       expect(screen.getByText('@Alice')).toBeTruthy();
+      expect(screen.getByText('@Bob')).toBeTruthy();
+      expect(screen.getByText('@Charlie')).toBeTruthy();
     });
 
-    it('filters dropdown by typed text case-insensitively', async () => {
+    it('filters to prefix matches as you type, case-insensitively', async () => {
       const onSubmit = vi.fn();
       render(
         <ConductorInput
@@ -82,6 +84,21 @@ describe('ConductorInput', () => {
       await user.type(textarea, '@bo');
       expect(screen.getByText('@Bob')).toBeTruthy();
       expect(screen.queryByText('@Alice')).toBeNull();
+      expect(screen.queryByText('@Charlie')).toBeNull();
+    });
+
+    it('does not match names that contain but do not start with the query', async () => {
+      const onSubmit = vi.fn();
+      render(
+        <ConductorInput
+          ensemble={ensemble}
+          onSubmit={onSubmit}
+          mode="conductor"
+        />,
+      );
+      const textarea = screen.getByPlaceholderText('Message the ensemble…');
+      // 'arlie' is in Charlie but Charlie does not start with 'arlie'
+      await user.type(textarea, '@arlie');
       expect(screen.queryByText('@Charlie')).toBeNull();
     });
 
@@ -136,13 +153,14 @@ describe('ConductorInput', () => {
         />,
       );
       const textarea = screen.getByPlaceholderText('Message the ensemble…');
+      // @ alone shows all voices; first is selected
       await user.type(textarea, '@');
-      // All voices shown — type one char to trigger
-      await user.type(textarea, 'a');
-      // Alice matches
       const aliceBtn = screen.getByText('@Alice').closest('button');
-      expect(aliceBtn?.className).toContain('indigo'); // selected
-      // ArrowDown → would cycle but only Alice matches for 'a'
+      expect(aliceBtn?.className).toContain('indigo'); // first item selected
+      // ArrowDown moves to Bob
+      await user.keyboard('{ArrowDown}');
+      const bobBtn = screen.getByText('@Bob').closest('button');
+      expect(bobBtn?.className).toContain('indigo');
     });
 
     it('shows autocomplete in broadcast mode', async () => {

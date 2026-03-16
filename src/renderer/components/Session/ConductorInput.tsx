@@ -21,22 +21,15 @@ export default function ConductorInput({
   const [mentionIndex, setMentionIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const showMention = mentionQuery !== null && mentionQuery.length >= 1;
+  const showMention = mentionQuery !== null;
 
   const filteredVoices =
-    mentionQuery !== null && mentionQuery.length >= 1
-      ? ensemble
-          .filter((v) =>
-            v.name.toLowerCase().includes(mentionQuery.toLowerCase()),
+    mentionQuery !== null
+      ? mentionQuery === ''
+        ? ensemble
+        : ensemble.filter((v) =>
+            v.name.toLowerCase().startsWith(mentionQuery.toLowerCase()),
           )
-          .sort((a, b) => {
-            const q = mentionQuery.toLowerCase();
-            const aStarts = a.name.toLowerCase().startsWith(q);
-            const bStarts = b.name.toLowerCase().startsWith(q);
-            if (aStarts && !bStarts) return -1;
-            if (!aStarts && bStarts) return 1;
-            return 0;
-          })
       : [];
 
   // Focus on mount
@@ -70,7 +63,7 @@ export default function ConductorInput({
 
     const cursor = e.target.selectionStart;
     const before = val.slice(0, cursor);
-    const match = before.match(/@(\w+)$/);
+    const match = before.match(/@(\w*)$/);
     if (match) {
       setMentionQuery(match[1] ?? null);
       setMentionStart(cursor - match[0].length);

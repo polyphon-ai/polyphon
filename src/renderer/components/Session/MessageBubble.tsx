@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, User } from 'lucide-react';
+import { ChevronDown, ChevronUp, Wand2 } from 'lucide-react';
 import type { Message } from '../../../shared/types';
 import ProviderLogo from '../Shared/ProviderLogo';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -77,7 +77,7 @@ export default function MessageBubble({
           {conductorAvatar ? (
             <img src={conductorAvatar} alt="" className="w-full h-full object-cover" />
           ) : (
-            <User size={18} strokeWidth={1.75} style={{ color }} />
+            <Wand2 size={18} strokeWidth={1.75} style={{ color }} />
           )}
         </div>
 
