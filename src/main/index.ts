@@ -11,6 +11,13 @@ import { checkForUpdate } from './utils/updateChecker';
 // Handle Squirrel startup events on Windows
 if (started) app.quit();
 
+// The SUID sandbox cannot be configured inside an AppImage (chrome-sandbox
+// extracts to /tmp and cannot be made setuid-root by a normal user).
+// Disable it on Linux so the app launches without requiring root ownership.
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('no-sandbox');
+}
+
 // In test mode, isolate all Electron storage (localStorage, session data, etc.)
 // to the same temp directory used for the SQLite DB, preventing state leaks between tests.
 if (process.env.POLYPHON_TEST_USER_DATA) {
