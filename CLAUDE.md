@@ -83,7 +83,7 @@ const db = new DatabaseSync(dbPath)
 db.exec('PRAGMA journal_mode = WAL')
 ```
 
-### Schema (SCHEMA_VERSION = 1)
+### Schema (SCHEMA_VERSION = 2)
 
 Tables: `schema_version`, `compositions`, `composition_voices`, `sessions`, `messages`,
 `provider_configs`, `custom_providers`, `tones`, `system_prompt_templates`, `user_profile`, `build_expiry`
@@ -208,6 +208,7 @@ suffixed with `:${sessionId}` at runtime to scope them to a single session.
 | Custom Providers | `settings:customProvider:list`, `settings:customProvider:create`, `settings:customProvider:update`, `settings:customProvider:delete`, `settings:customProvider:fetchModels` |
 | Tones | `settings:tone:list`, `settings:tone:create`, `settings:tone:update`, `settings:tone:delete` |
 | System Prompt Templates | `settings:systemPromptTemplate:list`, `settings:systemPromptTemplate:create`, `settings:systemPromptTemplate:update`, `settings:systemPromptTemplate:delete` |
+| Updates | `update:available` (main→renderer push), `update:get-state` (renderer invoke), `update:dismiss` (renderer invoke) |
 
 
 ---
@@ -233,6 +234,8 @@ The `user_profile` table stores a single row with:
 - `pronouns` — preferred pronouns injected into the ensemble system prompt
 - `conductor_context` — free-form background injected into the ensemble system prompt
 - `default_tone` — tone ID (built-in preset key or custom UUID); resolved via `VoiceManager.tonesById`
+- `dismissed_update_version` — release version string the user permanently dismissed (empty = none)
+- `update_remind_after` — Unix ms timestamp; update banner is suppressed until this time (0 = show immediately)
 
 `VoiceManager.buildEnsembleSystemPrompt()` injects the profile into each voice's system
 prompt at session init time. The Settings page has a Conductor Profile card that
