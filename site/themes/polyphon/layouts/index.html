@@ -377,6 +377,9 @@
       <p>Install Polyphon, add your voices, and start your first session in minutes.</p>
     </div>
     {{ if $version }}
+    {{ if strings.Contains $version "-" }}
+    <p class="downloads-note">Early access — this is a pre-release build. Expect rough edges.</p>
+    {{ end }}
     <div class="downloads-grid">
 
       <!-- macOS -->
