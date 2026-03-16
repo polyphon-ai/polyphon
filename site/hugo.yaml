@@ -9,7 +9,7 @@ params:
   description: "Desktop application for orchestrating conversations between multiple AI voices simultaneously."
   gaId: G-H87CVDM7K1
   ogImage: "/images/og-default.png"
-  appVersion: "0.1.0-alpha"
+  appVersion: "0.1.0-alpha.1"
   # twitterHandle: "polyphonapp"        # set to enable twitter:site tag
 
 taxonomies:
