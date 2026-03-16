@@ -1,5 +1,5 @@
 ---
 title: "About"
-description: "Polyphon is free. No subscriptions, no accounts, no usage tracking. Optional services available for power users."
+description: "Polyphon is free. Period. No subscriptions, no accounts, no usage tracking."
 layout: "about"
 ---
