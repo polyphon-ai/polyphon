@@ -369,13 +369,14 @@
 </section>
 
 <!-- Downloads / CTA -->
-{{ $version := .Site.Params.appVersion }}
+{{ $version := .Site.Params.downloadVersion }}
 <section id="download" class="downloads" aria-label="Download Polyphon">
   <div class="container">
     <div class="downloads-heading">
       <h2>Ready to conduct your ensemble?</h2>
       <p>Install Polyphon, add your voices, and start your first session in minutes.</p>
     </div>
+    {{ if $version }}
     <div class="downloads-grid">
 
       <!-- macOS -->
@@ -466,6 +467,11 @@
       </div>
 
     </div>
+    {{ else }}
+    <div class="downloads-pending">
+      <p>The first release is on its way. Watch the <a href="https://github.com/polyphon-ai/polyphon/releases">GitHub Releases page</a> for availability.</p>
+    </div>
+    {{ end }}
     <a class="docs-card card-base" href="/docs/getting-started/">
       <div class="docs-card-icon" aria-hidden="true">
         {{ partial "icon.html" (dict "name" "book-open" "size" 22) }}

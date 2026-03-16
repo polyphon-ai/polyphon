@@ -72,6 +72,10 @@ Use the Edit tool to:
 1. Update the `"version"` field in `package.json` to the new version (without the leading `v`).
 2. Update the `appVersion` field in `site/hugo.yaml` to the new version (without the leading `v`).
 
+**Do NOT update `downloadVersion` in `site/hugo.yaml`.** That field is updated manually
+after the release is confirmed published (artifacts uploaded, release not a draft). Until
+then the site shows a "coming soon" fallback so no broken download links are served.
+
 ### 8. Commit the version bump
 
 ```bash

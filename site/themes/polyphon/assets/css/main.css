@@ -2530,6 +2530,12 @@ a:hover {
   gap: 1.25rem;
 }
 
+.downloads-pending {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: 2rem 0;
+}
+
 .download-card {
   display: flex;
   flex-direction: column;
