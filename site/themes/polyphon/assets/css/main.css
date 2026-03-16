@@ -2831,6 +2831,10 @@ a:hover {
   white-space: nowrap;
 }
 
+.downloads-prerelease + .downloads-note {
+  margin-top: 0.5rem;
+}
+
 .downloads-note {
   text-align: center;
   margin-top: 1.25rem;
