@@ -1,6 +1,6 @@
 ---
 title: "Compositions"
-weight: 30
+weight: 80
 description: "Create and manage compositions — named, reusable sets of voices for launching consistent multi-voice sessions in Polyphon."
 ---
 

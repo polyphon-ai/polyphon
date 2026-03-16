@@ -1,6 +1,6 @@
 ---
 title: "Custom Providers"
-weight: 55
+weight: 75
 description: "Add OpenAI-compatible endpoints like Ollama, LM Studio, or vLLM as custom voice providers in Polyphon."
 ---
 

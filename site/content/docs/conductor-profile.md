@@ -1,6 +1,6 @@
 ---
 title: "Conductor Profile"
-weight: 70
+weight: 40
 description: "Set your avatar, name, pronouns, and background context so every voice in every session knows who they're talking to."
 ---
 

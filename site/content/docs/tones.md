@@ -1,6 +1,6 @@
 ---
 title: "Tones"
-weight: 65
+weight: 50
 description: "Use built-in tone presets or create custom tones to shape how each voice communicates in Polyphon sessions."
 ---
 

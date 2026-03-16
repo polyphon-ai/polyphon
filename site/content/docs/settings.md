@@ -1,12 +1,12 @@
 ---
 title: "Settings"
-weight: 60
+weight: 30
 description: "Configure voice providers, manage tones and system prompt templates, set up your Conductor Profile, and view app info in Polyphon."
 ---
 
 The Settings page lets you configure voice providers, manage tones and system prompt templates, set up your Conductor Profile, and view app information. Open it by clicking the **gear icon** in the bottom-left corner of the main window.
 
-Settings is organized into tabs: **Providers**, **Custom Providers**, **Tones**, **Templates**, **Conductor Profile**, and **About**.
+Settings is organized into tabs: **Providers**, **Custom Providers**, **Tones**, **System Prompt Templates**, **Conductor Profile**, and **About**.
 
 ![Full Settings page showing the tab navigation bar with all six tabs](/images/screenshots/settings/settings-overview.webp)
 <!-- Prerequisites: Settings open | Platform: any | Theme: any | Window: default -->
@@ -70,9 +70,9 @@ See [Tones](../tones/) for details on creating custom tones and assigning them t
 
 ---
 
-## Templates
+## System Prompt Templates
 
-The **Templates** tab lets you create and manage system prompt templates — saved, reusable system prompts that can be attached to any voice in a composition.
+The **System Prompt Templates** tab lets you create and manage system prompt templates — saved, reusable system prompts that can be attached to any voice in a composition.
 
 See [System Prompt Templates](../system-prompt-templates/) for details on creating templates and attaching them to voices.
 

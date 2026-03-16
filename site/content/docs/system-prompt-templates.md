@@ -1,6 +1,6 @@
 ---
 title: "System Prompt Templates"
-weight: 66
+weight: 60
 description: "Save and reuse system prompts across voices and compositions with system prompt templates in Polyphon."
 ---
 

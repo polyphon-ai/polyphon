@@ -1,6 +1,6 @@
 ---
 title: "Sessions"
-weight: 40
+weight: 90
 description: "Start a session, send messages in broadcast or conductor-directed mode, continue multi-round conversations, and manage session history in Polyphon."
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Voice Providers"
-weight: 50
+weight: 70
 description: "Configure API keys for Anthropic, OpenAI, and Google Gemini, or set up CLI-based voice providers like claude and codex."
 ---
 
