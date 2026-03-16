@@ -8,13 +8,6 @@ items:
     discussion:
     feature_request:
 
-  - title: "Commercial Licenses"
-    description: "Using Polyphon in a professional or business context? A commercial license will cover teams and organizations who use Polyphon at work."
-    pricing: paid
-    status: planned
-    discussion:
-    feature_request:
-
   - title: "Session Export"
     description: "Export full conversation transcripts in multiple formats — Markdown, JSON, or plain text."
     pricing: free
@@ -37,12 +30,6 @@ items:
     feature_request:
 
   # ── Released ───────────────────────────────────────────────
-
-  - title: "Auto-Updates"
-    description: "Silent background updates with in-app notifications. Always stay on the latest version without having to think about it."
-    pricing: free
-    status: released
-    release_date: 2025-03-10
 
   - title: "Tones & System Prompt Templates"
     description: "Custom tone presets and reusable system prompt templates for fine-grained control over each voice's personality and behavior."
