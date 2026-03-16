@@ -32,6 +32,9 @@ menu:
     - name: About
       url: /about/
       weight: 20
+    - name: Roadmap
+      url: /roadmap/
+      weight: 25
     - name: Blog
       url: /blog/
       weight: 30
