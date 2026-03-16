@@ -57,7 +57,7 @@ export function loadShellEnv(): void {
     const parts = result.stdout.split(DELIM);
     if (parts.length < 2) continue;
 
-    for (const line of parts[1].split('\n')) {
+    for (const line of parts[1]!.split('\n')) {
       const eq = line.indexOf('=');
       if (eq > 0) {
         process.env[line.slice(0, eq)] = line.slice(eq + 1);
