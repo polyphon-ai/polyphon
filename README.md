@@ -93,6 +93,30 @@ POLYPHON_PREVIEW_EXPIRED=1 make dev
 
 ---
 
+## Releasing
+
+Push a semver tag to trigger the release pipeline:
+
+```sh
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+The pipeline runs automatically:
+
+1. **Test** — lint, unit, integration, and e2e tests across macOS, Windows, and Linux
+2. **Build** — creates installers for all six platform/arch targets
+3. **Publish** — attaches installers to a GitHub Release in `polyphon-ai/releases`
+4. **Update site** — bumps `downloadVersion` in `site/hugo.yaml`, creates a release announcement blog post, and pushes to `main` (which triggers a site redeploy)
+
+### Required secrets
+
+| Secret | Description |
+|---|---|
+| `RELEASES_REPO_TOKEN` | GitHub PAT with write access to `polyphon-ai/releases` |
+
+---
+
 ## Community
 
 - **Website:** [polyphon.ai](https://polyphon.ai)
