@@ -2542,30 +2542,17 @@ a:hover {
   align-items: center;
   gap: 0.4375rem;
   font-size: 0.8125rem;
-  color: var(--color-accent);
-  background: var(--color-accent-light);
-  border: 1px solid var(--color-accent);
+  color: oklch(42% 0.14 68);
+  background: oklch(97% 0.06 80);
+  border: 1px solid oklch(78% 0.14 74);
   border-radius: var(--radius-full);
   padding: 0.3125rem 0.875rem;
 }
 
-.downloads-prerelease::before {
-  content: '';
-  flex-shrink: 0;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-  animation: prerelease-pulse 2s ease-in-out infinite;
-}
-
-@keyframes prerelease-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .downloads-prerelease::before { animation: none; }
+.dark .downloads-prerelease {
+  color: oklch(82% 0.14 74);
+  background: oklch(25% 0.06 68);
+  border-color: oklch(48% 0.14 68);
 }
 
 .downloads-grid {
