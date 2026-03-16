@@ -448,18 +448,19 @@ function ConductorProfile() {
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 space-y-4">
       <div className="space-y-3">
-        {/* Avatar */}
+        {/* Avatar + color */}
         <div className="flex items-center gap-4">
           <div className="relative shrink-0 group/avatar">
             <button
               onClick={pickAvatarFile}
               aria-label="Upload photo"
+              style={!userProfile.conductorAvatar ? { backgroundColor: conductorColor || '#6b7280' } : undefined}
               className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               {userProfile.conductorAvatar ? (
                 <img src={userProfile.conductorAvatar} alt="Your avatar" className="w-full h-full object-cover" />
               ) : (
-                <Wand2 size={26} strokeWidth={1.5} className="text-gray-400 dark:text-gray-500" />
+                <Wand2 size={26} strokeWidth={1.5} className="text-white/80" />
               )}
               <span className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
                 <Camera size={18} strokeWidth={1.75} className="text-white" />
@@ -475,12 +476,48 @@ function ConductorProfile() {
               </button>
             )}
           </div>
-          {pendingAvatarSrc && (
+          {pendingAvatarSrc ? (
             <AvatarEditor
               src={pendingAvatarSrc}
               onConfirm={confirmAvatar}
               onCancel={dismissPendingAvatar}
             />
+          ) : (
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Choose display color for your voice
+                <HelpTooltip text="Appears next to your messages in the conversation view. This color is reserved so no voice can use the same one." />
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleColorSelect('#6b7280')}
+                  title="No color"
+                  aria-label="No color"
+                  aria-pressed={!conductorColor || conductorColor === '#6b7280'}
+                  className={`w-6 h-6 rounded-full transition-transform ${
+                    !conductorColor || conductorColor === '#6b7280'
+                      ? 'ring-2 ring-offset-2 ring-indigo-500 scale-110'
+                      : 'hover:scale-110'
+                  }`}
+                  style={{ backgroundColor: '#6b7280' }}
+                />
+                {PRESET_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => handleColorSelect(c)}
+                    title={PRESET_COLOR_NAMES[c]}
+                    aria-label={`Your color: ${PRESET_COLOR_NAMES[c] ?? c}`}
+                    aria-pressed={conductorColor === c}
+                    className={`w-6 h-6 rounded-full transition-transform ${
+                      conductorColor === c
+                        ? 'ring-2 ring-offset-2 ring-indigo-500 scale-110'
+                        : 'hover:scale-110'
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
@@ -562,42 +599,6 @@ function ConductorProfile() {
           </p>
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-            Your color{' '}
-            <span className="text-gray-400 font-normal">(shown in conversation — reserved from voice palette)</span>
-            <HelpTooltip text="Appears next to your messages in the conversation view. This color is reserved so no voice can use the same one." />
-          </label>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleColorSelect('#6b7280')}
-              title="No color"
-              aria-label="No color"
-              aria-pressed={conductorColor === '#6b7280'}
-              className={`w-6 h-6 rounded-full transition-transform ${
-                conductorColor === '#6b7280'
-                  ? 'ring-2 ring-offset-2 ring-indigo-500 scale-110'
-                  : 'hover:scale-110'
-              }`}
-              style={{ backgroundColor: '#6b7280' }}
-            />
-            {PRESET_COLORS.map((c) => (
-              <button
-                key={c}
-                onClick={() => handleColorSelect(c)}
-                title={PRESET_COLOR_NAMES[c]}
-                aria-label={`Your color: ${PRESET_COLOR_NAMES[c] ?? c}`}
-                aria-pressed={conductorColor === c}
-                className={`w-6 h-6 rounded-full transition-transform ${
-                  conductorColor === c
-                    ? 'ring-2 ring-offset-2 ring-indigo-500 scale-110'
-                    : 'hover:scale-110'
-                }`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
-        </div>
       </div>
 
       <div className="flex items-center gap-3 pt-1">

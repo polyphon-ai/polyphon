@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MessageSquare, Music2, Settings2, Archive, Plus, PanelLeftClose, PanelLeftOpen, Pencil, Check, X, Camera, Wand2 } from 'lucide-react';
+import { MessageSquare, Music2, Settings2, Archive, Plus, PanelLeftClose, PanelLeftOpen, Pencil, Check, X, Camera, Wand2, BookOpen } from 'lucide-react';
 import wordmarkLightUrl from '../../assets/wordmark-light.svg?url';
 import wordmarkDarkUrl from '../../assets/wordmark-dark.svg?url';
 import iconLightUrl from '../../assets/icon-light-transparent.svg?url';
@@ -14,6 +14,7 @@ import CompositionBuilder from './components/Composition/CompositionBuilder';
 import type { Session, Composition } from '../shared/types';
 import { PROVIDER_METADATA, SETTINGS_PROVIDERS, PRESET_COLORS, PRESET_COLOR_NAMES } from '../shared/constants';
 import { AvatarEditor } from './components/Settings/AvatarEditor';
+import { HelpTooltip } from './components/Shared';
 import UpdateBanner from './components/Shared/UpdateBanner';
 
 
@@ -1379,7 +1380,14 @@ export default function App(): React.JSX.Element {
               )}
             </nav>
 
-            <div className="px-2 py-3 border-t border-gray-200 dark:border-gray-800">
+            <div className="px-2 py-3 border-t border-gray-200 dark:border-gray-800 space-y-0.5">
+              <button
+                onClick={() => window.polyphon.shell.openExternal('https://polyphon.ai/docs/')}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <BookOpen size={18} strokeWidth={1.75} />
+                Documentation
+              </button>
               <button
                 onClick={() => setView('settings')}
                 aria-current={activeView === 'settings' ? 'page' : undefined}
@@ -1499,12 +1507,13 @@ export default function App(): React.JSX.Element {
                   <button
                     onClick={handleOnboardingPickAvatar}
                     aria-label="Upload photo"
+                    style={!onboardingAvatar ? { backgroundColor: onboardingColor } : undefined}
                     className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                   >
                     {onboardingAvatar ? (
                       <img src={onboardingAvatar} alt="Your avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <Wand2 size={26} strokeWidth={1.5} className="text-gray-400 dark:text-gray-500" />
+                      <Wand2 size={26} strokeWidth={1.5} className="text-white/80" />
                     )}
                     <span className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
                       <Camera size={18} strokeWidth={1.75} className="text-white" />
@@ -1523,7 +1532,8 @@ export default function App(): React.JSX.Element {
 
                 <div className="flex-1">
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Your color
+                    Choose display color for your voice
+                    <HelpTooltip text="Your messages and icon appear in this color throughout Polyphon. It's reserved so no voice can share it." />
                   </label>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -1561,6 +1571,7 @@ export default function App(): React.JSX.Element {
                 <div className="flex items-baseline justify-between mb-1.5">
                   <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
                     What should we call you?
+                    <HelpTooltip text="Voices will use this name when addressing you in conversation." />
                   </label>
                   <span className="text-xs text-gray-400">{onboardingName.length}/25</span>
                 </div>
@@ -1579,6 +1590,7 @@ export default function App(): React.JSX.Element {
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   Your preferred pronouns
+                  <HelpTooltip text="Injected into every voice's system prompt so they refer to you correctly." />
                 </label>
                 <select
                   value={onboardingPronouns}
@@ -1602,6 +1614,7 @@ export default function App(): React.JSX.Element {
                 <div className="flex items-baseline justify-between mb-1.5">
                   <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
                     About me <span className="font-normal text-gray-400">(optional)</span>
+                    <HelpTooltip text="Background context shared with every voice at the start of each session to help them tailor their responses." />
                   </label>
                   <span className="text-xs text-gray-400">{onboardingContext.length}/250</span>
                 </div>
