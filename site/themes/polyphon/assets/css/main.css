@@ -2624,7 +2624,6 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-top: auto;
 }
 
 .download-file-btn {
