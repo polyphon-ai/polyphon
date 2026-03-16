@@ -1,75 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { ExternalLink, Download, Music2, Bug, Lightbulb, MessageSquare, ShieldAlert } from 'lucide-react';
-import type { ExpiryStatus } from '../../../shared/types';
+import React, { useState } from 'react';
+import { ExternalLink, Music2, Bug, Lightbulb, MessageSquare, ShieldAlert, RefreshCw, CheckCircle, Download } from 'lucide-react';
 import wordmarkLightUrl from '../../../../assets/wordmark-light.svg?url';
 import wordmarkDarkUrl from '../../../../assets/wordmark-dark.svg?url';
-
-function formatDate(ts: number): string {
-  return new Date(ts).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
-function Countdown({ expiryTimestamp }: { expiryTimestamp: number }) {
-  const [msRemaining, setMsRemaining] = useState(() =>
-    Math.max(0, expiryTimestamp - Date.now()),
-  );
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setMsRemaining(Math.max(0, expiryTimestamp - Date.now()));
-    }, 60_000);
-    return () => clearInterval(id);
-  }, [expiryTimestamp]);
-
-  const days = Math.floor(msRemaining / (24 * 60 * 60 * 1000));
-  const hours = Math.floor(msRemaining / (60 * 60 * 1000));
-  const showHours = days < 2;
-
-  let label: string;
-  if (showHours) {
-    label = hours === 0 ? 'Expired' : `${hours} hour${hours !== 1 ? 's' : ''}`;
-  } else {
-    label = `${days} day${days !== 1 ? 's' : ''}`;
-  }
-
-  return (
-    <span className="font-medium text-[var(--color-text-primary)]">{label}</span>
-  );
-}
-
-// Animated waveform bars — references the @keyframes waveform in index.css
-function WaveformBars({ urgency = 'normal' }: { urgency?: 'normal' | 'warning' | 'critical' }) {
-  const color =
-    urgency === 'critical'
-      ? 'var(--color-danger)'
-      : urgency === 'warning'
-        ? 'var(--color-warning)'
-        : 'var(--color-brand)';
-
-  const heights = [10, 16, 24, 18, 12, 20, 14];
-  const delays = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9];
-
-  return (
-    <div className="flex items-end gap-[2px]" style={{ height: 24 }} aria-hidden>
-      {heights.map((h, i) => (
-        <div
-          key={i}
-          style={{
-            width: 3,
-            height: h,
-            borderRadius: 2,
-            background: color,
-            animation: `waveform 1.2s ease-in-out ${delays[i]}s infinite`,
-            transformOrigin: 'bottom',
-          }}
-        />
-      ))}
-    </div>
-  );
-}
 
 const GLOSSARY: Array<{ term: string; description: string }> = [
   {
@@ -110,42 +42,34 @@ const GLOSSARY: Array<{ term: string; description: string }> = [
   },
 ];
 
-export default function AboutPage({ status }: { status: ExpiryStatus | null }) {
+type CheckState = 'idle' | 'checking' | 'up-to-date' | 'update-available';
+
+export default function AboutPage() {
   const version =
     typeof (globalThis as any).__APP_VERSION__ !== 'undefined'
       ? (globalThis as any).__APP_VERSION__
-      : status?.version ?? 'unknown';
+      : 'unknown';
 
-  const buildDate =
-    status && status.buildTimestamp > 0 ? formatDate(status.buildTimestamp) : '—';
-
-  function handleDownload() {
-    if (status?.downloadUrl) {
-      window.polyphon.shell.openExternal(status.downloadUrl);
-    }
-  }
+  const [checkState, setCheckState] = useState<CheckState>('idle');
+  const [availableVersion, setAvailableVersion] = useState<string | null>(null);
 
   function handleDocs() {
     window.polyphon.shell.openExternal('https://polyphon.ai/docs');
   }
 
-  // Urgency tier for expiry display
-  const urgency =
-    status && !status.expired
-      ? status.daysRemaining <= 2
-        ? 'critical'
-        : status.daysRemaining <= 7
-          ? 'warning'
-          : 'normal'
-      : 'critical';
-
-  const isPreRelease = status?.channel === 'alpha' || status?.channel === 'beta';
-  const isDev = status?.channel === 'dev';
-
-  if (status === null) {
-    return (
-      <div className="text-sm text-[var(--color-text-muted)]">Loading…</div>
-    );
+  async function handleCheckNow() {
+    setCheckState('checking');
+    try {
+      const result = await window.polyphon.update.checkNow();
+      if (result) {
+        setAvailableVersion(result.version);
+        setCheckState('update-available');
+      } else {
+        setCheckState('up-to-date');
+      }
+    } catch {
+      setCheckState('idle');
+    }
   }
 
   return (
@@ -195,36 +119,6 @@ export default function AboutPage({ status }: { status: ExpiryStatus | null }) {
               >
                 v{version}
               </span>
-              {isPreRelease && (
-                <span
-                  className="text-xs font-medium px-2 py-0.5 rounded-full"
-                  style={{
-                    background:
-                      status.channel === 'alpha'
-                        ? 'oklch(95% 0.05 45)'
-                        : 'oklch(95% 0.05 148)',
-                    color:
-                      status.channel === 'alpha'
-                        ? 'oklch(48% 0.18 45)'
-                        : 'oklch(40% 0.16 148)',
-                    border: `1px solid ${status.channel === 'alpha' ? 'oklch(85% 0.08 45)' : 'oklch(85% 0.08 148)'}`,
-                  }}
-                >
-                  {status.channel === 'alpha' ? 'Alpha Build' : 'Beta Build'}
-                </span>
-              )}
-              {isDev && (
-                <span
-                  className="text-xs font-medium px-2 py-0.5 rounded-full"
-                  style={{
-                    background: 'oklch(95% 0.03 255)',
-                    color: 'oklch(45% 0.12 255)',
-                    border: '1px solid oklch(85% 0.06 255)',
-                  }}
-                >
-                  Dev Build
-                </span>
-              )}
             </div>
 
             <p
@@ -243,6 +137,93 @@ export default function AboutPage({ status }: { status: ExpiryStatus | null }) {
               other — like an ensemble playing in harmony, with you as conductor.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* ── Updates ──────────────────────────────────────────────────── */}
+      <div
+        className="rounded-xl p-4 flex items-center justify-between gap-4"
+        style={{
+          background: 'var(--color-surface-raised)',
+          border: '1px solid var(--color-border)',
+        }}
+      >
+        <div className="min-w-0">
+          <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+            Updates
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+            {checkState === 'idle' || checkState === 'checking'
+              ? 'Check for the latest version'
+              : checkState === 'update-available' && availableVersion
+              ? `v${availableVersion} is available`
+              : `Currently on v${version}`}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {checkState === 'up-to-date' && (
+            <span
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium"
+              style={{
+                background: 'color-mix(in oklch, #10b981 12%, transparent)',
+                color: '#10b981',
+                border: '1px solid color-mix(in oklch, #10b981 30%, transparent)',
+              }}
+            >
+              <CheckCircle size={13} strokeWidth={1.75} />
+              No updates available
+            </span>
+          )}
+          {checkState === 'update-available' && availableVersion && (
+            <button
+              onClick={() => window.polyphon.shell.openExternal('https://polyphon.ai/#download')}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-ring"
+              style={{
+                background: 'var(--color-brand)',
+                color: '#fff',
+                border: '1px solid transparent',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = '0.88';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = '1';
+              }}
+            >
+              <Download size={13} strokeWidth={1.75} />
+              Download v{availableVersion}
+            </button>
+          )}
+          <button
+            onClick={handleCheckNow}
+            disabled={checkState === 'checking'}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              background: 'var(--color-surface-overlay)',
+              border: '1px solid var(--color-border-strong)',
+              color: 'var(--color-text-primary)',
+            }}
+            onMouseEnter={(e) => {
+              if (checkState !== 'checking') {
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-brand-light)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-brand)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-brand)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface-overlay)';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border-strong)';
+              (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-primary)';
+            }}
+          >
+            <RefreshCw
+              size={13}
+              strokeWidth={1.75}
+              className={checkState === 'checking' ? 'animate-spin' : ''}
+            />
+            {checkState === 'checking' ? 'Checking…' : 'Check for updates'}
+          </button>
         </div>
       </div>
 
@@ -436,155 +417,6 @@ export default function AboutPage({ status }: { status: ExpiryStatus | null }) {
         </div>
         <ExternalLink size={12} strokeWidth={1.75} style={{ color: 'var(--color-text-muted)', marginLeft: 'auto', flexShrink: 0 }} />
       </button>
-
-      {/* ── Build info / expiry ──────────────────────────────────────── */}
-      {status.channel === 'release' || status.channel === 'dev' ? (
-        <div
-          className="rounded-xl p-4"
-          style={{
-            background: 'var(--color-surface-raised)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            {status.channel === 'dev'
-              ? 'You\'re running a development build.'
-              : 'You\'re running a release build.'}
-          </p>
-          {status.channel !== 'dev' && (
-            <p
-              className="text-xs mt-1"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              Built {buildDate}
-            </p>
-          )}
-        </div>
-      ) : (
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{
-            border: `1px solid ${urgency === 'critical' ? 'var(--color-danger)' : urgency === 'warning' ? 'var(--color-warning)' : 'var(--color-border)'}`,
-          }}
-        >
-          {/* Expiry header */}
-          <div
-            className="px-4 pt-4 pb-3 flex items-center justify-between"
-            style={{
-              background:
-                urgency === 'critical'
-                  ? 'oklch(from var(--color-danger) l c h / 0.06)'
-                  : urgency === 'warning'
-                    ? 'oklch(from var(--color-warning) l c h / 0.06)'
-                    : 'var(--color-surface-raised)',
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <WaveformBars urgency={urgency} />
-              <div>
-                <p
-                  className="text-sm font-semibold leading-none"
-                  style={{
-                    color:
-                      urgency === 'critical'
-                        ? 'var(--color-danger)'
-                        : urgency === 'warning'
-                          ? 'var(--color-warning)'
-                          : 'var(--color-text-primary)',
-                  }}
-                >
-                  {status.expired ? 'Build expired' : 'Time remaining'}
-                </p>
-                <p
-                  className="text-xs mt-1"
-                  style={{ color: 'var(--color-text-muted)' }}
-                >
-                  Expires {formatDate(status.expiryTimestamp)}
-                </p>
-              </div>
-            </div>
-
-            <div className="text-right">
-              <p
-                className="text-2xl font-semibold tabular-nums leading-none"
-                style={{
-                  color:
-                    urgency === 'critical'
-                      ? 'var(--color-danger)'
-                      : urgency === 'warning'
-                        ? 'var(--color-warning)'
-                        : 'var(--color-brand)',
-                }}
-              >
-                {status.expired ? (
-                  'Expired'
-                ) : (
-                  <Countdown expiryTimestamp={status.expiryTimestamp} />
-                )}
-              </p>
-              <p
-                className="text-xs mt-0.5"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                Built {buildDate}
-              </p>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          {!status.expired && (
-            <div
-              style={{
-                height: 3,
-                background: 'var(--color-border)',
-              }}
-            >
-              <div
-                style={{
-                  height: '100%',
-                  width: `${Math.min(100, (status.daysRemaining / 28) * 100)}%`,
-                  background:
-                    urgency === 'critical'
-                      ? 'var(--color-danger)'
-                      : urgency === 'warning'
-                        ? 'var(--color-warning)'
-                        : 'var(--color-brand)',
-                  transition: 'width 0.3s ease',
-                }}
-              />
-            </div>
-          )}
-
-          {/* Actions */}
-          <div
-            className="px-4 py-3 flex flex-col gap-2"
-            style={{ background: 'var(--color-surface-raised)' }}
-          >
-            <p
-              className="text-xs"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              Alpha builds expire 28 days after release. Download the latest to keep going.
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={handleDownload}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors focus-ring"
-                style={{ background: 'var(--color-brand)' }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-brand-hover)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-brand)';
-                }}
-              >
-                <Download size={14} strokeWidth={1.75} />
-                Download latest build
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );

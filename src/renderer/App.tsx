@@ -11,9 +11,10 @@ import { useSettingsStore } from './store/settingsStore';
 import SettingsPage from './components/Settings/SettingsPage';
 import SessionView from './components/Session/SessionView';
 import CompositionBuilder from './components/Composition/CompositionBuilder';
-import type { Session, Composition, ExpiryStatus } from '../shared/types';
+import type { Session, Composition } from '../shared/types';
 import { PROVIDER_METADATA, SETTINGS_PROVIDERS, PRESET_COLORS, PRESET_COLOR_NAMES } from '../shared/constants';
 import { AvatarEditor } from './components/Settings/AvatarEditor';
+import UpdateBanner from './components/Shared/UpdateBanner';
 
 
 function ArchiveToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -949,7 +950,7 @@ function Dashboard({
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 
-export default function App({ initialExpiryStatus }: { initialExpiryStatus?: ExpiryStatus | null }): React.JSX.Element {
+export default function App(): React.JSX.Element {
   const { activeView, setView, theme } = useUIStore();
   const {
     activeSessionId,
@@ -1112,7 +1113,9 @@ export default function App({ initialExpiryStatus }: { initialExpiryStatus?: Exp
     activeView === 'composition-builder' && editingComposition !== null;
 
   return (
-    <div className="flex h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 overflow-hidden">
+    <div className="flex flex-col h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 overflow-hidden">
+      <UpdateBanner />
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Skip to main content */}
       <a
         href="#main-content"
@@ -1661,7 +1664,7 @@ export default function App({ initialExpiryStatus }: { initialExpiryStatus?: Exp
           />
         )}
 
-        {activeView === 'settings' && <SettingsPage initialExpiryStatus={initialExpiryStatus ?? null} />}
+        {activeView === 'settings' && <SettingsPage />}
 
         {activeView === 'session' && (
           <>
@@ -1693,6 +1696,7 @@ export default function App({ initialExpiryStatus }: { initialExpiryStatus?: Exp
           </>
         )}
       </main>
+      </div>
     </div>
   );
 }

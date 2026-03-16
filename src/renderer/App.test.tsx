@@ -113,6 +113,15 @@ function stubPolyphon(compositions: Composition[] = [], sessions: Session[] = []
       testCliVoice: vi.fn(),
       fetchModels: vi.fn().mockResolvedValue({ models: [] }),
     },
+    update: {
+      getState: vi.fn().mockResolvedValue(null),
+      dismiss: vi.fn(),
+      checkNow: vi.fn().mockResolvedValue(null),
+      onAvailable: vi.fn().mockReturnValue(() => {}),
+    },
+    shell: {
+      openExternal: vi.fn(),
+    },
   });
 }
 
