@@ -10,10 +10,12 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: 'assets/icons/icon',
+    executableName: 'polyphon',
   },
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({
+      authors: 'Polyphon AI',
       setupIcon: 'assets/icons/icon.ico',
       setupExe: process.env.BUILD_ARCH ? `Polyphon-${process.env.npm_package_version}-${process.env.BUILD_ARCH}-Setup.exe` : 'Polyphon-Setup.exe',
     }),

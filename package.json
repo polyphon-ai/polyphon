@@ -18,7 +18,7 @@
     "screenshots": "npx tsx scripts/take-screenshots.ts"
   },
   "keywords": [],
-  "author": "",
+  "author": "Polyphon AI",
   "license": "UNLICENSED",
   "devDependencies": {
     "@electron-forge/cli": "^7.11.1",
