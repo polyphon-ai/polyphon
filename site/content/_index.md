@@ -82,4 +82,4 @@ Your conversations and API keys stay on your machine. Polyphon never phones home
 
 Head to the [documentation](/docs/) to learn how to install Polyphon, configure your first voices, and start your first session.
 
-Download the latest release from [GitHub](https://github.com/polyphon-ai/polyphon/releases).
+Download the latest release from [polyphon.ai](https://polyphon.ai/#download).
