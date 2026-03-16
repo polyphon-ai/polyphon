@@ -1,6 +1,6 @@
 ---
 title: "Polyphon"
-description: "Desktop app for orchestrating conversations between multiple AI voices simultaneously. One chat. Many minds."
+description: "Desktop app for orchestrating conversations between multiple AI voices simultaneously. One chat. Many voices."
 ---
 
 ## What is Polyphon?

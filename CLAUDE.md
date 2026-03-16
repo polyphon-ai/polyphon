@@ -5,7 +5,7 @@ between multiple AI agents simultaneously. Agents can respond to the user and to
 other. The name comes from "polyphony" — many voices in harmony. The product should feel
 like a conductor's podium: the user orchestrates, the agents are the ensemble.
 
-**Taglines:** "One chat. Many minds." / "Every agent has a voice." / "Orchestrate the conversation."
+**Taglines:** "One chat. Many voices." / "Every agent has a voice." / "Orchestrate the conversation."
 
 ---
 
