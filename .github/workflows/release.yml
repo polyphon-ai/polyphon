@@ -369,6 +369,7 @@ jobs:
           repository: polyphon-ai/releases
           token: ${{ secrets.RELEASES_REPO_TOKEN }}
           name: ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
           generate_release_notes: false
           body: |
             Download the installer for your platform below.
@@ -385,6 +386,7 @@ jobs:
   update-site:
     name: Update Site
     needs: [release]
+    if: ${{ !contains(github.ref_name, '-') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
