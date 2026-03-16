@@ -446,6 +446,17 @@
             </span>
           </a>
         </div>
+        <div class="download-gatekeeper-note">
+          <span class="gatekeeper-label">
+            {{ partial "icon.html" (dict "name" "terminal" "size" 11) }}
+            Linux tip
+          </span>
+          <div class="gatekeeper-command">
+            <span class="gatekeeper-prompt" aria-hidden="true">$</span>
+            <code>chmod +x Polyphon-{{ $version }}-*.AppImage</code>
+          </div>
+          <p class="gatekeeper-desc">Run in a terminal after downloading to make the AppImage executable.</p>
+        </div>
       </div>
 
       <!-- Windows -->
