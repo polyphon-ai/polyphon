@@ -1,6 +1,42 @@
 .DEFAULT_GOAL := help
 
-# ─── Dependencies ─────────────────────────────────────────────────────────────
+# ── VM configuration ──────────────────────────────────────────────────────────
+# Override any of these on the command line, e.g.:
+#   make vm-linux-test LINUX_VM_HOST=192.168.64.10
+#
+# LINUX_VM_NAME / WINDOWS_VM_NAME enable UTM auto-start/suspend (requires
+# utmctl in PATH). When set the target starts the VM, waits for SSH, runs,
+# then suspends. Leave unset to skip UTM lifecycle management.
+#
+# Prerequisites: run vm-linux-provision / vm-windows-provision once first.
+# Windows: Git for Windows must be installed before provisioning.
+
+LINUX_VM_USER  ?= corey
+LINUX_VM_HOST  ?= 192.168.64.7
+LINUX_VM_PATH  ?= ~/polyphon
+LINUX_VM_NAME  ?= Polyphon CI - Linux
+
+WINDOWS_VM_USER ?= corey
+WINDOWS_VM_HOST ?= 192.168.64.6
+WINDOWS_VM_PATH ?= ~/polyphon
+WINDOWS_VM_NAME ?= Polyphon CI - Windows
+
+_LINUX_VM   := $(LINUX_VM_USER)@$(LINUX_VM_HOST)
+_WINDOWS_VM := $(WINDOWS_VM_USER)@$(WINDOWS_VM_HOST)
+
+_VM_RSYNC_OPTS := -az --delete \
+	--exclude=node_modules \
+	--exclude=out \
+	--exclude=.vite \
+	--exclude=.git \
+	--exclude=.dev-data \
+	--exclude=.venv \
+	--exclude=test-results \
+	--exclude=playwright-report
+
+# ─────────────────────────────────────────────────────────────────────────────
+
+##@ Setup
 
 .PHONY: install
 install: install-npm hooks-install ## Install all dependencies and git hooks
@@ -14,7 +50,7 @@ hooks-install: ## Install pre-commit and pre-push git hooks via pre-commit
 	pre-commit install
 	pre-commit install --hook-type pre-push
 
-# ─── Development ──────────────────────────────────────────────────────────────
+##@ Development
 
 .PHONY: dev
 dev: ## Start the Electron app in development mode (hot reload)
@@ -23,38 +59,54 @@ dev: ## Start the Electron app in development mode (hot reload)
 .PHONY: run
 run: dev ## Alias for dev
 
-# ─── Build ────────────────────────────────────────────────────────────────────
+##@ Build
 
 .PHONY: build
-build: build-app ## Build the Electron app
+build: build-app ## Package the app (no installer)
 
 .PHONY: build-app
 build-app: ## Package the Electron app with Electron Forge
 	npm run package
 
 .PHONY: dist
-dist: ## Create distributable installers for the current platform
+dist: ## Build installer for the current platform and arch
 	npm run make
 
-# ─── Test ─────────────────────────────────────────────────────────────────────
+.PHONY: dist-macos
+dist-macos: ## Build macOS arm64 + x64 DMGs locally; output to out/make/
+	npm run make -- --arch arm64
+	npm run make -- --arch x64
+
+.PHONY: dist-linux-arm64
+dist-linux-arm64: ## Build Linux arm64 AppImage via Docker (no Linux VM required)
+	docker run --rm \
+		--platform linux/arm64 \
+		-v "$(CURDIR):/workspace" \
+		-v polyphon-nm-linux-arm64:/workspace/node_modules \
+		-w /workspace \
+		-e APPIMAGE_EXTRACT_AND_RUN=1 \
+		node:22-bookworm \
+		sh -c "apt-get update -q && apt-get install -y -q squashfs-tools && npm ci && npm run make -- --arch arm64"
+
+##@ Test
 
 .PHONY: test
-test: lint test-unit test-integration test-e2e ## Run lint then all non-live tests (unit + integration + e2e)
+test: lint test-unit test-integration test-e2e ## Run lint + unit + integration + e2e (non-live)
 
 .PHONY: test-unit
-test-unit: ## Run unit tests (TypeScript)
+test-unit: ## Run unit tests
 	npm run test:unit
 
 .PHONY: test-integration
-test-integration: ## Run integration tests (TypeScript)
+test-integration: ## Run integration tests
 	npm run test:integration
 
 .PHONY: test-e2e
-test-e2e: ## Run e2e tests with mocked agents
+test-e2e: ## Run e2e tests with mocked voices
 	npm run test:e2e
 
 .PHONY: test-e2e-live
-test-e2e-live: ## Run all live e2e tests — opt-in, never CI
+test-e2e-live: ## Run live e2e tests against real providers — opt-in, never CI
 	npm run build:e2e && npx playwright test --config=playwright.config.e2e-live.ts
 
 .PHONY: test-openai-compatible
@@ -62,10 +114,17 @@ test-openai-compatible: ## Run live e2e tests against Ollama in Docker — requi
 	npm run build:e2e && npx playwright test --config=playwright.config.openai-compatible.ts
 
 .PHONY: test-watch
-test-watch: ## Run Vitest in watch mode (unit tests)
+test-watch: ## Run Vitest in watch mode
 	npm run test:watch
 
-# ─── Docker (CI mirror) ───────────────────────────────────────────────────────
+.PHONY: lint
+lint: lint-ts ## Run all linters
+
+.PHONY: lint-ts
+lint-ts: ## TypeScript type-check (no emit)
+	npm run lint
+
+##@ Docker
 
 .PHONY: test-docker
 test-docker: ## Run lint + unit + integration in Docker (mirrors CI "test" job)
@@ -83,48 +142,7 @@ test-docker-integration: ## Run integration tests in Docker
 test-docker-e2e: ## Run e2e tests in Docker (Playwright + Electron + Xvfb)
 	docker compose -f docker/compose.yml run --rm e2e
 
-# ─── VM Test Targets ──────────────────────────────────────────────────────────
-# Runs the full test suite on remote Linux Server and Windows Server 2022 VMs.
-# Mirrors the GitHub CI matrix as closely as possible without using CI credits.
-#
-# Usage:
-#   make vm-linux-test  LINUX_VM_USER=corey  LINUX_VM_HOST=192.168.64.10
-#   make vm-windows-test WINDOWS_VM_USER=corey WINDOWS_VM_HOST=192.168.64.20
-#   make test-vm         LINUX_VM_USER=...    WINDOWS_VM_USER=...   # both
-#
-# Auto-start/suspend (UTM only — requires utmctl in PATH):
-#   Set LINUX_VM_NAME / WINDOWS_VM_NAME to the exact VM name shown in UTM.
-#   When set, the target starts the VM, waits for SSH, runs tests, then suspends.
-#   Standalone targets: vm-linux-start, vm-linux-stop, vm-windows-start, vm-windows-stop
-#
-# Prerequisites:
-#   - SSH key auth configured on both VMs (no password prompts).
-#   - Run `make vm-linux-provision` / `make vm-windows-provision` once first.
-#   - Windows: Git for Windows must be installed before provisioning.
-
-LINUX_VM_USER  ?= corey
-LINUX_VM_HOST  ?= 192.168.64.7
-LINUX_VM_PATH  ?= ~/polyphon
-LINUX_VM_NAME  ?= "Polyphon CI - Linux"
-
-WINDOWS_VM_USER ?= corey
-WINDOWS_VM_HOST ?= 192.168.64.6
-WINDOWS_VM_PATH ?= ~/polyphon
-WINDOWS_VM_NAME ?= "Polyphon CI - Windows"
-
-_LINUX_VM  := $(LINUX_VM_USER)@$(LINUX_VM_HOST)
-_WINDOWS_VM := $(WINDOWS_VM_USER)@$(WINDOWS_VM_HOST)
-
-_VM_RSYNC_OPTS := -az --delete \
-	--exclude=node_modules \
-	--exclude=out \
-	--exclude=.vite \
-	--exclude=.git \
-	--exclude=.dev-data \
-	--exclude=test-results \
-	--exclude=playwright-report
-
-# ── UTM VM lifecycle ──────────────────────────────────────────────────────────
+##@ Virtual Machines
 
 .PHONY: vm-linux-start
 vm-linux-start: ## Start the UTM Linux VM and wait for SSH (requires LINUX_VM_NAME)
@@ -162,8 +180,6 @@ vm-windows-stop: ## Suspend the UTM Windows VM (requires WINDOWS_VM_NAME)
 	@echo "==> Suspending UTM VM '$(WINDOWS_VM_NAME)'..."
 	@utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
 
-# ── Linux ─────────────────────────────────────────────────────────────────────
-
 .PHONY: vm-linux-provision
 vm-linux-provision: ## Provision Linux VM: install Node 24 + system deps for Electron and Playwright
 	@echo "==> Checking SSH connectivity ($(_LINUX_VM))..."
@@ -179,6 +195,24 @@ vm-linux-provision: ## Provision Linux VM: install Node 24 + system deps for Ele
 	@echo "==> Updating npm to latest..."
 	@ssh $(_LINUX_VM) 'sudo npm install -g npm@latest'
 	@echo "==> Linux VM provisioned."
+
+.PHONY: vm-windows-provision
+vm-windows-provision: ## Provision Windows VM: verify Node 24 + Git for Windows, configure Git Bash as SSH shell
+	@echo "==> Checking SSH connectivity ($(_WINDOWS_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok || \
+		{ echo "ERROR: SSH failed. Verify WINDOWS_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node.js 24..."
+	@ssh $(_WINDOWS_VM) "node --version" 2>/dev/null | grep -q "v24" || \
+		{ echo "ERROR: Node 24 not found. Install via: winget install OpenJS.NodeJS.LTS"; exit 1; }
+	@echo "==> Checking Git for Windows (required for rsync and bash)..."
+	@ssh $(_WINDOWS_VM) "git --version" 2>/dev/null | grep -q "git version" || \
+		{ echo "ERROR: Git for Windows not found. Install from https://git-scm.com/download/win"; exit 1; }
+	@echo "==> Checking rsync (bundled with Git for Windows)..."
+	@ssh $(_WINDOWS_VM) "rsync --version" 2>/dev/null | grep -q "rsync" || \
+		{ echo "ERROR: rsync not found. Ensure Git for Windows is installed and includes rsync."; exit 1; }
+	@echo "==> Configuring Git Bash as the OpenSSH default shell..."
+	@ssh $(_WINDOWS_VM) "powershell -NoProfile -Command \"New-ItemProperty -Path 'HKLM:\\SOFTWARE\\OpenSSH' -Name DefaultShell -Value 'C:\\Program Files\\Git\\bin\\bash.exe' -PropertyType String -Force\""
+	@echo "==> Windows VM provisioned. Future SSH connections will use Git Bash."
 
 .PHONY: vm-linux-test
 vm-linux-test: ## Sync project to Linux VM and run lint + unit + integration + e2e
@@ -208,31 +242,8 @@ vm-linux-test: ## Sync project to Linux VM and run lint + unit + integration + e
 	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && CI=1 xvfb-run --auto-servernum --server-args="-screen 0 1280x720x16" npx playwright test'
 	@[ -z "$(LINUX_VM_NAME)" ] || utmctl suspend "$(LINUX_VM_NAME)" 2>/dev/null || true
 
-# ── Windows ───────────────────────────────────────────────────────────────────
-# Provision configures Git Bash as the OpenSSH default shell so that all
-# subsequent SSH commands can use Unix-style paths and pipelines consistently.
-# Git for Windows must be installed manually before running vm-windows-provision.
-
-.PHONY: vm-windows-provision
-vm-windows-provision: ## Provision Windows VM: verify Node 24 + Git for Windows, configure Git Bash as SSH shell
-	@echo "==> Checking SSH connectivity ($(_WINDOWS_VM))..."
-	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok || \
-		{ echo "ERROR: SSH failed. Verify WINDOWS_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
-	@echo "==> Checking Node.js 24..."
-	@ssh $(_WINDOWS_VM) "node --version" 2>/dev/null | grep -q "v24" || \
-		{ echo "ERROR: Node 24 not found. Install via: winget install OpenJS.NodeJS.LTS"; exit 1; }
-	@echo "==> Checking Git for Windows (required for rsync and bash)..."
-	@ssh $(_WINDOWS_VM) "git --version" 2>/dev/null | grep -q "git version" || \
-		{ echo "ERROR: Git for Windows not found. Install from https://git-scm.com/download/win"; exit 1; }
-	@echo "==> Checking rsync (bundled with Git for Windows)..."
-	@ssh $(_WINDOWS_VM) "rsync --version" 2>/dev/null | grep -q "rsync" || \
-		{ echo "ERROR: rsync not found. Ensure Git for Windows is installed and includes rsync."; exit 1; }
-	@echo "==> Configuring Git Bash as the OpenSSH default shell..."
-	@ssh $(_WINDOWS_VM) "powershell -NoProfile -Command \"New-ItemProperty -Path 'HKLM:\\SOFTWARE\\OpenSSH' -Name DefaultShell -Value 'C:\\Program Files\\Git\\bin\\bash.exe' -PropertyType String -Force\""
-	@echo "==> Windows VM provisioned. Future SSH connections will use Git Bash."
-
 .PHONY: vm-windows-test
-vm-windows-test: ## Sync project to Windows VM and run lint + unit + integration + e2e (requires vm-windows-provision)
+vm-windows-test: ## Sync project to Windows VM and run lint + unit + integration + e2e
 	@[ -z "$(WINDOWS_VM_NAME)" ] || { \
 		echo "==> Starting UTM VM '$(WINDOWS_VM_NAME)'..."; \
 		utmctl start "$(WINDOWS_VM_NAME)" 2>/dev/null || true; \
@@ -260,73 +271,116 @@ vm-windows-test: ## Sync project to Windows VM and run lint + unit + integration
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && CI=1 npx playwright test'
 	@[ -z "$(WINDOWS_VM_NAME)" ] || utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
 
-# ── Both ──────────────────────────────────────────────────────────────────────
-
 .PHONY: vm-test
-vm-test: vm-linux-test vm-windows-test ## Run full test suite on both Linux and Windows VMs (sequential)
+vm-test: vm-linux-test vm-windows-test ## Run full test suite on both VMs (sequential)
 
-# ─── Lint & Type-check ────────────────────────────────────────────────────────
+.PHONY: vm-linux-dist
+vm-linux-dist: ## Build Linux x64 + arm64 AppImages on the Linux VM; fetch to out/dist/linux/
+	@[ -z "$(LINUX_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(LINUX_VM_NAME)'..."; \
+		utmctl start "$(LINUX_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_LINUX_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_LINUX_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify LINUX_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-linux-provision' if missing)..."
+	@ssh $(_LINUX_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
+		{ echo "ERROR: Node 24 not found on Linux VM. Run: make vm-linux-provision"; exit 1; }
+	@echo "==> Installing build dependencies..."
+	@ssh $(_LINUX_VM) 'sudo apt-get update -q && sudo apt-get install -y -q libgtk-3-0 libgbm1 libnss3 libasound2t64 libxshmfence1 rpm'
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_LINUX_VM):$(LINUX_VM_PATH)/
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm install'
+	@echo "==> Building Linux x64 AppImage..."
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch x64'
+	@echo "==> Building Linux arm64 AppImage..."
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch arm64'
+	@echo "==> Fetching artifacts..."
+	@mkdir -p "$(CURDIR)/out/dist/linux"
+	@rsync -az $(_LINUX_VM):$(LINUX_VM_PATH)/out/make/ "$(CURDIR)/out/dist/linux/"
+	@echo "==> Artifacts in out/dist/linux/"
+	@[ -z "$(LINUX_VM_NAME)" ] || utmctl suspend "$(LINUX_VM_NAME)" 2>/dev/null || true
 
-.PHONY: lint
-lint: lint-ts ## Run all linters
+.PHONY: vm-windows-dist
+vm-windows-dist: ## Build Windows x64 + arm64 installers on the Windows VM; fetch to out/dist/windows/
+	@[ -z "$(WINDOWS_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(WINDOWS_VM_NAME)'..."; \
+		utmctl start "$(WINDOWS_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_WINDOWS_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_WINDOWS_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok || \
+		{ echo "ERROR: SSH failed. Verify WINDOWS_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-windows-provision' if missing)..."
+	@ssh $(_WINDOWS_VM) "node --version" 2>/dev/null | grep -q "v24" || \
+		{ echo "ERROR: Node 24 not found on Windows VM. Run: make vm-windows-provision"; exit 1; }
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_WINDOWS_VM):$(WINDOWS_VM_PATH)/
+	@ssh $(_WINDOWS_VM) 'taskkill //F //IM electron.exe 2>/dev/null; cd $(WINDOWS_VM_PATH) && rm -rf node_modules && npm install'
+	@echo "==> Building Windows x64 installer..."
+	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && BUILD_ARCH=x64 npm run make -- --arch x64'
+	@echo "==> Building Windows arm64 installer..."
+	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && BUILD_ARCH=arm64 npm run make -- --arch arm64'
+	@echo "==> Fetching artifacts..."
+	@mkdir -p "$(CURDIR)/out/dist/windows"
+	@rsync -az $(_WINDOWS_VM):$(WINDOWS_VM_PATH)/out/make/ "$(CURDIR)/out/dist/windows/"
+	@echo "==> Artifacts in out/dist/windows/"
+	@[ -z "$(WINDOWS_VM_NAME)" ] || utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
 
-.PHONY: lint-ts
-lint-ts: ## TypeScript type-check (no emit)
-	npm run lint
+.PHONY: vm-dist
+vm-dist: vm-linux-dist vm-windows-dist ## Build all Linux + Windows installers on both VMs (sequential)
 
-# ─── Icons ───────────────────────────────────────────────────────────────────
+##@ Icons
+
+.PHONY: icons
+icons: icon-generate icon-light-generate ## Generate all platform icons for dark and light variants
 
 .PHONY: icon-rasterize
-icon-rasterize: ## Convert icon SVGs to 1024x1024 PNGs (requires rsvg-convert)
-	rsvg-convert -w 1024 -h 1024 assets/icon-dark.svg -o assets/icon-dark-1024.png
-	rsvg-convert -w 1024 -h 1024 assets/icon-light.svg -o assets/icon-light-1024.png
-
-.PHONY: icon-generate
-icon-generate: icon-rasterize ## Generate all platform icon formats from SVGs (requires electron-icon-maker)
-	npx electron-icon-maker --input=assets/icon-dark-1024.png --output=assets/icons/dark
-	npx electron-icon-maker --input=assets/icon-light-1024.png --output=assets/icons/light
-
-# ─── Icons ────────────────────────────────────────────────────────────────────
-
-.PHONY: icon-rasterize
-icon-rasterize: ## Convert icon-dark.svg to a 1024x1024 PNG for icon generation (requires rsvg-convert)
+icon-rasterize: ## Convert icon-dark.svg to a 1024x1024 PNG (requires rsvg-convert)
 	rsvg-convert -w 1024 -h 1024 assets/icon-dark.svg -o assets/icon-1024.png
 
 .PHONY: icon-generate
-icon-generate: icon-rasterize ## Generate all platform icon formats from icon-dark.svg (requires electron-icon-maker)
+icon-generate: icon-rasterize ## Generate platform icon formats from icon-dark.svg (requires electron-icon-maker)
 	npx electron-icon-maker --input=assets/icon-1024.png --output=assets/icons
 
 .PHONY: icon-light-rasterize
-icon-light-rasterize: ## Convert icon-light.svg to a 1024x1024 PNG for icon generation (requires rsvg-convert)
+icon-light-rasterize: ## Convert icon-light.svg to a 1024x1024 PNG (requires rsvg-convert)
 	rsvg-convert -w 1024 -h 1024 assets/icon-light.svg -o assets/icon-light-1024.png
 
 .PHONY: icon-light-generate
-icon-light-generate: icon-light-rasterize ## Generate all platform icon formats from icon-light.svg (requires electron-icon-maker)
+icon-light-generate: icon-light-rasterize ## Generate platform icon formats from icon-light.svg (requires electron-icon-maker)
 	npx electron-icon-maker --input=assets/icon-light-1024.png --output=assets/icons-light
 
-.PHONY: icons
-icons: icon-generate icon-light-generate ## Generate all platform icons for both dark and light variants
+##@ Site
 
-# ─── Site ─────────────────────────────────────────────────────────────────────
-# Run `cd site && npm install` once before using site-search.
-
-.PHONY: screenshots
-screenshots: ## Build a clean e2e bundle then capture site screenshots
-	npm run build:e2e && npx tsx scripts/take-screenshots.ts
+.PHONY: site-dev
+site-dev: ## Serve the Hugo site locally (run site-search first to enable /search/)
+	hugo server -s site
 
 .PHONY: site-build
 site-build: ## Build the Hugo marketing site
 	hugo --minify -s site
 
 .PHONY: site-search
-site-search: site-build ## Build Hugo site + generate Pagefind search index
+site-search: site-build ## Build Hugo site + generate Pagefind search index (run cd site && npm install first)
 	cd site && npm run pagefind
 
-.PHONY: site-dev
-site-dev: ## Serve the Hugo site locally (run site-search first to enable /search/)
-	hugo server -s site
+.PHONY: screenshots
+screenshots: ## Build a clean e2e bundle then capture site screenshots
+	npm run build:e2e && npx tsx scripts/take-screenshots.ts
 
-# ─── Clean ────────────────────────────────────────────────────────────────────
+##@ Clean
 
 .PHONY: clean
 clean: clean-app clean-dev-data ## Remove all build artifacts and dev data
@@ -340,12 +394,14 @@ clean-dev-data: ## Remove local development database
 	rm -rf .dev-data
 
 .PHONY: reset-app-data
-reset-app-data: ## Delete packaged app user data (DB + localStorage) for a clean first-run test — macOS only
+reset-app-data: ## Delete packaged app user data for a clean first-run test — macOS only
 	rm -rf "$(HOME)/Library/Application Support/Polyphon"
 
-# ─── Help ─────────────────────────────────────────────────────────────────────
+##@ Help
 
 .PHONY: help
 help: ## Show this help message
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} \
-	  /^[a-zA-Z0-9_\/-]+:.*##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} \
+	  /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } \
+	  /^[a-zA-Z0-9_\/-]+:.*##/ { printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2 }' \
+	  $(MAKEFILE_LIST)
