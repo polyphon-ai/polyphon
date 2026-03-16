@@ -96,11 +96,6 @@ body {
   padding: 3rem 1.5rem;
 }
 
-@keyframes waveform {
-  0%, 100% { transform: scaleY(0.25); }
-  50% { transform: scaleY(1); }
-}
-
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(3px); }
   to   { opacity: 1; transform: translateY(0); }

@@ -30,7 +30,7 @@ import {
   PRESET_COLOR_NAMES,
   type VoiceType,
 } from '../../../shared/constants';
-import type { ApiKeyStatus, ProviderConfig, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, ExpiryStatus } from '../../../shared/types';
+import type { ApiKeyStatus, ProviderConfig, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate } from '../../../shared/types';
 import ProviderLogo from '../Shared/ProviderLogo';
 import { HelpTooltip } from '../Shared/HelpTooltip';
 import { AvatarEditor } from './AvatarEditor';
@@ -1428,9 +1428,8 @@ function SectionNav({
 
 // ── Main Settings page ──────────────────────────────────────────────────────
 
-export default function SettingsPage({ initialExpiryStatus }: { initialExpiryStatus?: ExpiryStatus | null }) {
+export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>('conductor');
-  const [expiryStatus] = useState<ExpiryStatus | null>(initialExpiryStatus ?? null);
   const { load, loading, error } = useSettingsStore();
 
   useEffect(() => {
@@ -1577,7 +1576,7 @@ export default function SettingsPage({ initialExpiryStatus }: { initialExpirySta
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">About</h2>
             </div>
-            <AboutPage status={expiryStatus} />
+            <AboutPage />
           </div>
         )}
       </div>

@@ -1,8 +1,12 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  server: {
+    watch: {
+      ignored: ['**/site/**'],
+    },
+  },
   define: {
-    __BUILD_TIMESTAMP__: JSON.stringify(Date.now()),
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0'),
   },
   build: {
