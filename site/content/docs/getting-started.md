@@ -38,9 +38,6 @@ Download the latest release for your platform from the [GitHub Releases page](ht
 2. Drag **Polyphon** to your Applications folder.
 3. On first launch, macOS may show a security prompt — click **Open Anyway** in System Settings → Privacy & Security.
 
-> **Screenshot placeholder:** *macOS install — DMG window showing Polyphon being dragged to Applications folder*
-<!-- Prerequisites: freshly downloaded DMG | Platform: macOS | Theme: any | Window: default Finder DMG window -->
-
 ### Windows
 
 Run the installer (`.exe`) and follow the setup wizard. Polyphon will be added to your Start menu.
