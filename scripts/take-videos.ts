@@ -47,7 +47,6 @@ const VALID_TRACKS = [
   'streaming',
   'at-mention',
   'continuation-nudge',
-  'avatar-upload',
   'custom-providers',
   'walkthrough',
 ] as const;
@@ -62,7 +61,7 @@ const skipped: { label: string; reason: string }[] = [];
 
 // ── Timing scale ──────────────────────────────────────────────────────────────
 // Increase TIMING_SCALE above 1.0 to slow down all recorded interactions uniformly.
-const TIMING_SCALE = 1.5;
+const TIMING_SCALE = 3;
 function wait(_page: Page, ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, Math.round(ms * TIMING_SCALE)));
 }
@@ -261,11 +260,14 @@ async function startFrameRecording(
   let active = true;
   let frameIndex = 0;
   const delay = Math.floor(1000 / fps);
+  const timestamps: number[] = [];
+  const startMs = Date.now();
 
   const loopDone = (async () => {
     while (active) {
       const framePath = path.join(framesDir, `frame-${String(frameIndex).padStart(6, '0')}.png`);
       frameIndex++;
+      timestamps.push(Date.now() - startMs);
       try {
         await page.screenshot({ path: framePath, fullPage: false, timeout: 3_000 });
       } catch {
@@ -280,6 +282,8 @@ async function startFrameRecording(
   return async () => {
     active = false;
     await loopDone;
+    // Persist frame timestamps so compileFramesToMp4 can assign real-time durations.
+    fs.writeFileSync(path.join(framesDir, 'timestamps.json'), JSON.stringify(timestamps));
   };
 }
 
@@ -307,11 +311,24 @@ function compileFramesToMp4(
     throw new Error(`No frames captured in ${framesDir}`);
   }
 
-  const frameDuration = (1 / fps).toFixed(6);
+  // Use real inter-frame timestamps when available so the video plays at true
+  // wall-clock speed regardless of how long each screenshot() call took.
+  const tsFile = path.join(framesDir, 'timestamps.json');
+  const timestamps: number[] | null = fs.existsSync(tsFile)
+    ? (JSON.parse(fs.readFileSync(tsFile, 'utf8')) as number[])
+    : null;
+
+  const nominalDuration = 1 / fps;
   const concatLines: string[] = [];
-  for (const f of frames) {
-    concatLines.push(`file '${path.join(framesDir, f).replace(/\\/g, '/')}'`);
-    concatLines.push(`duration ${frameDuration}`);
+  for (let i = 0; i < frames.length; i++) {
+    let duration: number;
+    if (timestamps && timestamps.length > i + 1) {
+      duration = (timestamps[i + 1] - timestamps[i]) / 1000;
+    } else {
+      duration = nominalDuration;
+    }
+    concatLines.push(`file '${path.join(framesDir, frames[i]).replace(/\\/g, '/')}'`);
+    concatLines.push(`duration ${duration.toFixed(6)}`);
   }
   const concatFile = path.join(framesDir, 'frames.txt');
   fs.writeFileSync(concatFile, concatLines.join('\n') + '\n', 'utf8');
@@ -696,6 +713,7 @@ async function captureStreaming(ffmpegBin: string): Promise<void> {
     // Start recording at 15fps; dwell on the empty session so viewers can orient
     cues.start();
     const stopRecording = await startFrameRecording(window, framesDir, 15);
+    cues.emit('session-ready', 'Streaming Demo session open with Anthropic and OpenAI voices ready');
     await wait(window,3_000);
     cues.emit('session-started', 'Streaming Demo session open with Anthropic and OpenAI voices');
 
@@ -753,6 +771,7 @@ async function captureAtMention(ffmpegBin: string): Promise<void> {
     // Start recording at 15fps; dwell on the session so viewers can orient
     cues.start();
     const stopRecording = await startFrameRecording(window, framesDir, 15);
+    cues.emit('session-ready', 'Mention Demo session open in conductor mode — two voices ready for directed messages');
     await wait(window,3_000);
     cues.emit('session-started', 'Mention Demo session open in conductor mode');
 
@@ -844,6 +863,7 @@ async function captureContinuationNudge(ffmpegBin: string): Promise<void> {
 
     cues.start();
     const stopRecording = await startFrameRecording(window, framesDir, 15);
+    cues.emit('session-ready', 'Continuation Demo session open in broadcast mode with Prompt me continuation policy');
     await wait(window,2_500);
     cues.emit('session-started', 'Continuation Demo session open in broadcast + Prompt me mode');
 
@@ -887,112 +907,6 @@ async function captureContinuationNudge(ffmpegBin: string): Promise<void> {
   console.log(`  ✓ videos/docs/continuation-nudge.mp4 (${mb}MB)`);
 }
 
-async function captureAvatarUpload(ffmpegBin: string): Promise<void> {
-  console.log('\n── Track 5: Avatar upload ───────────────────────────────────────  [TRACK=avatar-upload]');
-
-  // Launch without skipping onboarding — show the full flow from the welcome modal
-  const { app, window } = await launchApp({ skipOnboarding: false });
-  const framesDir = makeTempDir('polyphon-frames-avatar-upload-');
-  const cues = new CueEmitter();
-
-  try {
-    await window.waitForLoadState('domcontentloaded');
-    // Wait for the onboarding modal
-    const skipBtn = window.getByRole('button', { name: /skip for now/i });
-    await skipBtn.waitFor({ state: 'visible', timeout: 10_000 });
-
-    // Override pickAvatarFile with a synthetic gradient image so the file picker is bypassed
-    await window.evaluate(() => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 400; canvas.height = 400;
-      const ctx = canvas.getContext('2d')!;
-      const grad = ctx.createLinearGradient(0, 0, 400, 400);
-      grad.addColorStop(0, '#4f46e5');
-      grad.addColorStop(1, '#7c3aed');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 400, 400);
-      ctx.fillStyle = '#c7d2fe';
-      ctx.beginPath(); ctx.arc(200, 160, 80, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#818cf8';
-      ctx.beginPath(); ctx.arc(200, 320, 140, Math.PI, 0); ctx.fill();
-      // @ts-ignore
-      (window as any).__testAvatarDataUrl = canvas.toDataURL('image/png');
-      // @ts-ignore
-      (window as any).polyphon.settings.pickAvatarFile = async () =>
-        (window as any).__testAvatarDataUrl;
-    });
-
-    cues.start();
-    const stopRecording = await startFrameRecording(window, framesDir, 15);
-    await wait(window,2_500);
-    cues.emit('onboarding-visible', 'Welcome modal open — avatar button, name, pronouns, About me fields visible');
-
-    // Click the avatar button to open the AvatarEditor
-    try {
-      const avatarTrigger = window.getByRole('button', { name: /upload|avatar|photo/i }).first();
-      await avatarTrigger.click();
-    } catch {
-      // Fallback: click the first button-like element near the top of the modal
-      await window.locator('button').first().click();
-    }
-    await wait(window,800);
-    cues.emit('avatar-editor-opened', 'AvatarEditor modal opened with synthetic image loaded');
-
-    // Interact with the editor: drag to reposition, zoom in, then apply
-    const applyBtn = window.getByRole('button', { name: /apply/i });
-    await applyBtn.waitFor({ state: 'visible', timeout: 5_000 });
-    await wait(window,3_000); // hold so viewers see the editor
-    cues.emit('avatar-editor-dwell', 'AvatarEditor showing circular crop preview, zoom slider, rotate buttons');
-
-    // Simulate a drag to reposition
-    const canvas = window.locator('canvas').first();
-    const canvasBox = await canvas.boundingBox();
-    if (canvasBox) {
-      const cx = canvasBox.x + canvasBox.width / 2;
-      const cy = canvasBox.y + canvasBox.height / 2;
-      await window.mouse.move(cx, cy);
-      await window.mouse.down();
-      await window.mouse.move(cx + 30, cy - 20, { steps: 10 });
-      await window.mouse.up();
-      await wait(window,1_500);
-      cues.emit('avatar-repositioned', 'Image dragged to reposition within the crop circle');
-    }
-
-    await wait(window,1_500);
-    await applyBtn.click();
-    await wait(window,1_000);
-    cues.emit('avatar-applied', 'Apply clicked — cropped avatar saved, AvatarEditor closes');
-
-    // Avatar should now appear in the modal; fill in name and click Get started
-    await wait(window,1_500);
-    cues.emit('avatar-in-modal', 'Avatar preview appears in the welcome modal');
-
-    const nameField = window.getByPlaceholder(/e\.g\. Corey/i);
-    await nameField.pressSequentially('Corey', { delay: 180 });
-    await wait(window,1_500);
-    cues.emit('name-entered', 'Name "Corey" entered in the name field');
-
-    const startBtn = window.getByRole('button', { name: /get started/i });
-    await startBtn.click();
-    await window.getByRole('button', { name: /settings/i }).waitFor({ state: 'visible', timeout: 15_000 });
-    await wait(window,2_500);
-    cues.emit('onboarding-complete', 'Get started clicked — avatar appears in the sidebar');
-
-    await stopRecording();
-  } finally {
-    try { await app.close(); } catch { /* ignore */ }
-  }
-
-  const outputMp4 = path.join(SITE_STATIC, 'videos', 'docs', 'conductor-profile-avatar-upload.mp4');
-  compileFramesToMp4(ffmpegBin, framesDir, outputMp4, 15);
-  cues.save(path.join(SITE_STATIC, 'videos', 'docs', 'conductor-profile-avatar-upload-cues.json'));
-  // Poster at ~8s: after AvatarEditor interaction, showing the circular crop editor
-  extractPosterFrame(ffmpegBin, outputMp4, path.join(SITE_STATIC, 'images', 'video-posters', 'docs', 'conductor-profile-avatar-upload.webp'), 8);
-  assertOutputWithinBudget(outputMp4, 20);
-  captured++;
-  const mb = (fs.statSync(outputMp4).size / (1024 * 1024)).toFixed(1);
-  console.log(`  ✓ videos/docs/conductor-profile-avatar-upload.mp4 (${mb}MB)`);
-}
 
 async function captureWalkthrough(ffmpegBin: string): Promise<void> {
   console.log('\n── Track 4: Full walkthrough ────────────────────────────────────  [TRACK=walkthrough]');
@@ -1022,19 +936,22 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
 
     await window.getByRole('button', { name: /settings/i }).click();
     await wait(window,5_000); // Conductor tab (the default) — viewer reads the filled profile
-    cues.emit('settings-conductor-tab', 'Settings open on Conductor tab — filled profile visible');
+    cues.emit('settings-conductor-tab', 'Settings → Conductor tab — conductor name (Corey), pronouns (they/them), background bio, and default tone all filled in; voices read this profile to address the user personally and in the right tone');
 
     await window.getByRole('tab', { name: /^Tones$/i }).click();
     await wait(window,5_000);
-    cues.emit('settings-tones-tab', 'Tones tab — preset tones like Professional, Collaborative, Concise visible');
+    cues.emit('settings-tones-tab', 'Tones tab — preset cards for Professional, Collaborative, Concise, Exploratory, and Devil\'s Advocate; selecting a tone shapes how every voice in a composition communicates; custom tones can be added');
 
     await window.getByRole('tab', { name: /^System Prompts$/i }).click();
     await wait(window,5_000);
-    cues.emit('settings-system-prompts-tab', 'System Prompts tab — reusable prompt templates for voices');
+    cues.emit('settings-system-prompts-tab', 'System Prompts tab — reusable instruction templates listed; attach any template to a voice in the composition builder to give it a persistent role, specialty, or set of constraints');
 
     await window.getByRole('tab', { name: /^General$/i }).click();
     await wait(window,5_000);
-    cues.emit('settings-general-tab', 'General tab — theme and app-level preferences');
+    cues.emit('settings-general-tab', 'General tab — light/dark theme toggle and other app-level preferences that apply across all sessions');
+
+    await wait(window,2_000);
+    cues.emit('settings-complete', 'Settings tour complete — providers enabled, custom Ollama models added, conductor profile filled; the next section shows how to organize these voices into compositions');
 
     // ── Providers — detailed walkthrough ──────────────────────────────────────
 
@@ -1051,13 +968,13 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     await providerSwitches.nth(0).click();
     await window.getByText('Saved').first().waitFor({ state: 'visible', timeout: 5_000 });
     await wait(window,4_000); // hold — viewers see the API key section + model list
-    cues.emit('anthropic-api-enabled', 'Anthropic API enabled — API key section and model list visible');
+    cues.emit('anthropic-api-enabled', 'Anthropic API enabled — paste an API key and the model selector appears; choose from Claude Haiku, Sonnet, or Opus for each voice independently');
 
     // Enable CLI too — shows the command/args fields alongside the API section
     await providerSwitches.nth(1).click();
     await window.getByText('Saved').first().waitFor({ state: 'visible', timeout: 5_000 });
     await wait(window,4_500); // hold — viewer sees CLI command and args fields
-    cues.emit('anthropic-cli-mode', 'Anthropic CLI enabled — command and args fields visible below API section');
+    cues.emit('anthropic-cli-mode', 'Anthropic CLI mode also enabled — CLI mode runs the claude command-line tool locally; no API key needed, and it uses whatever model the CLI is configured for');
 
     // --- OpenAI ---
     // Scroll the OpenAI card into view, then enable it in API mode
@@ -1066,7 +983,7 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     await providerSwitches.nth(2).click();
     await window.getByText('Saved').first().waitFor({ state: 'visible', timeout: 5_000 });
     await wait(window,3_000); // hold on API mode — show API key badge + model dropdown
-    cues.emit('openai-enabled', 'OpenAI enabled in API mode — API key badge and model dropdown visible');
+    cues.emit('openai-enabled', 'OpenAI enabled in API mode — API key badge confirms the connection; both API mode (key + model picker) and CLI mode (codex CLI) are available for OpenAI');
 
     // Click Refresh to demonstrate the live model fetch
     try {
@@ -1076,7 +993,7 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
       await wait(window,4_500); // watch the model list populate
     } catch { /* no API key or button not found — skip */ }
     await wait(window,3_500); // hold on the populated model dropdown
-    cues.emit('openai-models-fetched', 'OpenAI model list refreshed from the API');
+    cues.emit('openai-models-fetched', 'Model list refreshed from the OpenAI API — if a key is configured, the latest available models populate the picker; cloud model selection stays current without manual updates');
 
     // --- Gemini ---
     // Scroll down, enable it — Gemini is API-only so there's no CLI toggle to show
@@ -1085,7 +1002,7 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     await providerSwitches.nth(4).click();
     await window.getByText('Saved').first().waitFor({ state: 'visible', timeout: 5_000 });
     await wait(window,4_000); // dwell — viewer sees Gemini has no CLI option
-    cues.emit('gemini-enabled', 'Gemini enabled — API-only, no CLI option');
+    cues.emit('gemini-enabled', 'Gemini enabled — Gemini is API-only; there is no CLI variant for this provider, which is why only one toggle row appears');
 
     await wait(window,2_500); // final hold on the configured providers screen
 
@@ -1095,7 +1012,7 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     const addCustomBtn = window.getByRole('button', { name: /Add Custom Provider/i }).first();
     await addCustomBtn.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
     await wait(window,2_500); // hold — viewers read the Custom Providers heading
-    cues.emit('custom-providers-section', 'Custom Providers section visible — Add Custom Provider button shown');
+    cues.emit('custom-providers-section', 'Custom Providers section — add any OpenAI-compatible endpoint: Ollama, LM Studio, vLLM, or a private proxy; they appear alongside built-in providers in every composition');
 
     // Provider 1: Llama 3.2
     await addCustomBtn.click();
@@ -1110,13 +1027,13 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     await wait(window,800);
     await window.getByPlaceholder('llama3.2').fill('llama3.2:1b');
     await wait(window,1_500);
-    cues.emit('llama-form-filled', 'Llama 3.2 custom provider form filled — name, base URL http://localhost:11434/v1, model llama3.2:1b');
+    cues.emit('llama-form-filled', 'Llama 3.2 custom provider form filled — name, base URL pointing to local Ollama at http://localhost:11434/v1, model llama3.2:1b; fully offline, fully private');
     const saveBtn1 = window.getByRole('button', { name: 'Save', exact: true }).first();
     await saveBtn1.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
     await wait(window,800);
     await saveBtn1.click();
     await wait(window,2_500); // hold — viewers see the Llama 3.2 card saved
-    cues.emit('llama-provider-saved', 'Llama 3.2 custom provider saved and card visible');
+    cues.emit('llama-provider-saved', 'Llama 3.2 custom provider card saved — it now appears in every composition builder alongside Anthropic, OpenAI, and Gemini');
 
     // Provider 2: Qwen 2.5
     const addCustomBtn2 = window.getByRole('button', { name: /Add Custom Provider/i }).first();
@@ -1134,13 +1051,13 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     await wait(window,800);
     await window.getByPlaceholder('llama3.2').fill('qwen2.5:0.5b');
     await wait(window,1_500);
-    cues.emit('qwen-form-filled', 'Qwen 2.5 custom provider form filled — same Ollama base URL, model qwen2.5:0.5b');
+    cues.emit('qwen-form-filled', 'Qwen 2.5 form filled with the same Ollama base URL but a different model ID; two local providers, one running server');
     const saveBtn2 = window.getByRole('button', { name: 'Save', exact: true }).first();
     await saveBtn2.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'center' }));
     await wait(window,800);
     await saveBtn2.click();
     await wait(window,3_000); // hold — viewers see both custom provider cards
-    cues.emit('qwen-provider-saved', 'Qwen 2.5 custom provider saved — both Ollama providers now listed');
+    cues.emit('qwen-provider-saved', 'Both Ollama providers are listed — cloud APIs and local models are peers in Polyphon; no provider is first-class');
 
     // ── Step 3: Create three compositions ────────────────────────────────────
 
@@ -1152,10 +1069,13 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     cues.emit('composition-builder-opened-1', 'Composition builder opened for first composition');
     await window.getByPlaceholder('My Composition').fill('Research Panel');
     await wait(window,2_500); // hold — viewers read the name
-    cues.emit('composition-named-broadcast', 'Composition named "Research Panel"');
+    cues.emit('composition-named-broadcast', 'Composition named Research Panel — broadcast mode means all voices respond to every message simultaneously');
     await window.getByRole('button', { name: /broadcast/i }).first().click();
     await wait(window,3_000); // hold — viewers see the mode switch to Broadcast
-    cues.emit('composition-mode-broadcast', 'Mode set to Broadcast — all voices answer every message');
+    cues.emit('composition-mode-broadcast', 'Mode set to Broadcast — every message goes to every voice; all voices respond in parallel each round');
+    await window.getByRole('button', { name: /prompt me/i }).click();
+    await wait(window,3_500);
+    cues.emit('composition-continuation-set', 'Continuation policy set to Prompt me — after all voices finish a round, a banner asks whether to continue; Auto would continue without asking, None stops after one round');
     await window.getByRole('button', { name: 'Anthropic' }).first().click();
     await wait(window,3_000); // hold — viewers see the Anthropic voice config form
     await window.getByRole('button', { name: 'Add Voice' }).click();
@@ -1216,6 +1136,29 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     await wait(window,3_000); // hold — viewers see the saved composition
     cues.emit('composition-ollama-saved', 'Ollama Duo composition saved with both local voices');
 
+    // Composition 4 — conductor: mix cloud Anthropic API + local Llama
+    await window.getByRole('button', { name: /compositions/i }).click();
+    await wait(window,2_000);
+    await window.getByRole('button', { name: 'New Composition', exact: true }).first().click();
+    await wait(window,2_500);
+    cues.emit('composition-builder-opened-4', 'Composition builder opened for fourth composition — mixing a cloud API voice with a local model');
+    await window.getByPlaceholder('My Composition').fill('Hybrid Panel');
+    await wait(window,2_500);
+    cues.emit('composition-named-hybrid', 'Composition named Hybrid Panel — conductor mode, mixing cloud and local providers in one composition');
+    await window.getByRole('button', { name: 'Anthropic' }).first().click();
+    await wait(window,3_000);
+    await window.getByRole('button', { name: 'Add Voice' }).click();
+    await wait(window,2_500);
+    cues.emit('composition-hybrid-anthropic-added', 'Anthropic API voice added — cloud provider with full model selection');
+    await window.getByRole('button', { name: /Llama 3\.2/i }).first().click();
+    await wait(window,3_000);
+    await window.getByRole('button', { name: 'Add Voice' }).click();
+    await wait(window,2_500);
+    cues.emit('composition-hybrid-llama-added', 'Llama 3.2 local voice added alongside Anthropic — cloud and local voices in one composition');
+    await window.getByRole('button', { name: 'Save Composition' }).click();
+    await wait(window,3_000);
+    cues.emit('composition-hybrid-saved', 'Hybrid Panel saved — four compositions now listed, showing all major configuration patterns');
+
     // ── Step 4: Broadcast session — both voices research a topic together ─────
 
     await window.getByRole('button', { name: /^sessions$/i }).click();
@@ -1231,23 +1174,35 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     await window.getByRole('button', { name: 'Start Session' }).click();
     await window.getByPlaceholder('Message the ensemble\u2026').waitFor({ state: 'visible', timeout: 45_000 });
     await wait(window,3_000); // hold — viewers orient to the session view
-    cues.emit('session-broadcast-started', 'Research Panel broadcast session started — both voices ready');
+    cues.emit('session-broadcast-started', 'Research Panel broadcast session started — Anthropic and OpenAI voice panels visible; all voices will respond to every message simultaneously; continuation policy is Prompt me');
 
     // Round 1 — ask a research question; both voices respond simultaneously
     await sendMessage(window, 'What are the main tradeoffs between microservices and monolithic architectures?');
-    cues.emit('broadcast-round1-sent', 'Research question sent — Anthropic and OpenAI stream simultaneously');
+    await wait(window, 2_500); // separates session-started from round1-sent in VTT
+    cues.emit('broadcast-round1-sent', 'Research question sent — both voices streaming their answers in parallel; watch two independent responses appear simultaneously');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 180_000);
-    await wait(window,4_000);
-    cues.emit('broadcast-round1-complete', 'Both voices finished round 1 — parallel responses visible');
-
-    // Round 2 — ask voices to engage with each other's response
-    await sendMessage(window, 'Read each other\'s response and add one important point the other missed.');
-    cues.emit('broadcast-round2-sent', 'Follow-up sent — voices read and respond to each other');
-    await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
-    await waitForSessionIdle(window, 180_000);
-    await wait(window,4_000);
-    cues.emit('broadcast-round2-complete', 'Round 2 complete — voices have engaged with each other\'s answers');
+    await wait(window,3_000);
+    cues.emit('broadcast-round1-complete', 'Round 1 complete — Research Panel Prompt me continuation is active; nudge banner should appear');
+    try {
+      const allowBtn = window.getByRole('button', { name: 'Allow' });
+      await allowBtn.waitFor({ state: 'visible', timeout: 8_000 });
+      await wait(window, 5_000); // hold on the nudge banner so viewers can read it
+      cues.emit('continuation-nudge-visible',
+        'Continuation nudge banner visible — voices have more to say; Allow lets round 2 begin, Dismiss ends the conversation here; this is the Prompt me policy in action');
+      await allowBtn.click();
+      await wait(window, 1_500);
+      cues.emit('continuation-allowed', 'Allow clicked — round 2 begins automatically; voices are streaming their follow-up responses');
+      await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
+      await waitForSessionIdle(window, 180_000);
+      await wait(window,4_000);
+      cues.emit('broadcast-round2-complete',
+        'Round 2 complete — voices built on each other\'s round 1 responses using the shared conversation history; this is multi-round AI research under conductor control');
+    } catch {
+      // nudge may not appear if voices don't request continuation
+      await wait(window, 2_000);
+      cues.emit('broadcast-round2-complete', 'Broadcast session complete — both voices have responded in parallel');
+    }
 
     // ── Step 5: Conductor session — direct different questions to each voice ──
 
@@ -1278,14 +1233,14 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
       await window.locator('[role="option"]').first().click();
       await wait(window,1_500);
     } catch { /* dropdown shape may differ */ }
-    cues.emit('directed-anthropic-targeted', 'Anthropic targeted via @mention for the first question');
+    cues.emit('directed-anthropic-targeted', 'At-mention picker opened, typing @A to target Anthropic — in conductor mode the at-mention picker lists all voices in the composition');
     await window.getByPlaceholder('Message the ensemble\u2026').type(' What\'s your top tip for a junior developer trying to grow quickly?');
     await wait(window,1_500);
     await window.keyboard.press('Enter');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 180_000);
     await wait(window,4_000);
-    cues.emit('directed-anthropic-responded', 'Anthropic answered — only this voice responded');
+    cues.emit('directed-anthropic-responded', 'Only Anthropic responded — the other voice stayed completely silent; conductor mode gives precise control over which perspective speaks next');
 
     // Direct OpenAI to engage with Anthropic's answer
     await window.getByPlaceholder('Message the ensemble\u2026').click();
@@ -1299,14 +1254,14 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
       await window.locator('[role="option"]').first().click();
       await wait(window,1_500);
     } catch { /* dropdown shape may differ */ }
-    cues.emit('directed-openai-targeted', 'OpenAI targeted via @mention to respond to Anthropic\'s answer');
+    cues.emit('directed-openai-targeted', 'OpenAI targeted via at-mention to respond to Anthropic\'s answer — the at-mention picker works the same way every time');
     await window.getByPlaceholder('Message the ensemble\u2026').type(' What do you think of that advice? Would you add or change anything?');
     await wait(window,1_500);
     await window.keyboard.press('Enter');
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 180_000);
     await wait(window,4_000);
-    cues.emit('directed-openai-responded', 'OpenAI responded — a direct reply to Anthropic\'s answer');
+    cues.emit('directed-openai-responded', 'OpenAI replied directly to what Anthropic said — this is orchestrated dialogue between two models, not two parallel monologues');
 
     // ── Step 6: Ollama Duo — local models with directed questions ─────────────
 
@@ -1323,7 +1278,7 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     await window.getByRole('button', { name: 'Start Session' }).click();
     await window.getByPlaceholder('Message the ensemble\u2026').waitFor({ state: 'visible', timeout: 45_000 });
     await wait(window,3_000); // hold — viewers orient to the session view
-    cues.emit('session-ollama-started', 'Ollama Duo session started — two local models ready');
+    cues.emit('session-ollama-started', 'Ollama Duo session started — both voices are local models running on this machine; no API key, no internet connection required');
 
     // Direct a simple question to Llama 3.2
     await window.getByPlaceholder('Message the ensemble\u2026').click();
@@ -1344,7 +1299,7 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 120_000);
     await wait(window,4_000);
-    cues.emit('directed-llama-responded', 'Llama 3.2 answered locally — no cloud required');
+    cues.emit('directed-llama-responded', 'Llama 3.2 answered entirely on local hardware — inference runs on your machine; same interface, no cloud dependency');
 
     // Direct a simple question to Qwen 2.5
     await window.getByPlaceholder('Message the ensemble\u2026').click();
@@ -1365,7 +1320,77 @@ async function captureWalkthrough(ffmpegBin: string): Promise<void> {
     await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
     await waitForSessionIdle(window, 120_000);
     await wait(window,4_000);
-    cues.emit('directed-qwen-responded', 'Qwen 2.5 answered — two local models, one conversation');
+    cues.emit('directed-qwen-responded', 'Qwen 2.5 answered — two local models, one conversation, completely private; Polyphon is provider-agnostic whether voices are cloud APIs or local models');
+
+    // ── Step 7: Hybrid Panel — mix cloud API + local model ────────────────────
+
+    await window.getByRole('button', { name: /^sessions$/i }).click();
+    await wait(window,2_000);
+    await window.getByRole('button', { name: 'New Session', exact: true }).first().click();
+    await wait(window,2_500);
+    await window.getByRole('button', { name: /Hybrid Panel/i }).first().waitFor({ state: 'visible', timeout: 10_000 });
+    await window.getByRole('button', { name: /Hybrid Panel/i }).first().click();
+    await wait(window,2_000);
+    await window.getByPlaceholder('My session').waitFor({ state: 'visible', timeout: 5_000 });
+    await window.getByPlaceholder('My session').fill('Hybrid Panel Session');
+    await wait(window,2_000);
+    await window.getByRole('button', { name: 'Start Session' }).click();
+    await window.getByPlaceholder('Message the ensemble\u2026').waitFor({ state: 'visible', timeout: 45_000 });
+    await wait(window,3_000);
+    cues.emit('session-hybrid-started',
+      'Hybrid Panel session started — Anthropic API voice and local Llama voice ready in the same conductor session; mixing cloud and local providers works identically to any other composition');
+
+    try {
+      // Direct Anthropic to answer
+      await window.getByPlaceholder('Message the ensemble\u2026').click();
+      await wait(window,1_000);
+      await window.getByPlaceholder('Message the ensemble\u2026').type('@');
+      await wait(window,2_000);
+      await window.getByPlaceholder('Message the ensemble\u2026').type('A');
+      await wait(window,3_500);
+      try {
+        await window.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 2_000 });
+        await window.locator('[role="option"]').first().click();
+        await wait(window,1_500);
+      } catch { /* dropdown shape may differ */ }
+      cues.emit('hybrid-anthropic-targeted', 'Anthropic API voice targeted in the hybrid session — same at-mention picker, same conductor workflow');
+      await window.getByPlaceholder('Message the ensemble\u2026').type(' What makes a good API design?');
+      await wait(window,1_500);
+      await window.keyboard.press('Enter');
+      await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
+      await waitForSessionIdle(window, 180_000);
+      await wait(window,4_000);
+      cues.emit('hybrid-anthropic-responded', 'Anthropic cloud API responded — this voice is using remote inference');
+
+      // Direct Llama to respond
+      await window.getByPlaceholder('Message the ensemble\u2026').click();
+      await wait(window,1_000);
+      await window.getByPlaceholder('Message the ensemble\u2026').type('@');
+      await wait(window,2_000);
+      await window.getByPlaceholder('Message the ensemble\u2026').type('L');
+      await wait(window,3_500);
+      try {
+        await window.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 2_000 });
+        await window.locator('[role="option"]').first().click();
+        await wait(window,1_500);
+      } catch { /* dropdown shape may differ */ }
+      cues.emit('hybrid-llama-targeted', 'Local Llama voice targeted to add its perspective — same session, same at-mention workflow, but running locally');
+      await window.getByPlaceholder('Message the ensemble\u2026').type(' What would you add to that?');
+      await wait(window,1_500);
+      await window.keyboard.press('Enter');
+      await window.getByPlaceholder('Waiting for voices\u2026').waitFor({ state: 'visible', timeout: 30_000 });
+      await waitForSessionIdle(window, 120_000);
+      await wait(window,4_000);
+      cues.emit('hybrid-llama-responded',
+        'Local Llama answered — a cloud API voice and a local model voice just had a directed exchange in one session; this is provider-agnostic by design');
+    } catch {
+      await wait(window, 2_000);
+      cues.emit('hybrid-session-complete', 'Hybrid Panel session complete — cloud and local voices in one conductor session');
+    }
+
+    await wait(window,3_000);
+    cues.emit('closing',
+      'All four sessions visible in the sidebar — broadcast for parallel research, conductor for directed dialogue, local-only for privacy, hybrid for mixing cloud and local; one chat, many minds');
 
     await stopRecording();
   } finally {
@@ -1392,6 +1417,7 @@ async function captureCustomProviders(ffmpegBin: string): Promise<void> {
   try {
     cues.start();
     const stopRecording = await startFrameRecording(window, framesDir, 15);
+    cues.emit('app-open', 'Polyphon is open — navigating to Settings to configure custom AI providers');
     await wait(window,2_000);
     cues.emit('app-launched', 'App open, navigating to Settings Providers tab');
 
@@ -1577,26 +1603,19 @@ Click Allow and a second round begins — voices read each other's answers and b
 You stay in control of when the conversation goes deeper.
 `;
 
-const NARRATION_AVATAR_UPLOAD = `The Conductor Profile lets voices know who they're talking to.
-On first launch, the welcome dialog prompts you to set up your profile.
-Click the avatar button to open the photo editor — load any image and drag it to reposition within the circular crop.
-Click Apply and your avatar is set. Add your name, then click Get started.
-Your avatar appears in the sidebar throughout the app, and voices can address you by name.
-`;
-
 const NARRATION_WALKTHROUGH = `Polyphon is a desktop app for orchestrating conversations between multiple AI voices.
 
-Settings gives you full control over your setup. The Conductor profile lets voices address you personally. Tones shape how every voice communicates — from concise to collaborative. System prompt templates save reusable instructions you can attach to any voice in a composition.
+Settings gives you full control over your setup. The Conductor profile lets voices address you personally — by name, with your pronouns, and in your chosen tone. Tones shape how every voice communicates: Professional for focused answers, Collaborative for expansive exploration, Devil's Advocate to stress-test ideas. System prompt templates let you save reusable instructions and attach them to any voice in a composition.
 
-In Providers, each provider can run in one of two modes. API mode connects to the cloud using your API key and lets you choose the exact model. CLI mode uses a local command-line tool installed on your machine — no key required. Anthropic and OpenAI both support both modes. Gemini is API-only. You can mix and match across a single composition.
+In Providers, each provider can run in one of two modes. API mode connects to the cloud using your API key and lets you choose the exact model. CLI mode uses a local command-line tool installed on your machine — no key required. Anthropic and OpenAI both support both modes. Gemini is API-only. Custom providers let you connect any OpenAI-compatible endpoint — Ollama, LM Studio, vLLM, or a private proxy. Enter a name, base URL, and model ID and save. Cloud and local providers are peers in every composition.
 
-Custom providers let you connect any OpenAI-compatible endpoint — Ollama, LM Studio, vLLM, or a private proxy. Enter a base URL, fetch the available models, and save. No built-in integration required.
+Compositions are saved, reusable sets of voices. A broadcast composition sends every message to every voice simultaneously — all voices respond in parallel each round. A conductor composition lets you direct each message to a specific voice with the at-mention picker. You can also set a continuation policy: Prompt me means a banner appears after each round asking whether to continue, giving you control over when the conversation goes deeper.
 
-Compositions are saved, reusable sets of voices. Create a broadcast composition for parallel research — all voices answer every message at the same time. Create a conductor composition for directed conversation — you choose which voice speaks next. Custom provider voices appear in the builder alongside built-in ones.
+In a broadcast session, ask a research question and every voice answers at the same time. When the round completes and Prompt me is active, a nudge banner appears — click Allow and round two begins, with voices building on each other's answers from round one.
 
-In a broadcast session, ask a question and every voice responds simultaneously. Ask a follow-up and they read each other's answers and build on them.
+In a conductor session, use the at-mention picker to direct each message to a specific voice. One voice makes a claim; another responds to it directly. Orchestrated dialogue between models, under your control. The same interface works with local models — no cloud required.
 
-In a conductor session, use the at-mention picker to direct each message to a specific voice. One voice makes a claim; the other responds to it. A real back-and-forth between models, under your control. The same works with local models — same interface, same directed workflow, no cloud required.
+Polyphon supports any mix: broadcast, directed, local-only, or hybrid cloud-and-local in the same session. Four compositions, four session types, one interface.
 
 Polyphon: one chat, many minds.
 `;
@@ -1623,7 +1642,6 @@ async function main(): Promise<void> {
       'streaming':          async () => { await captureStreaming(ffmpegBin);         writeNarrationScript('docs/video-narration/sessions-streaming.txt',               NARRATION_STREAMING); },
       'at-mention':         async () => { await captureAtMention(ffmpegBin);         writeNarrationScript('docs/video-narration/sessions-at-mention.txt',              NARRATION_AT_MENTION); },
       'continuation-nudge': async () => { await captureContinuationNudge(ffmpegBin); writeNarrationScript('docs/video-narration/continuation-nudge.txt',               NARRATION_CONTINUATION_NUDGE); },
-      'avatar-upload':      async () => { await captureAvatarUpload(ffmpegBin);      writeNarrationScript('docs/video-narration/conductor-profile-avatar-upload.txt',  NARRATION_AVATAR_UPLOAD); },
       'custom-providers':   async () => { assertOllamaRunning(); await captureCustomProviders(ffmpegBin); writeNarrationScript('docs/video-narration/custom-providers-ollama.txt', NARRATION_CUSTOM_PROVIDERS); },
       'walkthrough':        async () => { await captureWalkthrough(ffmpegBin);       writeNarrationScript('docs/video-narration/full-walkthrough.txt',                 NARRATION_WALKTHROUGH); },
     };
@@ -1635,22 +1653,13 @@ async function main(): Promise<void> {
 
   const runDocs = !WALKTHROUGH_ONLY && !CUSTOM_PROVIDERS_ONLY;
   const runWalkthrough = !DOCS_ONLY && !CUSTOM_PROVIDERS_ONLY;
-  const runCustomProviders = CUSTOM_PROVIDERS_ONLY;
+  const runCustomProviders = CUSTOM_PROVIDERS_ONLY || DOCS_ONLY;
 
   const docErrors: { label: string; error: unknown }[] = [];
 
   // ── Docs clips (processed per-asset — each failure is independent) ────────
 
   if (runDocs) {
-    try {
-      await captureAvatarUpload(ffmpegBin);
-      writeNarrationScript('docs/video-narration/conductor-profile-avatar-upload.txt', NARRATION_AVATAR_UPLOAD);
-    } catch (err) {
-      console.error('\nERROR in avatar-upload capture:', err);
-      docErrors.push({ label: 'conductor-profile-avatar-upload', error: err });
-      skipped.push({ label: 'conductor-profile-avatar-upload', reason: String(err) });
-    }
-
     try {
       await captureTypeToggle(ffmpegBin);
       writeNarrationScript('docs/video-narration/compositions-type-toggle.txt', NARRATION_TYPE_TOGGLE);
@@ -1744,16 +1753,10 @@ async function main(): Promise<void> {
         poster: '/images/video-posters/docs/continuation-nudge.webp',
       },
       {
-        file: 'site/content/docs/conductor-profile.md',
-        placeholder: 'Avatar upload — pick photo → crop in AvatarEditor → avatar appears in sidebar',
-        src: '/videos/docs/conductor-profile-avatar-upload.mp4',
-        poster: '/images/video-posters/docs/conductor-profile-avatar-upload.webp',
-      },
-      {
         file: 'site/content/docs/custom-providers.md',
         placeholder: 'Custom provider setup — add Ollama end-to-end: fill form, fetch models, save, launch session',
-        src: '/videos/docs/custom-provider-ollama.mp4',
-        poster: '/images/video-posters/docs/custom-provider-ollama.webp',
+        src: '/videos/docs/custom-providers-ollama.mp4',
+        poster: '/images/video-posters/docs/custom-providers-ollama.webp',
       },
     ];
 

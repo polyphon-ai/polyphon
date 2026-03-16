@@ -319,8 +319,24 @@ videos: ## Build a clean e2e bundle then capture site videos
 	npm run build:e2e && npx tsx scripts/take-videos.ts
 
 .PHONY: videos-docs
-videos-docs: ## Build a clean e2e bundle then capture documentation video clips
-	npm run build:e2e && npx tsx scripts/take-videos.ts --docs-only
+videos-docs: ## Build a clean e2e bundle then capture documentation video clips (starts/stops Ollama automatically for custom providers)
+	@npm run build:e2e; \
+	OLLAMA_STARTED=0; \
+	OLLAMA_PID=0; \
+	if ! curl -sf http://localhost:11434/api/tags --max-time 2 > /dev/null 2>&1; then \
+		echo "Starting Ollama..."; \
+		ollama serve > /dev/null 2>&1 & \
+		OLLAMA_PID=$$!; \
+		OLLAMA_STARTED=1; \
+		sleep 4; \
+	fi; \
+	npx tsx scripts/take-videos.ts --docs-only; \
+	EXIT_CODE=$$?; \
+	if [ $$OLLAMA_STARTED -eq 1 ]; then \
+		echo "Stopping Ollama (pid $$OLLAMA_PID)..."; \
+		kill $$OLLAMA_PID 2>/dev/null || true; \
+	fi; \
+	exit $$EXIT_CODE
 
 .PHONY: videos-walkthrough
 videos-walkthrough: ## Build a clean e2e bundle then capture the full-product walkthrough video (starts/stops Ollama automatically)
@@ -346,7 +362,7 @@ videos-walkthrough: ## Build a clean e2e bundle then capture the full-product wa
 videos-track: ## Rerecord a single video track by name (skips rebuild): make videos-track TRACK=<name>
 	@if [ -z "$(TRACK)" ]; then \
 		echo "Usage: make videos-track TRACK=<name>"; \
-		echo "Valid tracks: type-toggle, streaming, at-mention, continuation-nudge, avatar-upload, custom-providers, walkthrough"; \
+		echo "Valid tracks: type-toggle, streaming, at-mention, continuation-nudge, custom-providers, walkthrough"; \
 		exit 1; \
 	fi
 	npx tsx scripts/take-videos.ts --track $(TRACK)
@@ -379,11 +395,34 @@ narration-walkthrough: ## Generate WebVTT narration for the walkthrough video on
 	npx tsx scripts/generate-narration.ts site/static/videos/home/full-walkthrough-cues.json
 
 .PHONY: narration-docs
-narration-docs: ## Generate WebVTT narration for the three docs video clips
+narration-docs: ## Generate WebVTT narration for all docs video clips
 	npx tsx scripts/generate-narration.ts \
 		site/static/videos/docs/compositions-type-toggle-cues.json \
 		site/static/videos/docs/sessions-streaming-cues.json \
-		site/static/videos/docs/sessions-at-mention-cues.json
+		site/static/videos/docs/sessions-at-mention-cues.json \
+		site/static/videos/docs/continuation-nudge-cues.json \
+		site/static/videos/docs/custom-providers-ollama-cues.json
+
+VOICE ?= nova
+LEAD  ?= 1.0
+
+.PHONY: voiceover
+voiceover: ## Generate voiceovers for all narrated videos (requires OPENAI_API_KEY, ffmpeg). Opts: VOICE=nova LEAD=1.0
+	npx tsx scripts/generate-voiceover.ts --voice $(VOICE) --lead $(LEAD)
+
+.PHONY: voiceover-walkthrough
+voiceover-walkthrough: ## Generate voiceover for the walkthrough video only. Opts: VOICE=nova LEAD=1.0
+	npx tsx scripts/generate-voiceover.ts --voice $(VOICE) --lead $(LEAD) \
+		site/static/videos/home/full-walkthrough-narration.vtt
+
+.PHONY: voiceover-docs
+voiceover-docs: ## Generate voiceovers for all docs video clips. Opts: VOICE=nova LEAD=1.0
+	npx tsx scripts/generate-voiceover.ts --voice $(VOICE) --lead $(LEAD) \
+		site/static/videos/docs/compositions-type-toggle-narration.vtt \
+		site/static/videos/docs/sessions-streaming-narration.vtt \
+		site/static/videos/docs/sessions-at-mention-narration.vtt \
+		site/static/videos/docs/continuation-nudge-narration.vtt \
+		site/static/videos/docs/custom-providers-ollama-narration.vtt
 
 .PHONY: site-build
 site-build: ## Build the Hugo marketing site

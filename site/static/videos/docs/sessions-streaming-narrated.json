@@ -1,0 +1,44 @@
+[
+  {
+    "t": 0,
+    "label": "session-ready",
+    "context": "Streaming Demo session open with Anthropic and OpenAI voices ready",
+    "endT": 8.9,
+    "narration": "Here's a session called Streaming Demo, with an Anthropic voice and an OpenAI voice ready to go."
+  },
+  {
+    "t": 9,
+    "label": "session-started",
+    "context": "Streaming Demo session open with Anthropic and OpenAI voices",
+    "endT": 10,
+    "narration": ""
+  },
+  {
+    "t": 9.02,
+    "label": "round1-sent",
+    "context": "Question sent — both voices begin streaming simultaneously",
+    "endT": 31.24,
+    "narration": "As soon as the question is sent, both voices start streaming their responses at the same time. There's no waiting for one to finish before the other begins — Polyphon runs them in parallel, so you see each model's thinking unfold side by side in real time."
+  },
+  {
+    "t": 31.34,
+    "label": "round1-complete",
+    "context": "Both voices finished streaming round 1 responses",
+    "endT": 32.34,
+    "narration": ""
+  },
+  {
+    "t": 31.39,
+    "label": "round2-sent",
+    "context": "Follow-up sent — voices read each other's responses",
+    "endT": 48.83,
+    "narration": "Now a follow-up goes out. Notice that each voice has access to what the other one said in round one. This means every response is informed by the full conversation — not just the user's prompt."
+  },
+  {
+    "t": 48.93,
+    "label": "round2-complete",
+    "context": "Both voices finished their round 2 responses",
+    "endT": 52.13,
+    "narration": "Both voices have finished. Two perspectives, one conversation."
+  }
+]

@@ -6,7 +6,7 @@ description: "A end-to-end video walkthrough of Polyphon — from first launch t
 
 A full product walkthrough from first launch to a live multi-voice session.
 
-{{< video src="/videos/home/full-walkthrough.mp4" poster="/images/video-posters/home/full-walkthrough.webp" >}}
+{{< video src="/videos/home/full-walkthrough-with-voice.mp4" poster="/images/video-posters/home/full-walkthrough.webp" track="/videos/home/full-walkthrough-narration.vtt" >}}
 
 The walkthrough covers:
 

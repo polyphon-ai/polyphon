@@ -1,61 +1,66 @@
 [
   {
-    "t": 3,
+    "t": 0,
+    "label": "app-open",
+    "context": "Polyphon is open — navigating to Settings to configure custom AI providers"
+  },
+  {
+    "t": 6,
     "label": "app-launched",
     "context": "App open, navigating to Settings Providers tab"
   },
   {
-    "t": 8.52,
+    "t": 16.14,
     "label": "custom-providers-section",
     "context": "Custom Providers section visible"
   },
   {
-    "t": 18.39,
+    "t": 35.8,
     "label": "llama-form-filled",
     "context": "Llama 3.2 form filled — Ollama base URL and model name"
   },
   {
-    "t": 23.37,
+    "t": 45.75,
     "label": "llama-provider-saved",
     "context": "Llama 3.2 provider saved"
   },
   {
-    "t": 34.68,
+    "t": 68.37,
     "label": "qwen-form-filled",
     "context": "Qwen 2.5 form filled — same Ollama URL, different model"
   },
   {
-    "t": 40.43,
+    "t": 79.81,
     "label": "qwen-provider-saved",
     "context": "Both Ollama providers saved"
   },
   {
-    "t": 58.2,
+    "t": 114.98,
     "label": "composition-saved",
     "context": "Ollama Duo conductor composition saved with both local voices"
   },
   {
-    "t": 63.38,
+    "t": 125.37,
     "label": "session-started",
     "context": "Ollama Duo session started"
   },
   {
-    "t": 75.56,
+    "t": 149.42,
     "label": "directed-llama-targeted",
     "context": "Llama 3.2 targeted"
   },
   {
-    "t": 85.05,
+    "t": 166.68,
     "label": "directed-llama-responded",
     "context": "Llama 3.2 answered"
   },
   {
-    "t": 97.11,
+    "t": 190.89,
     "label": "directed-qwen-targeted",
     "context": "Qwen 2.5 targeted"
   },
   {
-    "t": 116.94,
+    "t": 207.51,
     "label": "directed-qwen-responded",
     "context": "Qwen 2.5 answered"
   }

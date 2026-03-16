@@ -80,7 +80,7 @@ Your conversations and API keys stay on your machine. Polyphon never phones home
 
 ## See it in action
 
-{{< video src="/videos/home/full-walkthrough.mp4" poster="/images/video-posters/home/full-walkthrough.webp" >}}
+{{< video src="/videos/home/full-walkthrough-with-voice.mp4" poster="/images/video-posters/home/full-walkthrough.webp" track="/videos/home/full-walkthrough-narration.vtt" >}}
 
 ---
 

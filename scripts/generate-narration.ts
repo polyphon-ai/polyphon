@@ -40,8 +40,28 @@ interface NarratedCue extends Cue {
 const client = new Anthropic();
 
 async function generateNarration(cues: Cue[], videoTitle: string): Promise<NarratedCue[]> {
-  const cueList = cues
-    .map((c, i) => `${i + 1}. [${c.t}s] ${c.label}: ${c.context}`)
+  // Skip cues whose window is too short to narrate without overlapping the next clip.
+  // A clip needs at least MIN_WINDOW_S seconds to say anything meaningful and still
+  // leave a clean gap before the following cue starts.
+  const MIN_WINDOW_S = 2.5;
+  const narratableCues = cues.filter((c, i) => {
+    const next = cues[i + 1];
+    const windowS = next ? next.t - c.t : Infinity;
+    return windowS >= MIN_WINDOW_S;
+  });
+
+  const cueList = narratableCues
+    .map((c, i) => {
+      const next = narratableCues[i + 1] ?? cues[cues.indexOf(c) + 1];
+      const windowS = next ? (next.t - c.t).toFixed(1) : '?';
+      // Target word count: 75% of the available window at 2.5 wps gives the viewer
+      // continuous narration without rushing, and avoids long silences mid-clip.
+      const targetWords =
+        windowS === '?'
+          ? '10–15'
+          : `~${Math.max(6, Math.round(parseFloat(windowS) * 2.5 * 0.75))}`;
+      return `${i + 1}. [${c.t}s, ${windowS}s available, target ${targetWords} words] ${c.label}: ${c.context}`;
+    })
     .join('\n');
 
   const message = await client.messages.create({
@@ -54,13 +74,12 @@ async function generateNarration(cues: Cue[], videoTitle: string): Promise<Narra
 
 Video: "${videoTitle}"
 
-Below are timestamped cues. Each cue describes what is happening on screen at that moment. Write one or two concise, natural-sounding sentences of narration for each cue. The narration will be read aloud by a text-to-speech voice, so it must:
-- Fit comfortably within the time available (from this cue's timestamp to the next one)
+Below are timestamped cues. Each cue describes what is happening on screen at that moment. Write natural-sounding narration for each cue. The narration will be read aloud by a text-to-speech voice, so it must:
+- TARGET the word count shown — a speaker reads roughly 2.5 words per second, so hitting the target fills most of the available window and avoids dead-air silence while the video plays
+- Use the available time to describe both WHAT the viewer sees and WHY it matters — longer windows let you explain the feature in more depth
 - Sound natural when spoken, not robotic
-- Describe what the viewer sees AND why it matters
 - Use present tense
 - Vary sentence structure — don't start every sentence the same way
-- Aim for 10–20 words per cue (roughly 4–8 seconds at a comfortable speaking pace)
 
 Cues:
 ${cueList}
@@ -83,7 +102,7 @@ Respond with ONLY a JSON array — no prose, no markdown fences. Each element mu
     // End time: next cue start minus a 0.1s gap, or estimate from word count
     const narrationText = byLabel.get(cue.label) ?? '';
     const wordCount = narrationText.split(/\s+/).filter(Boolean).length;
-    const estimatedDuration = Math.max(4, wordCount / 2.5);
+    const estimatedDuration = Math.max(2, wordCount / 2.5);
     const endT = next ? Math.max(cue.t + 1, next.t - 0.1) : cue.t + estimatedDuration;
     return { ...cue, endT: parseFloat(endT.toFixed(3)), narration: narrationText };
   });

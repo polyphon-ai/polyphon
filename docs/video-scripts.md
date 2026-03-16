@@ -93,35 +93,6 @@ All videos should be captured at 1280×800 or 1440×900 (retina-friendly). Use t
 
 ---
 
-## Conductor Profile: Avatar Upload
-
-**File:** `/videos/docs/conductor-profile-avatar-upload.mp4`
-**Poster:** `/images/video-posters/docs/conductor-profile-avatar-upload.webp`
-**Duration target:** 25–35 seconds
-
-### Prerequisites
-
-- Settings → Conductor Profile open
-- A stock photo ready to select (e.g. a neutral headshot; do not use a real person's identifiable photo without permission)
-- No avatar currently set
-
-### Shot List
-
-1. **(0:00)** Settings → Conductor Profile open; avatar button shows empty placeholder with wand icon
-2. **(0:02)** Click the avatar button — file picker opens
-3. **(0:05)** Select a stock photo file
-4. **(0:07)** AvatarEditor modal opens with the photo loaded
-5. **(0:09–0:18)** Drag the image to reposition; scroll to zoom in slightly; rotate once using the rotate button; drag again to center the face in the crop circle
-6. **(0:20)** Click Apply
-7. **(0:22)** AvatarEditor closes; cropped avatar appears in the avatar button in the Conductor Profile section
-8. **(0:25)** Scroll up — avatar also appears in the sidebar next to the conductor name area
-
-### Narration
-
-> "Click your avatar to upload a photo. The crop editor lets you drag, zoom, and rotate before confirming. The cropped avatar appears in your profile and in the sidebar."
-
----
-
 ## Continuation Policy: Prompt Me
 
 **File:** `/videos/docs/continuation-nudge.mp4`

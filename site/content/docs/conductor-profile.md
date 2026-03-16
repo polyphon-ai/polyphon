@@ -104,8 +104,3 @@ The Conductor Profile saves automatically when you leave a field (on blur). Ther
 ![Conductor Profile tab with avatar photo, name, pronouns, and background context filled in](/images/screenshots/settings/conductor-profile.webp)
 <!-- Prerequisites: all profile fields populated, avatar photo uploaded and cropped | Platform: any | Theme: any | Window: default -->
 
----
-
-## Video Walkthrough
-
-{{< video src="/videos/docs/conductor-profile-avatar-upload.mp4" poster="/images/video-posters/docs/conductor-profile-avatar-upload.webp" >}}

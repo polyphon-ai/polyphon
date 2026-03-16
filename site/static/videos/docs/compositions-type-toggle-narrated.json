@@ -1,0 +1,86 @@
+[
+  {
+    "t": 0,
+    "label": "app-launched",
+    "context": "App open, all providers enabled, Compositions section visible",
+    "endT": 1.87,
+    "narration": ""
+  },
+  {
+    "t": 1.97,
+    "label": "composition-builder-opened",
+    "context": "New composition builder opened, name field empty",
+    "endT": 9.4,
+    "narration": "The composition builder opens with a blank slate, ready for a new multi-voice setup."
+  },
+  {
+    "t": 9.5,
+    "label": "composition-named",
+    "context": "Composition named \"Research Duo\"",
+    "endT": 42.58,
+    "narration": "We'll call this composition Research Duo. A composition is essentially a saved recipe — it defines which AI voices participate and how they're configured. Think of it as a reusable template you can launch anytime you want the same group of minds working together. Once named, we can start adding voices to bring this duo to life."
+  },
+  {
+    "t": 42.68,
+    "label": "voice-type-toggle",
+    "context": "Voice type toggle shown — API disabled (no key), switching to CLI",
+    "endT": 50.14,
+    "narration": "Here's the voice type toggle. Since no API key is configured, we switch over to CLI mode instead."
+  },
+  {
+    "t": 50.24,
+    "label": "anthropic-voice-added",
+    "context": "Anthropic voice added to composition in CLI mode",
+    "endT": 65.19,
+    "narration": "Now we add an Anthropic voice running in CLI mode. This means Polyphon talks to the model through a local command-line interface rather than a remote API."
+  },
+  {
+    "t": 65.29,
+    "label": "openai-voice-added",
+    "context": "OpenAI voice added to composition",
+    "endT": 71.28,
+    "narration": "Next, an OpenAI voice joins the composition — our second mind."
+  },
+  {
+    "t": 71.38,
+    "label": "composition-saved",
+    "context": "Research Duo composition saved with both voices",
+    "endT": 81.63,
+    "narration": "With both voices in place, we save the Research Duo composition. It's now ready to launch whenever we need it."
+  },
+  {
+    "t": 81.73,
+    "label": "session-started",
+    "context": "Session started from Research Duo composition",
+    "endT": 105.74,
+    "narration": "Starting a session from the Research Duo composition spins up a live conversation with both voices active and waiting. This is where the real magic happens — one shared chat thread, two distinct AI perspectives ready to respond. Notice that the session inherits everything we just configured."
+  },
+  {
+    "t": 105.84,
+    "label": "at-mention-anthropic",
+    "context": "At-mention picker used to target Anthropic voice",
+    "endT": 134,
+    "narration": "To direct a message to a specific voice, we use the at-mention picker. Typing the at symbol brings up a list of available voices in this session. We select the Anthropic voice, so only that model will process and respond to this particular prompt. It's precise control over who speaks next."
+  },
+  {
+    "t": 134.1,
+    "label": "anthropic-responded",
+    "context": "Anthropic voice finished streaming its response",
+    "endT": 158.1,
+    "narration": "The Anthropic voice streams its response right into the shared conversation thread. You can see the answer arriving in real time. This is one perspective on the question — and in a moment, we'll hear from the other mind to get a different take."
+  },
+  {
+    "t": 158.2,
+    "label": "at-mention-openai",
+    "context": "At-mention picker used to target OpenAI voice",
+    "endT": 178.06,
+    "narration": "Now we open the at-mention picker again and this time target the OpenAI voice. Same conversation, same context, but a completely different model weighing in with its own perspective."
+  },
+  {
+    "t": 178.16,
+    "label": "openai-responded",
+    "context": "OpenAI voice finished streaming its response",
+    "endT": 184.56,
+    "narration": "And there it is — the OpenAI voice delivers its own take. One chat, many minds."
+  }
+]

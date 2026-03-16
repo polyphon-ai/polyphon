@@ -87,7 +87,7 @@ This prevents adding a voice that would fail when a session starts.
 
 To configure credentials, see [Voice Providers](../providers/) (API keys and CLI tools) or [Custom Providers](../custom-providers/) (custom endpoints).
 
-{{< video src="/videos/docs/compositions-type-toggle.mp4" poster="/images/video-posters/docs/compositions-type-toggle.webp" >}}
+{{< video src="/videos/docs/compositions-type-toggle-with-voice.mp4" poster="/images/video-posters/docs/compositions-type-toggle.webp" track="/videos/docs/compositions-type-toggle-narration.vtt" >}}
 
 ---
 

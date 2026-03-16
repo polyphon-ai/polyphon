@@ -29,12 +29,15 @@ menu:
     - name: Docs
       url: /docs/
       weight: 10
+    - name: About
+      url: /about/
+      weight: 20
     - name: Blog
       url: /blog/
-      weight: 15
-    - name: Search
-      url: /search/
-      weight: 16
+      weight: 30
     - name: Download
       url: /#download
-      weight: 18
+      weight: 40
+    - name: Search
+      url: /search/
+      weight: 50

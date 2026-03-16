@@ -1,0 +1,338 @@
+[
+  {
+    "t": 0,
+    "label": "app-launched",
+    "context": "App launched, onboarding screen visible",
+    "endT": 28.06,
+    "narration": "Welcome to Polyphon — one chat, many minds. The onboarding screen walks you through your initial setup."
+  },
+  {
+    "t": 28.16,
+    "label": "onboarding-complete",
+    "context": "Conductor profile set — name Corey, pronouns they/them, software engineer bio",
+    "endT": 36.56,
+    "narration": "Here the conductor profile is set — that's you, the person steering the conversation."
+  },
+  {
+    "t": 36.66,
+    "label": "settings-conductor-tab",
+    "context": "Settings open on Conductor tab — filled profile visible",
+    "endT": 44.12,
+    "narration": "Settings open on the Conductor tab, where your profile details live."
+  },
+  {
+    "t": 44.22,
+    "label": "settings-tones-tab",
+    "context": "Tones tab — preset tones like Professional, Collaborative, Concise visible",
+    "endT": 51.64,
+    "narration": "The Tones tab offers presets like Professional and Concise that shape how each voice communicates."
+  },
+  {
+    "t": 51.74,
+    "label": "settings-system-prompts-tab",
+    "context": "System Prompts tab — reusable prompt templates for voices",
+    "endT": 59.16,
+    "narration": "System Prompts let you create reusable templates you can attach to any voice."
+  },
+  {
+    "t": 59.26,
+    "label": "settings-general-tab",
+    "context": "General tab — theme and app-level preferences",
+    "endT": 65.18,
+    "narration": "Under General, you'll find theme options and other app-wide preferences."
+  },
+  {
+    "t": 65.28,
+    "label": "settings-providers-tab",
+    "context": "Providers tab — all built-in providers listed, none yet enabled",
+    "endT": 71.28,
+    "narration": "The Providers tab lists every built-in provider. None are enabled yet — let's change that."
+  },
+  {
+    "t": 71.38,
+    "label": "anthropic-api-enabled",
+    "context": "Anthropic API enabled — API key section and model list visible",
+    "endT": 78.07,
+    "narration": "Anthropic is now enabled. Just paste an API key and its models appear automatically."
+  },
+  {
+    "t": 78.17,
+    "label": "anthropic-cli-mode",
+    "context": "Anthropic CLI enabled — command and args fields visible below API section",
+    "endT": 84.48,
+    "narration": "There's also a CLI mode, useful if you prefer running Anthropic through a local command-line tool."
+  },
+  {
+    "t": 84.58,
+    "label": "openai-enabled",
+    "context": "OpenAI enabled in API mode — API key badge and model dropdown visible",
+    "endT": 96.51,
+    "narration": "OpenAI is enabled in API mode — notice the key badge confirming the connection."
+  },
+  {
+    "t": 96.61,
+    "label": "openai-models-fetched",
+    "context": "OpenAI model list refreshed from the API",
+    "endT": 104.4,
+    "narration": "Refreshing the model list pulls the latest available models directly from the OpenAI API."
+  },
+  {
+    "t": 104.5,
+    "label": "gemini-enabled",
+    "context": "Gemini enabled — API-only, no CLI option",
+    "endT": 111.91,
+    "narration": "Gemini is enabled too. This one's API-only — no CLI option needed."
+  },
+  {
+    "t": 112.01,
+    "label": "custom-providers-section",
+    "context": "Custom Providers section visible — Add Custom Provider button shown",
+    "endT": 120.48,
+    "narration": "Below the built-in providers, you can add custom ones. This is how you bring in local models."
+  },
+  {
+    "t": 120.58,
+    "label": "llama-form-filled",
+    "context": "Llama 3.2 custom provider form filled — name, base URL http://localhost:11434/v1, model llama3.2:1b",
+    "endT": 125.52,
+    "narration": "Here's a Llama 3.2 provider pointing at a local Ollama server — completely offline, completely private."
+  },
+  {
+    "t": 125.62,
+    "label": "llama-provider-saved",
+    "context": "Llama 3.2 custom provider saved and card visible",
+    "endT": 135.19,
+    "narration": "Saved. The Llama provider now has its own card, ready to use in any composition."
+  },
+  {
+    "t": 135.29,
+    "label": "qwen-form-filled",
+    "context": "Qwen 2.5 custom provider form filled — same Ollama base URL, model qwen2.5:0.5b",
+    "endT": 140.98,
+    "narration": "A second custom provider for Qwen 2.5, sharing the same Ollama base URL but a different model."
+  },
+  {
+    "t": 141.08,
+    "label": "qwen-provider-saved",
+    "context": "Qwen 2.5 custom provider saved — both Ollama providers now listed",
+    "endT": 147.82,
+    "narration": "Both local providers are now listed side by side — cloud and local models coexist seamlessly."
+  },
+  {
+    "t": 147.92,
+    "label": "composition-builder-opened-1",
+    "context": "Composition builder opened for first composition",
+    "endT": 151.6,
+    "narration": "Time to create a composition. This is where you decide which voices participate and how."
+  },
+  {
+    "t": 151.7,
+    "label": "composition-named-broadcast",
+    "context": "Composition named \"Research Panel\"",
+    "endT": 156.16,
+    "narration": "This first composition is called Research Panel."
+  },
+  {
+    "t": 156.26,
+    "label": "composition-mode-broadcast",
+    "context": "Mode set to Broadcast — all voices answer every message",
+    "endT": 164.54,
+    "narration": "Broadcast mode means every voice answers every message — great for comparing perspectives at a glance."
+  },
+  {
+    "t": 164.64,
+    "label": "composition-anthropic-added",
+    "context": "Anthropic voice added to Research Panel",
+    "endT": 172.83,
+    "narration": "Anthropic joins the panel as the first voice."
+  },
+  {
+    "t": 172.93,
+    "label": "composition-openai-added",
+    "context": "OpenAI voice added to Research Panel",
+    "endT": 177.38,
+    "narration": "OpenAI is added as the second voice. Two minds, one conversation."
+  },
+  {
+    "t": 177.48,
+    "label": "composition-broadcast-saved",
+    "context": "Research Panel broadcast composition saved",
+    "endT": 184.2,
+    "narration": "The Research Panel composition is saved and ready to go."
+  },
+  {
+    "t": 184.3,
+    "label": "composition-builder-opened-2",
+    "context": "Composition builder opened for second composition",
+    "endT": 188.72,
+    "narration": "Now for a second composition with a different interaction style."
+  },
+  {
+    "t": 188.82,
+    "label": "composition-named-conductor",
+    "context": "Composition named \"Directed Q&A\" — conductor mode is default",
+    "endT": 197.07,
+    "narration": "Directed Q&A uses conductor mode — you choose which voice speaks and when."
+  },
+  {
+    "t": 197.17,
+    "label": "composition-conductor-anthropic-added",
+    "context": "Anthropic voice added to Directed Q&A",
+    "endT": 205.42,
+    "narration": "Anthropic is added to this directed composition."
+  },
+  {
+    "t": 205.52,
+    "label": "composition-conductor-openai-added",
+    "context": "OpenAI voice added to Directed Q&A",
+    "endT": 209.94,
+    "narration": "OpenAI joins as the second voice, giving you two models to direct."
+  },
+  {
+    "t": 210.04,
+    "label": "composition-conductor-saved",
+    "context": "Directed Q&A conductor composition saved",
+    "endT": 216.74,
+    "narration": "Directed Q&A is saved. You now have both a broadcast and a conductor composition."
+  },
+  {
+    "t": 216.84,
+    "label": "composition-builder-opened-3",
+    "context": "Composition builder opened for Ollama Duo composition",
+    "endT": 220.5,
+    "narration": "One more — this time using only local models."
+  },
+  {
+    "t": 220.6,
+    "label": "composition-named-ollama",
+    "context": "Composition named \"Ollama Duo\" — conductor mode",
+    "endT": 228.84,
+    "narration": "Ollama Duo pairs two local models in conductor mode."
+  },
+  {
+    "t": 228.94,
+    "label": "composition-ollama-llama-added",
+    "context": "Llama 3.2 local voice added to Ollama Duo",
+    "endT": 237.14,
+    "narration": "Llama 3.2 is added — running entirely on your own machine."
+  },
+  {
+    "t": 237.24,
+    "label": "composition-ollama-qwen-added",
+    "context": "Qwen 2.5 local voice added to Ollama Duo",
+    "endT": 241.65,
+    "narration": "Qwen 2.5 joins alongside it. Two local voices, zero cloud dependency."
+  },
+  {
+    "t": 241.75,
+    "label": "composition-ollama-saved",
+    "context": "Ollama Duo composition saved with both local voices",
+    "endT": 259.09,
+    "narration": "Ollama Duo is saved. Three compositions, three different workflows — let's try them out."
+  },
+  {
+    "t": 259.19,
+    "label": "session-broadcast-started",
+    "context": "Research Panel broadcast session started — both voices ready",
+    "endT": 260.19,
+    "narration": "The Research Panel session begins with both voices standing by."
+  },
+  {
+    "t": 259.21,
+    "label": "broadcast-round1-sent",
+    "context": "Research question sent — Anthropic and OpenAI stream simultaneously",
+    "endT": 276.96,
+    "narration": "A research question goes out and both voices start streaming their answers simultaneously."
+  },
+  {
+    "t": 277.06,
+    "label": "broadcast-round1-complete",
+    "context": "Both voices finished round 1 — parallel responses visible",
+    "endT": 278.06,
+    "narration": "Round one is done. Both responses are visible side by side for easy comparison."
+  },
+  {
+    "t": 277.08,
+    "label": "broadcast-round2-sent",
+    "context": "Follow-up sent — voices read and respond to each other",
+    "endT": 295.38,
+    "narration": "A follow-up is sent. This time each voice can see and react to the other's previous answer."
+  },
+  {
+    "t": 295.48,
+    "label": "broadcast-round2-complete",
+    "context": "Round 2 complete — voices have engaged with each other's answers",
+    "endT": 312.74,
+    "narration": "Notice how the voices engage with each other's reasoning — that's the power of shared context."
+  },
+  {
+    "t": 312.84,
+    "label": "session-conductor-started",
+    "context": "Directed Q&A conductor session started",
+    "endT": 324.8,
+    "narration": "Switching to Directed Q&A. In conductor mode, you control exactly who speaks."
+  },
+  {
+    "t": 324.9,
+    "label": "directed-anthropic-targeted",
+    "context": "Anthropic targeted via @mention for the first question",
+    "endT": 342.09,
+    "narration": "An at-mention targets Anthropic specifically with the first question."
+  },
+  {
+    "t": 342.19,
+    "label": "directed-anthropic-responded",
+    "context": "Anthropic answered — only this voice responded",
+    "endT": 354.17,
+    "narration": "Only Anthropic responds — the other voice stays quiet until called on."
+  },
+  {
+    "t": 354.27,
+    "label": "directed-openai-targeted",
+    "context": "OpenAI targeted via @mention to respond to Anthropic's answer",
+    "endT": 366.23,
+    "narration": "Now OpenAI is at-mentioned and asked to weigh in on Anthropic's answer."
+  },
+  {
+    "t": 366.33,
+    "label": "directed-openai-responded",
+    "context": "OpenAI responded — a direct reply to Anthropic's answer",
+    "endT": 383.74,
+    "narration": "OpenAI replies directly to what Anthropic said. You're orchestrating a real dialogue between models."
+  },
+  {
+    "t": 383.84,
+    "label": "session-ollama-started",
+    "context": "Ollama Duo session started — two local models ready",
+    "endT": 395.81,
+    "narration": "Finally, the Ollama Duo session — two local models, fully offline."
+  },
+  {
+    "t": 395.91,
+    "label": "directed-llama-targeted",
+    "context": "Llama 3.2 targeted with a simple question",
+    "endT": 407.58,
+    "narration": "Llama 3.2 is targeted with a simple question to kick things off."
+  },
+  {
+    "t": 407.68,
+    "label": "directed-llama-responded",
+    "context": "Llama 3.2 answered locally — no cloud required",
+    "endT": 419.73,
+    "narration": "Llama answers instantly on your local hardware — no API key, no cloud, no latency."
+  },
+  {
+    "t": 419.83,
+    "label": "directed-qwen-targeted",
+    "context": "Qwen 2.5 targeted with a different simple question",
+    "endT": 430.19,
+    "narration": "Qwen 2.5 gets its own question next."
+  },
+  {
+    "t": 430.29,
+    "label": "directed-qwen-responded",
+    "context": "Qwen 2.5 answered — two local models, one conversation",
+    "endT": 435.89,
+    "narration": "Two local models, one conversation, completely private. That's Polyphon — one chat, many minds."
+  }
+]
