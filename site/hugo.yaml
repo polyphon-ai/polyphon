@@ -7,7 +7,7 @@ paginate: 10
 
 params:
   description: "Desktop application for orchestrating conversations between multiple AI voices simultaneously."
-  gaId: G-H87CVDM7K1
+  gaId: G-JV9QH1V5YJ
   ogImage: "/images/og-default.png"
   appVersion: "0.1.0-alpha.2"
   # downloadVersion is only updated after a release is confirmed published.
