@@ -15,8 +15,7 @@
     "test:e2e": "npm run build:e2e && playwright test",
     "test:watch": "vitest --config vitest.unit.config.ts",
     "build:e2e": "node scripts/build-e2e.mjs",
-    "screenshots": "npx tsx scripts/take-screenshots.ts",
-    "videos": "npx tsx scripts/take-videos.ts"
+    "screenshots": "npx tsx scripts/take-screenshots.ts"
   },
   "keywords": [],
   "author": "",

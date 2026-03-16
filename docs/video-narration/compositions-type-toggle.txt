@@ -1,4 +1,0 @@
-A composition is a saved set of voices you can launch any time.
-Here we add two voices — Anthropic and OpenAI. For Anthropic, the API option is disabled because no key is configured, so we switch to the local CLI instead.
-Once the composition is saved, we start a session and use the at-mention picker to direct different questions to each voice.
-Each voice responds only when addressed — giving you full control over who speaks and when.

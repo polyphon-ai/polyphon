@@ -1,3 +1,0 @@
-In conductor mode, you can address a specific voice using the at-mention picker.
-Type the at sign to open the voice list, then select any voice from your composition.
-Only the targeted voice will respond — useful when you want a focused follow-up.

@@ -8,7 +8,6 @@ Welcome to the Polyphon documentation. Use the navigation to explore each topic,
 
 ## Getting Started
 
-- [Walkthrough](./walkthrough/) — end-to-end video walkthrough from first launch to a live multi-voice session
 - [Installation](./getting-started/) — download, install, and launch Polyphon for the first time, including the onboarding flow for setting your conductor profile
 - [Core Concepts](./concepts/) — understand voices, compositions, sessions, rounds, continuation policy, and broadcast vs. conductor-directed modes
 

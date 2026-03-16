@@ -44,8 +44,6 @@ Type your message in the input bar at the bottom and press **Enter** (or **Shift
 
 Each voice's response streams in as it is generated. You can read responses as they arrive — you don't have to wait for all voices to finish before reading.
 
-{{< video src="/videos/docs/sessions-streaming-with-voice.mp4" poster="/images/video-posters/docs/sessions-streaming.webp" track="/videos/docs/sessions-streaming-narration.vtt" >}}
-
 ---
 
 ## Broadcast vs. Conductor-Directed Mode
@@ -68,8 +66,6 @@ There are two ways to target a voice in conductor-directed mode:
 1. **Click the voice** in the voice panel. The selected voice is highlighted.
 2. **Type `@` in the message input** to open a voice picker dropdown. The dropdown lists all active voices by display name. Select a voice from the dropdown to direct your next message to that voice; the voice panel updates to highlight the selection.
 
-{{< video src="/videos/docs/sessions-at-mention-with-voice.mp4" poster="/images/video-posters/docs/sessions-at-mention.webp" track="/videos/docs/sessions-at-mention-narration.vtt" >}}
-
 ---
 
 ## Continuation Rounds
@@ -79,8 +75,6 @@ The continuation policy is set on the composition, not on individual voices. It 
 **None** — voices respond once and wait. This is the default for new compositions.
 
 **Prompt me** — after each round completes, a nudge banner appears at the bottom of the message feed asking whether to continue:
-
-{{< video src="/videos/docs/continuation-nudge-with-voice.mp4" poster="/images/video-posters/docs/continuation-nudge.webp" track="/videos/docs/continuation-nudge-narration.vtt" >}}
 
 Click **Allow** to start the next round, or **Dismiss** to stop without continuing.
 

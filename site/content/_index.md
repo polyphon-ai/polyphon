@@ -78,12 +78,6 @@ Your conversations and API keys stay on your machine. Polyphon never phones home
 
 ---
 
-## See it in action
-
-{{< video src="/videos/home/full-walkthrough-with-voice.mp4" poster="/images/video-posters/home/full-walkthrough.webp" track="/videos/home/full-walkthrough-narration.vtt" >}}
-
----
-
 ## Get Started
 
 Head to the [documentation](/docs/) to learn how to install Polyphon, configure your first voices, and start your first session.

@@ -1,6 +1,0 @@
-Custom providers let you connect any OpenAI-compatible endpoint to Polyphon — no built-in integration required.
-Here we add two Ollama providers, each backed by a different local model running on the same machine.
-In Settings, we enter the Ollama base URL, type in the model name, and save each provider.
-Both appear in the Composition Builder alongside the built-in providers.
-We create a directed composition and use the at-mention picker to address each model separately — one answers a geography question, the other a science question.
-Two local models, one conversation, under your control.

@@ -53,8 +53,6 @@ If your endpoint requires no authentication (Ollama running locally with default
 
 ## Ollama Setup Example
 
-{{< video src="/videos/docs/custom-providers-ollama-with-voice.mp4" poster="/images/video-posters/docs/custom-providers-ollama.webp" track="/videos/docs/custom-providers-ollama-narration.vtt" >}}
-
 [Ollama](https://ollama.com) runs large language models locally with no API key required.
 
 1. [Install Ollama](https://ollama.com/download) and pull a model:

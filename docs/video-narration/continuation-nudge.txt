@@ -1,5 +1,0 @@
-Broadcast mode sends your message to every voice at the same time.
-With the "Prompt me" continuation policy, voices don't just stop after one round — when they have more to say, a nudge banner appears asking whether to continue.
-Here, both voices respond to a question about API design tradeoffs. Once they finish, the banner asks: let them continue?
-Click Allow and a second round begins — voices read each other's answers and build on them.
-You stay in control of when the conversation goes deeper.
