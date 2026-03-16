@@ -14,6 +14,7 @@ repos:
         entry: npm run lint
         pass_filenames: false
         stages: [pre-push]
+        files: ^(src/|e2e/|package(-lock)?\.json|forge\.config\.ts|vite\..+\.config\.ts|tsconfig.*\.json|playwright\.config.*\.ts)
 
       - id: test-unit
         name: Unit tests
@@ -21,6 +22,7 @@ repos:
         entry: npm run test:unit
         pass_filenames: false
         stages: [pre-push]
+        files: ^(src/|e2e/|package(-lock)?\.json|forge\.config\.ts|vite\..+\.config\.ts|tsconfig.*\.json|playwright\.config.*\.ts)
 
       - id: test-integration
         name: Integration tests
@@ -28,6 +30,7 @@ repos:
         entry: npm run test:integration
         pass_filenames: false
         stages: [pre-push]
+        files: ^(src/|e2e/|package(-lock)?\.json|forge\.config\.ts|vite\..+\.config\.ts|tsconfig.*\.json|playwright\.config.*\.ts)
 
       - id: test-e2e
         name: E2E tests (mocked voices)
@@ -35,3 +38,4 @@ repos:
         entry: npm run test:e2e
         pass_filenames: false
         stages: [pre-push]
+        files: ^(src/|e2e/|package(-lock)?\.json|forge\.config\.ts|vite\..+\.config\.ts|tsconfig.*\.json|playwright\.config.*\.ts)
