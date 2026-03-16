@@ -6,7 +6,7 @@ theme: polyphon
 paginate: 10
 
 params:
-  description: "Desktop application for orchestrating conversations between multiple AI voices simultaneously."
+  description: "One chat. Many voices."
   gaId: G-JV9QH1V5YJ
   ogImage: "/images/og-default.png"
   appVersion: "0.1.0-alpha.4"
