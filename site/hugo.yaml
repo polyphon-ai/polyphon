@@ -12,7 +12,7 @@ params:
   appVersion: "0.1.0-alpha.4"
   # downloadVersion is only updated after a release is confirmed published.
   # Leave empty to show the "coming soon" fallback in the download section.
-  downloadVersion: "0.1.0-alpha.2"
+  downloadVersion: "0.1.0-alpha.4"
   # twitterHandle: "polyphonapp"        # set to enable twitter:site tag
 
 taxonomies:

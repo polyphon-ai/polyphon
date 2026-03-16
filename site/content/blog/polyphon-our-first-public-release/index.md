@@ -1,6 +1,6 @@
 ---
 title: "Polyphon: Our First Public Release"
-description: "Today we're shipping Polyphon v0.1.0-alpha.2 — the first public alpha of our desktop app for orchestrating conversations between multiple AI voices simultaneously. Here's what it is, how it works, and what we have planned next."
+description: "Today we're shipping Polyphon v0.1.0-alpha.4 — the first public alpha of our desktop app for orchestrating conversations between multiple AI voices simultaneously. Here's what it is, how it works, and what we have planned next."
 date: "2026-03-16T02:27:00-0400"
 draft: false
 tags: ["release", "announcement", "multi-agent", "ai"]
@@ -15,7 +15,7 @@ You ask Claude for one pass, GPT for another, maybe run a local model for privac
 
 Polyphon is our attempt to fix that.
 
-Today we're shipping **Polyphon v0.1.0-alpha.2** — the first public alpha of a desktop application for orchestrating conversations between multiple AI voices simultaneously. Not multiple windows. Not a stack of pasted transcripts. One conversation, many voices, and a conductor in the middle.
+Today we're shipping **Polyphon v0.1.0-alpha.4** — the first public alpha of a desktop application for orchestrating conversations between multiple AI voices simultaneously. Not multiple windows. Not a stack of pasted transcripts. One conversation, many voices, and a conductor in the middle.
 
 ## Why We Built It
 
@@ -75,7 +75,7 @@ The near-term focus is **Session Export** — Markdown, JSON, and plain text tra
 
 Polyphon is free. Period. No subscriptions, no accounts, no credit card required. Download it, run it, keep it.
 
-**[Download Polyphon v0.1.0-alpha.2](https://polyphon.ai/#download)** for macOS (`.dmg`), Windows (`.exe`), and Linux (`.AppImage`).
+**[Download Polyphon v0.1.0-alpha.4](https://polyphon.ai/#download)** for macOS (`.dmg`), Windows (`.exe`), and Linux (`.AppImage`).
 
 Get started with the **[documentation](/docs/)** — it covers installation, configuring your first voices, and starting your first session.
 
