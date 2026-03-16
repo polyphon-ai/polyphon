@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { runMigrations } from './index';
+import { up as migration002 } from './002_add_update_preferences';
 
 describe('runMigrations (fresh install)', () => {
-  it('creates all tables and sets schema_version to 1', () => {
+  it('creates all tables and sets schema_version to 2', () => {
     const db = new DatabaseSync(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
 
@@ -20,7 +21,6 @@ describe('runMigrations (fresh install)', () => {
       'tones',
       'system_prompt_templates',
       'user_profile',
-      'build_expiry',
     ];
 
     const tables = db
@@ -33,7 +33,7 @@ describe('runMigrations (fresh install)', () => {
     }
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(1);
+    expect(row.version).toBe(2);
   });
 
   it('seeds built-in tones', () => {
@@ -80,6 +80,51 @@ describe('runMigrations (fresh install)', () => {
     expect(templates).toHaveLength(5);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(1);
+    expect(row.version).toBe(2);
+  });
+});
+
+describe('migration 002 — update preferences', () => {
+  it('runs cleanly on a v1 in-memory DB and adds new columns', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA journal_mode = WAL');
+
+    // Simulate a v1 database (schema without the new columns)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS user_profile (
+        id INTEGER PRIMARY KEY CHECK(id = 1),
+        conductor_name TEXT NOT NULL DEFAULT '',
+        pronouns TEXT NOT NULL DEFAULT '',
+        conductor_context TEXT NOT NULL DEFAULT '',
+        default_tone TEXT NOT NULL DEFAULT 'collaborative',
+        conductor_color TEXT NOT NULL DEFAULT '',
+        conductor_avatar TEXT NOT NULL DEFAULT '',
+        updated_at INTEGER NOT NULL
+      );
+    `);
+    db.exec(`INSERT INTO user_profile (id, conductor_name, pronouns, conductor_context, default_tone, conductor_color, conductor_avatar, updated_at) VALUES (1, '', '', '', 'collaborative', '', '', 0)`);
+
+    migration002(db);
+
+    const row = db
+      .prepare('SELECT dismissed_update_version, update_remind_after FROM user_profile WHERE id = 1')
+      .get() as { dismissed_update_version: string; update_remind_after: number };
+
+    expect(row.dismissed_update_version).toBe('');
+    expect(row.update_remind_after).toBe(0);
+  });
+
+  it('fresh install via runMigrations includes the new columns', () => {
+    const db = new DatabaseSync(':memory:');
+    db.exec('PRAGMA journal_mode = WAL');
+
+    runMigrations(db);
+
+    const row = db
+      .prepare('SELECT dismissed_update_version, update_remind_after FROM user_profile WHERE id = 1')
+      .get() as { dismissed_update_version: string; update_remind_after: number };
+
+    expect(row.dismissed_update_version).toBe('');
+    expect(row.update_remind_after).toBe(0);
   });
 });

@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { TONE_PRESETS } from '../../../shared/constants';
 import { CREATE_TABLES_SQL, SCHEMA_VERSION } from '../schema';
+import { up as migration002 } from './002_add_update_preferences';
 
 const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
   [
@@ -67,6 +68,14 @@ export function runMigrations(db: DatabaseSync): void {
   const row = db.prepare('SELECT version FROM schema_version LIMIT 1').get() as
     | { version: number }
     | undefined;
+
+  const currentVersion = row?.version ?? 0;
+
+  // Only run migrations on existing databases (row === undefined means fresh install;
+  // CREATE_TABLES_SQL already includes the latest schema for new databases).
+  if (row !== undefined && currentVersion < 2) {
+    migration002(db);
+  }
 
   if (row === undefined) {
     db.prepare('INSERT INTO schema_version (version) VALUES (?)').run(SCHEMA_VERSION);

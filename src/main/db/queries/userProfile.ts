@@ -9,6 +9,8 @@ interface UserProfileRow {
   default_tone: string;
   conductor_color: string;
   conductor_avatar: string;
+  dismissed_update_version: string;
+  update_remind_after: number;
   updated_at: number;
 }
 
@@ -47,4 +49,28 @@ export function upsertUserProfile(
   `).run(profile.conductorName, profile.pronouns, profile.conductorContext, profile.defaultTone, profile.conductorColor, profile.conductorAvatar, now);
 
   return getUserProfile(db);
+}
+
+export interface UpdatePreferences {
+  dismissedUpdateVersion: string;
+  updateRemindAfter: number;
+}
+
+export function getUpdatePreferences(db: DatabaseSync): UpdatePreferences {
+  const row = db
+    .prepare('SELECT dismissed_update_version, update_remind_after FROM user_profile WHERE id = 1')
+    .get() as { dismissed_update_version: string; update_remind_after: number } | undefined;
+
+  return {
+    dismissedUpdateVersion: row?.dismissed_update_version ?? '',
+    updateRemindAfter: row?.update_remind_after ?? 0,
+  };
+}
+
+export function setDismissedUpdateVersion(db: DatabaseSync, version: string): void {
+  db.prepare('UPDATE user_profile SET dismissed_update_version = ? WHERE id = 1').run(version);
+}
+
+export function setUpdateRemindAfter(db: DatabaseSync, remindAfter: number): void {
+  db.prepare('UPDATE user_profile SET update_remind_after = ? WHERE id = 1').run(remindAfter);
 }

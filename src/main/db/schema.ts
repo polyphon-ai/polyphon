@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const CREATE_TABLES_SQL = `
   CREATE TABLE IF NOT EXISTS schema_version (
@@ -108,12 +108,9 @@ export const CREATE_TABLES_SQL = `
     default_tone TEXT NOT NULL DEFAULT 'collaborative',
     conductor_color TEXT NOT NULL DEFAULT '',
     conductor_avatar TEXT NOT NULL DEFAULT '',
+    dismissed_update_version TEXT NOT NULL DEFAULT '',
+    update_remind_after INTEGER NOT NULL DEFAULT 0,
     updated_at INTEGER NOT NULL
   );
 
-  CREATE TABLE IF NOT EXISTS build_expiry (
-    id INTEGER PRIMARY KEY CHECK(id = 1),
-    last_known_good_time INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
-  );
 `;
