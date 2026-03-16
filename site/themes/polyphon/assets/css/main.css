@@ -2555,6 +2555,23 @@ a:hover {
   border-color: oklch(48% 0.14 68);
 }
 
+.downloads-prerelease-sep {
+  opacity: 0.4;
+}
+
+.downloads-prerelease a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+.downloads-prerelease a:hover {
+  opacity: 0.75;
+}
+
 .downloads-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2831,9 +2848,6 @@ a:hover {
   white-space: nowrap;
 }
 
-.downloads-prerelease + .downloads-note {
-  margin-top: 0.5rem;
-}
 
 .downloads-note {
   text-align: center;

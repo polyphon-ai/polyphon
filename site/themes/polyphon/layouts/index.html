@@ -378,8 +378,7 @@
     </div>
     {{ if $version }}
     {{ if strings.Contains $version "-" }}
-    <p class="downloads-prerelease"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Early access — expect rough edges.</p>
-    <p class="downloads-note">Found a bug? <a href="https://github.com/polyphon-ai/releases/issues" target="_blank" rel="noopener">Report it on GitHub</a></p>
+    <p class="downloads-prerelease"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Early access — expect rough edges<span class="downloads-prerelease-sep" aria-hidden="true">·</span><a href="https://github.com/polyphon-ai/releases/issues" target="_blank" rel="noopener">Report a bug</a></p>
     {{ end }}
     <div class="downloads-grid">
 
