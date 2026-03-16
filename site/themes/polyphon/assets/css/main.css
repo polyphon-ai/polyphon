@@ -2535,6 +2535,38 @@ a:hover {
   margin-bottom: 1rem;
 }
 
+.downloads-prerelease {
+  width: fit-content;
+  margin: -1rem auto 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-size: 0.8125rem;
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-full);
+  padding: 0.3125rem 0.875rem;
+}
+
+.downloads-prerelease::before {
+  content: '';
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: prerelease-pulse 2s ease-in-out infinite;
+}
+
+@keyframes prerelease-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .downloads-prerelease::before { animation: none; }
+}
 
 .downloads-grid {
   display: grid;
