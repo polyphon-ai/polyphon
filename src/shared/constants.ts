@@ -102,8 +102,12 @@ export const IPC = {
   SESSION_NO_TARGET: 'session:no-target', // suffixed with `:${sessionId}` at runtime
   SESSION_MESSAGES_LIST: 'session:messages:list',
 
-  EXPIRY_CHECK: 'expiry:check',
   SHELL_OPEN_EXTERNAL: 'shell:openExternal',
+
+  UPDATE_AVAILABLE: 'update:available',
+  UPDATE_GET_STATE: 'update:get-state',
+  UPDATE_DISMISS: 'update:dismiss',
+  UPDATE_CHECK_NOW: 'update:check-now',
 } as const;
 
 export const CONTINUATION_MAX_ROUNDS_LIMIT = 3;

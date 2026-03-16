@@ -5,7 +5,7 @@ import { IPC } from '../../shared/constants';
 import { insertComposition } from '../db/queries/compositions';
 import { insertSession } from '../db/queries/sessions';
 import { insertMessage } from '../db/queries/messages';
-import type { Composition, Session, Message, ExpiryStatus } from '../../shared/types';
+import type { Composition, Session, Message } from '../../shared/types';
 
 const handlers = new Map<string, Function>();
 
@@ -25,10 +25,21 @@ vi.mock('electron', () => ({
 
 vi.mock('./settingsHandlers', () => ({ registerSettingsHandlers: vi.fn() }));
 
+const mockGetCachedUpdateInfo = vi.fn().mockReturnValue(null);
+const mockCheckForUpdateNow = vi.fn().mockResolvedValue(null);
+vi.mock('../utils/updateChecker', () => ({
+  getCachedUpdateInfo: () => mockGetCachedUpdateInfo(),
+  checkForUpdateNow: (...args: unknown[]) => mockCheckForUpdateNow(...args),
+}));
+
 function createTestDb(): DatabaseSync {
   const db = new DatabaseSync(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   db.exec(CREATE_TABLES_SQL);
+  // Seed a user_profile row (required for update preference queries)
+  db.prepare(
+    'INSERT OR IGNORE INTO user_profile (id, conductor_name, pronouns, conductor_context, default_tone, conductor_color, conductor_avatar, updated_at) VALUES (1, \'\', \'\', \'\', \'collaborative\', \'\', \'\', 0)',
+  ).run();
   return db;
 }
 
@@ -108,35 +119,21 @@ function makeMessage(overrides: Partial<Message> = {}): Message {
   };
 }
 
-function makeExpiryStatus(overrides: Partial<ExpiryStatus> = {}): ExpiryStatus {
-  return {
-    expired: false,
-    channel: 'alpha',
-    version: '0.1.0-alpha.1',
-    buildTimestamp: Date.now() - 5 * 24 * 60 * 60 * 1000,
-    expiryTimestamp: Date.now() + 23 * 24 * 60 * 60 * 1000,
-    daysRemaining: 23,
-    hoursRemaining: 23 * 24,
-    downloadUrl: 'https://polyphon.ai/#download',
-    ...overrides,
-  };
-}
-
 describe('IPC handlers integration', () => {
   let db: DatabaseSync;
   let voiceManager: ReturnType<typeof makeMockVoiceManager>;
   let sessionManager: ReturnType<typeof makeMockSessionManager>;
-  let expiryStatus: ExpiryStatus;
 
   beforeEach(async () => {
     handlers.clear();
     mockShellOpenExternal.mockClear();
+    mockGetCachedUpdateInfo.mockClear().mockReturnValue(null);
+    mockCheckForUpdateNow.mockClear().mockResolvedValue(null);
     db = createTestDb();
     voiceManager = makeMockVoiceManager();
     sessionManager = makeMockSessionManager();
-    expiryStatus = makeExpiryStatus();
     const { registerIpcHandlers } = await import('./index');
-    registerIpcHandlers(db, voiceManager, sessionManager, expiryStatus);
+    registerIpcHandlers(db, voiceManager, sessionManager);
   });
 
   // --- SESSION handlers ---
@@ -480,25 +477,6 @@ describe('IPC handlers integration', () => {
     });
   });
 
-  // --- EXPIRY handlers ---
-
-  describe('EXPIRY_CHECK', () => {
-    it('returns the cached ExpiryStatus passed to registerIpcHandlers', async () => {
-      const result = await handlers.get(IPC.EXPIRY_CHECK)!({});
-      expect(result).toEqual(expiryStatus);
-    });
-
-    it('returns expired=true status when registered with expired status', async () => {
-      handlers.clear();
-      const expiredStatus = makeExpiryStatus({ expired: true, daysRemaining: 0, hoursRemaining: 0 });
-      const { registerIpcHandlers } = await import('./index');
-      registerIpcHandlers(db, voiceManager, sessionManager, expiredStatus);
-
-      const result = await handlers.get(IPC.EXPIRY_CHECK)!({});
-      expect(result.expired).toBe(true);
-    });
-  });
-
   // --- SHELL handlers ---
 
   describe('SHELL_OPEN_EXTERNAL', () => {
@@ -535,6 +513,56 @@ describe('IPC handlers integration', () => {
     it('blocks invalid URL string', async () => {
       await handlers.get(IPC.SHELL_OPEN_EXTERNAL)!({}, 'not-a-url');
       expect(mockShellOpenExternal).not.toHaveBeenCalled();
+    });
+  });
+
+  // --- UPDATE handlers ---
+
+  describe('UPDATE_GET_STATE', () => {
+    it('returns null when no cached update', async () => {
+      mockGetCachedUpdateInfo.mockReturnValue(null);
+      const result = await handlers.get(IPC.UPDATE_GET_STATE)!({});
+      expect(result).toBeNull();
+    });
+
+    it('returns cached UpdateInfo when available', async () => {
+      mockGetCachedUpdateInfo.mockReturnValue({ version: '1.2.3' });
+      const result = await handlers.get(IPC.UPDATE_GET_STATE)!({});
+      expect(result).toEqual({ version: '1.2.3' });
+    });
+  });
+
+  describe('UPDATE_DISMISS', () => {
+    it('permanently=true writes dismissed_update_version to DB', async () => {
+      await handlers.get(IPC.UPDATE_DISMISS)!({}, '1.2.3', true);
+      const row = db
+        .prepare('SELECT dismissed_update_version FROM user_profile WHERE id = 1')
+        .get() as { dismissed_update_version: string };
+      expect(row.dismissed_update_version).toBe('1.2.3');
+    });
+
+    it('permanently=false writes update_remind_after ~24h from now', async () => {
+      const fakeNow = 1_000_000;
+      await handlers.get(IPC.UPDATE_DISMISS)!({}, '1.2.3', false, fakeNow);
+      const row = db
+        .prepare('SELECT update_remind_after FROM user_profile WHERE id = 1')
+        .get() as { update_remind_after: number };
+      expect(row.update_remind_after).toBe(fakeNow + 24 * 60 * 60 * 1000);
+    });
+
+    it('UPDATE_CHECK_NOW delegates to checkForUpdateNow and returns its result', async () => {
+      mockCheckForUpdateNow.mockResolvedValue({ version: '9.9.9' });
+      const result = await handlers.get(IPC.UPDATE_CHECK_NOW)!({ sender: {} });
+      expect(mockCheckForUpdateNow).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ version: '9.9.9' });
+    });
+
+    it('ignores invalid version strings', async () => {
+      await handlers.get(IPC.UPDATE_DISMISS)!({}, 'not-a-version', true);
+      const row = db
+        .prepare('SELECT dismissed_update_version FROM user_profile WHERE id = 1')
+        .get() as { dismissed_update_version: string };
+      expect(row.dismissed_update_version).toBe('');
     });
   });
 });

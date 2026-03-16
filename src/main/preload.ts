@@ -13,7 +13,7 @@ import type {
   CustomProviderWithStatus,
   ToneDefinition,
   SystemPromptTemplate,
-  ExpiryStatus,
+  UpdateInfo,
 } from '../shared/types';
 import type { ProbeModelResult } from './ipc/settingsHandlers';
 import { IPC } from '../shared/constants';
@@ -124,13 +124,23 @@ const api = {
     },
   },
 
-  expiry: {
-    check: (): Promise<ExpiryStatus> => ipcRenderer.invoke(IPC.EXPIRY_CHECK),
-  },
-
   shell: {
     openExternal: (url: string): Promise<void> =>
       ipcRenderer.invoke(IPC.SHELL_OPEN_EXTERNAL, url),
+  },
+
+  update: {
+    getState: (): Promise<UpdateInfo | null> =>
+      ipcRenderer.invoke(IPC.UPDATE_GET_STATE),
+    dismiss: (version: string, permanently: boolean): Promise<void> =>
+      ipcRenderer.invoke(IPC.UPDATE_DISMISS, version, permanently),
+    checkNow: (): Promise<UpdateInfo | null> =>
+      ipcRenderer.invoke(IPC.UPDATE_CHECK_NOW),
+    onAvailable: (handler: (info: UpdateInfo) => void) => {
+      const listener = (_: Electron.IpcRendererEvent, info: UpdateInfo) => handler(info);
+      ipcRenderer.on(IPC.UPDATE_AVAILABLE, listener);
+      return () => ipcRenderer.off(IPC.UPDATE_AVAILABLE, listener);
+    },
   },
 
   settings: {
@@ -196,4 +206,4 @@ contextBridge.exposeInMainWorld('polyphon', api);
 export type PolyphonAPI = typeof api;
 
 // Suppress unused import warning — these types are used in the api shape
-export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, ExpiryStatus, ProbeModelResult };
+export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, UpdateInfo, ProbeModelResult };

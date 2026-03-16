@@ -1,7 +1,7 @@
 import { ipcMain, BrowserWindow, shell } from 'electron';
 import { URL } from 'url';
 import type { DatabaseSync } from 'node:sqlite';
-import type { Message, Composition, ExpiryStatus } from '../../shared/types';
+import type { Message, Composition } from '../../shared/types';
 import { IPC } from '../../shared/constants';
 import { registerSettingsHandlers } from './settingsHandlers';
 import type { VoiceManager } from '../managers/VoiceManager';
@@ -29,13 +29,13 @@ import {
   upsertCompositionVoices,
 } from '../db/queries/compositions';
 import { generateId } from '../utils';
-import { getUserProfile } from '../db/queries/userProfile';
+import { getUserProfile, setDismissedUpdateVersion, setUpdateRemindAfter } from '../db/queries/userProfile';
+import { getCachedUpdateInfo, checkForUpdateNow } from '../utils/updateChecker';
 
 export function registerIpcHandlers(
   db: DatabaseSync,
   voiceManager: VoiceManager,
   sessionManager: SessionManager,
-  expiryStatus: ExpiryStatus,
 ): void {
   // --- Session handlers ---
 
@@ -226,8 +226,6 @@ export function registerIpcHandlers(
     archiveComposition(db, id, archived);
   });
 
-  ipcMain.handle(IPC.EXPIRY_CHECK, () => expiryStatus);
-
   const ALLOWED_EXTERNAL_HOSTS = new Set([
     'polyphon.ai',
     'github.com',
@@ -247,6 +245,31 @@ export function registerIpcHandlers(
     }
     return shell.openExternal(url);
   });
+
+  // --- Update handlers ---
+
+  ipcMain.handle(IPC.UPDATE_GET_STATE, () => getCachedUpdateInfo());
+
+  ipcMain.handle(IPC.UPDATE_CHECK_NOW, async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return null;
+    return checkForUpdateNow(win);
+  });
+
+  const VERSION_PATTERN = /^\d+\.\d+\.\d+/;
+  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
+  ipcMain.handle(
+    IPC.UPDATE_DISMISS,
+    (_event, version: string, permanently: boolean, now = Date.now()) => {
+      if (!VERSION_PATTERN.test(version)) return;
+      if (permanently) {
+        setDismissedUpdateVersion(db, version);
+      } else {
+        setUpdateRemindAfter(db, now + TWENTY_FOUR_HOURS);
+      }
+    },
+  );
 
   registerSettingsHandlers(db, voiceManager);
 }

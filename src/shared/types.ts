@@ -1,17 +1,6 @@
 // Core domain types shared between main and renderer processes.
 // These are plain serializable data shapes — no class instances cross the IPC boundary.
 
-export interface ExpiryStatus {
-  expired: boolean;
-  channel: 'alpha' | 'beta' | 'release' | 'dev';
-  version: string;
-  buildTimestamp: number;
-  expiryTimestamp: number;
-  daysRemaining: number;
-  hoursRemaining: number;
-  downloadUrl: string;
-}
-
 export type TonePreset =
   | 'professional'
   | 'collaborative'
@@ -166,6 +155,10 @@ export interface CliTestResult {
 export interface ModelsResult {
   models: string[];
   error?: string;
+}
+
+export interface UpdateInfo {
+  version: string;
 }
 
 // Serializable voice descriptor — sent over IPC, not the full Voice instance

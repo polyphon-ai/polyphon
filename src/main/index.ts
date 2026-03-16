@@ -6,8 +6,7 @@ import { getDb, closeDb } from './db';
 import { loadShellEnv } from './utils/env';
 import { VoiceManager } from './managers/VoiceManager';
 import { SessionManager } from './managers/SessionManager';
-import { checkExpiry } from './utils/buildExpiry';
-import type { ExpiryStatus } from '../shared/types';
+import { checkForUpdate } from './utils/updateChecker';
 
 // Handle Squirrel startup events on Windows
 if (started) app.quit();
@@ -22,7 +21,7 @@ if (process.env.POLYPHON_TEST_USER_DATA) {
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -44,6 +43,8 @@ function createWindow(): void {
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
     );
   }
+
+  return win;
 }
 
 app.whenReady().then(async () => {
@@ -58,16 +59,9 @@ app.whenReady().then(async () => {
   voiceManager.loadSystemPromptTemplates(db);
   const sessionManager = new SessionManager(voiceManager);
 
-  // Compute expiry once at startup with a 3s cap; fall back to local-only time if NTP is slow.
-  const expiryStatus = await Promise.race([
-    checkExpiry(db),
-    new Promise<ExpiryStatus>((_, reject) =>
-      setTimeout(() => reject(new Error('checkExpiry timeout')), 3000),
-    ),
-  ]).catch(() => checkExpiry(db, { skipNtp: true }));
-
-  registerIpcHandlers(db, voiceManager, sessionManager, expiryStatus);
-  createWindow();
+  registerIpcHandlers(db, voiceManager, sessionManager);
+  const win = createWindow();
+  checkForUpdate(db, win);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
