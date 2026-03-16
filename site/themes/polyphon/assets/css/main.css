@@ -2343,6 +2343,18 @@ a:hover {
   margin-bottom: 2rem;
 }
 
+.post-hero-figure {
+  margin: 0 0 2.5rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.post-hero-figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .post-taxonomy {
   display: flex;
   flex-wrap: wrap;

@@ -1,0 +1,7 @@
+{{- $src := .Get "src" -}}
+{{- $alt := .Get "alt" | default "" -}}
+{{- $caption := .Get "caption" | default "" -}}
+<figure class="post-hero-figure">
+  <img src="{{ $src }}" alt="{{ $alt }}" loading="lazy" decoding="async">
+  {{- if $caption }}<figcaption>{{ $caption }}</figcaption>{{ end -}}
+</figure>
