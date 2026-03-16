@@ -378,3 +378,58 @@ jobs:
             dist/linux/**/*.AppImage
             dist/macos/**/*.dmg
             dist/windows/**/*.exe
+
+  # ── 5. Update site: bump downloadVersion + publish release blog post ─────────
+  # Checks out main, bumps hugo.yaml params, and creates a release announcement
+  # post. The push to main triggers the deploy-site workflow automatically.
+  update-site:
+    name: Update Site
+    needs: [release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set version variables
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          SLUG="polyphon-${TAG//./-}"
+          DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "SLUG=$SLUG" >> $GITHUB_ENV
+          echo "DATE=$DATE" >> $GITHUB_ENV
+
+      - name: Bump hugo.yaml version params
+        run: |
+          sed -i "s/appVersion: \".*\"/appVersion: \"$VERSION\"/" site/hugo.yaml
+          sed -i "s/downloadVersion: \".*\"/downloadVersion: \"$VERSION\"/" site/hugo.yaml
+
+      - name: Create release blog post
+        run: |
+          mkdir -p "site/content/blog/$SLUG"
+          cat > "site/content/blog/$SLUG/index.md" << EOF
+          ---
+          title: "Polyphon $VERSION"
+          description: "Polyphon $VERSION is now available for download."
+          date: "$DATE"
+          draft: false
+          tags: ["release"]
+          categories: ["Announcements"]
+          ---
+
+          Polyphon **$VERSION** is now available. [Download it here](https://polyphon.ai/#download).
+          EOF
+
+      - name: Commit and push to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add site/hugo.yaml "site/content/blog/$SLUG/index.md"
+          git commit -m "chore(site): update site for release $TAG"
+          git push origin main
