@@ -75,7 +75,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" widt
   <text x="424" y="374"
         font-family="Geist Sans, system-ui, sans-serif"
         font-size="40" font-weight="400" letter-spacing="-0.5"
-        fill="#94a3b8">One chat. Many minds.</text>
+        fill="#94a3b8">One chat. Many Voices.</text>
 
   <!-- URL -->
   <text x="1140" y="606"
