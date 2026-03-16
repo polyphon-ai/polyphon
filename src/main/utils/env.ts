@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import type { ApiKeyStatus } from '../../shared/types';
 
 // Normalizes a provider name to the env-var prefix convention.
@@ -17,19 +18,52 @@ export function maskApiKey(key: string): string {
 //
 // GUI apps launched from the Dock, Spotlight, or an app launcher inherit a
 // minimal environment that often lacks shell-exported variables (API keys,
-// PATH additions, etc.). shell-env spawns the user's login shell to capture
-// the full environment and makes it available to the main process.
+// PATH additions, etc.). We spawn the user's login shell to capture the full
+// environment and apply it to the main process before any voice is created.
 //
-// shell-env v4 is ESM-only; dynamic import() lets us load it from the CJS
-// main-process bundle without bundling it through Vite.
-export async function loadShellEnv(): Promise<void> {
-  try {
-    const { shellEnv } = await import('shell-env');
-    Object.assign(process.env, await shellEnv());
-  } catch {
-    // Non-fatal: if shell-env fails (e.g. unusual shell config), fall back to
-    // whatever environment the OS provided. API key resolution will surface a
-    // clear error later if a required key is missing.
+// Uses child_process.spawnSync so this is bundled directly into main.js and
+// works correctly in the packaged ASAR app (no external ESM dependency needed).
+export function loadShellEnv(): void {
+  if (process.platform === 'win32') return;
+
+  const DELIM = '_POLYPHON_ENV_DELIM_';
+  const cmd = `echo -n "${DELIM}"; command env; echo -n "${DELIM}"; exit`;
+  const args = ['-ilc', cmd];
+  // Suppress shell plugin side-effects (e.g. oh-my-zsh auto-update, tmux).
+  const spawnEnv = {
+    DISABLE_AUTO_UPDATE: 'true',
+    ZSH_TMUX_AUTOSTARTED: 'true',
+    ZSH_TMUX_AUTOSTART: 'false',
+  };
+
+  // Try the user's preferred shell first, then fall back to common login shells.
+  const candidates = [process.env.SHELL, '/bin/zsh', '/bin/bash'].filter(
+    Boolean,
+  ) as string[];
+  const seen = new Set<string>();
+
+  for (const shell of candidates) {
+    if (seen.has(shell)) continue;
+    seen.add(shell);
+
+    const result = spawnSync(shell, args, {
+      env: spawnEnv,
+      encoding: 'utf8',
+      timeout: 5000,
+    });
+
+    if (result.status !== 0 || !result.stdout) continue;
+
+    const parts = result.stdout.split(DELIM);
+    if (parts.length < 2) continue;
+
+    for (const line of parts[1].split('\n')) {
+      const eq = line.indexOf('=');
+      if (eq > 0) {
+        process.env[line.slice(0, eq)] = line.slice(eq + 1);
+      }
+    }
+    return;
   }
 }
 

@@ -50,7 +50,7 @@ function createWindow(): BrowserWindow {
 app.whenReady().then(async () => {
   // Load shell-exported env vars before anything else so API keys set in
   // ~/.zshrc, ~/.bashrc, etc. are visible regardless of how the app launched.
-  await loadShellEnv();
+  loadShellEnv();
 
   const db = getDb();
   const voiceManager = new VoiceManager();

@@ -11,8 +11,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      // shell-env is ESM-only; keep external so we can load it via dynamic import()
-      external: ['shell-env', 'node:sqlite'],
+      external: ['node:sqlite'],
       output: {
         entryFileNames: 'main.js',
       },
