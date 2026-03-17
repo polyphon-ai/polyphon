@@ -4,6 +4,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import type { Message, Composition } from '../../shared/types';
 import { IPC } from '../../shared/constants';
 import { registerSettingsHandlers } from './settingsHandlers';
+import type { EncryptionContext } from './settingsHandlers';
 import type { VoiceManager } from '../managers/VoiceManager';
 import type { SessionManager } from '../managers/SessionManager';
 import {
@@ -36,6 +37,7 @@ export function registerIpcHandlers(
   db: DatabaseSync,
   voiceManager: VoiceManager,
   sessionManager: SessionManager,
+  encCtx?: EncryptionContext,
 ): void {
   // --- Session handlers ---
 
@@ -271,5 +273,5 @@ export function registerIpcHandlers(
     },
   );
 
-  registerSettingsHandlers(db, voiceManager);
+  registerSettingsHandlers(db, voiceManager, encCtx);
 }

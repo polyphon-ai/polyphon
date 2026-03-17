@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import type { Message } from '../../../shared/types';
+import { encryptField, decryptField, type EncryptedField } from '../encryption';
 
 interface MessageRow {
   id: string;
@@ -7,7 +8,7 @@ interface MessageRow {
   role: string;
   voice_id: string | null;
   voice_name: string | null;
-  content: string;
+  content: EncryptedField;
   timestamp: number;
   round_index: number;
   metadata: string | null;
@@ -20,7 +21,7 @@ function rowToMessage(row: MessageRow): Message {
     role: row.role as Message['role'],
     voiceId: row.voice_id,
     voiceName: row.voice_name,
-    content: row.content,
+    content: decryptField(row.content) ?? '',
     timestamp: row.timestamp,
     roundIndex: row.round_index,
     metadata: row.metadata ? (JSON.parse(row.metadata) as Record<string, unknown>) : undefined,
@@ -44,7 +45,7 @@ export function insertMessage(db: DatabaseSync, message: Message): void {
     message.role,
     message.voiceId,
     message.voiceName,
-    message.content,
+    encryptField(message.content),
     message.timestamp,
     message.roundIndex,
     message.metadata ? JSON.stringify(message.metadata) : null,

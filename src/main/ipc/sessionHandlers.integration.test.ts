@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { runMigrations } from '../db/migrations';
+import { initFieldEncryption, _resetForTests } from '../security/fieldEncryption';
 import { insertComposition } from '../db/queries/compositions';
 import { insertSession } from '../db/queries/sessions';
 import { listMessages } from '../db/queries/messages';
@@ -76,6 +77,7 @@ describe('SessionManager + DB integration', () => {
   let sessionManager: SessionManager;
 
   beforeEach(() => {
+    initFieldEncryption(Buffer.alloc(32));
     db = createTestDb();
     voiceManager = new VoiceManager();
     sessionManager = new SessionManager(voiceManager);
@@ -83,6 +85,7 @@ describe('SessionManager + DB integration', () => {
 
   afterEach(() => {
     db.close();
+    _resetForTests();
   });
 
   describe('runBroadcastRound with mocked voice provider', () => {

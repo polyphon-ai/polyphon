@@ -161,6 +161,14 @@ export interface UpdateInfo {
   version: string;
 }
 
+export interface EncryptionStatus {
+  available: boolean;
+  mode: 'safeStorage' | 'password' | 'e2e-test';
+  passwordSet: boolean;
+  linuxBasicText: boolean;
+  linuxNoticeDismissed: boolean;
+}
+
 // Serializable voice descriptor — sent over IPC, not the full Voice instance
 export interface VoiceDescriptor {
   id: string;

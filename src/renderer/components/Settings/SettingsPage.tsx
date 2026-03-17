@@ -20,6 +20,7 @@ import {
   Camera,
   Wand2,
   Info,
+  Lock,
 } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useUIStore, type Theme } from '../../store/uiStore';
@@ -35,6 +36,7 @@ import ProviderLogo from '../Shared/ProviderLogo';
 import { HelpTooltip } from '../Shared/HelpTooltip';
 import { AvatarEditor } from './AvatarEditor';
 import AboutPage from './AboutPage';
+import EncryptionSection from './EncryptionSection';
 
 // ── API Key Status badge ────────────────────────────────────────────────────
 
@@ -1361,13 +1363,14 @@ function SystemPromptsSection() {
 
 // ── Section nav ─────────────────────────────────────────────────────────────
 
-type Section = 'conductor' | 'tones' | 'system-prompts' | 'providers' | 'general' | 'about';
+type Section = 'conductor' | 'tones' | 'system-prompts' | 'providers' | 'encryption' | 'general' | 'about';
 
 const SECTION_ITEMS: { id: Section; label: string; Icon: React.ElementType }[] = [
   { id: 'conductor', label: 'Conductor', Icon: Wand2 },
   { id: 'tones', label: 'Tones', Icon: Music2 },
   { id: 'system-prompts', label: 'System Prompts', Icon: FileText },
   { id: 'providers', label: 'Providers', Icon: Plug },
+  { id: 'encryption', label: 'Encryption', Icon: Lock },
   { id: 'general', label: 'General', Icon: SlidersHorizontal },
   { id: 'about', label: 'About', Icon: Info },
 ];
@@ -1539,6 +1542,22 @@ export default function SettingsPage() {
               <p className="text-sm text-gray-500 mt-1">Personalise how voices address you and their conversation style.</p>
             </div>
             <ConductorProfile />
+          </div>
+        )}
+
+        {!loading && activeSection === 'encryption' && (
+          <div
+            role="tabpanel"
+            id="encryption-panel"
+            aria-labelledby="tab-encryption"
+            tabIndex={0}
+            className="max-w-2xl space-y-6"
+          >
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Encryption</h2>
+              <p className="text-sm text-gray-500 mt-1">Manage at-rest encryption for your local database.</p>
+            </div>
+            <EncryptionSection />
           </div>
         )}
 

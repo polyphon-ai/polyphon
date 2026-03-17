@@ -4,6 +4,8 @@ import type { Message } from '../../../shared/types';
 import ProviderLogo from '../Shared/ProviderLogo';
 import { useSettingsStore } from '../../store/settingsStore';
 
+const DECRYPTION_FAILED_SENTINEL = '\u0000[decryption-failed]\u0000';
+
 export interface MessageBubbleProps {
   message: Message;
   isStreaming?: boolean;
@@ -42,7 +44,9 @@ export default function MessageBubble({
   const conductorName = useSettingsStore((s) => s.userProfile.conductorName);
   const conductorAvatar = useSettingsStore((s) => s.userProfile.conductorAvatar);
 
-  const content = streamingContent ?? message.content;
+  const rawContent = streamingContent ?? message.content;
+  const isDecryptionFailed = rawContent === DECRYPTION_FAILED_SENTINEL;
+  const content = isDecryptionFailed ? '[Message unavailable]' : rawContent;
   const isConductor = message.role === 'conductor';
   const isLong = content.length > COLLAPSE_THRESHOLD;
   const displayContent =

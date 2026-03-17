@@ -14,6 +14,7 @@ import type {
   ToneDefinition,
   SystemPromptTemplate,
   UpdateInfo,
+  EncryptionStatus,
 } from '../shared/types';
 import type { ProbeModelResult } from './ipc/settingsHandlers';
 import { IPC } from '../shared/constants';
@@ -143,6 +144,31 @@ const api = {
     },
   },
 
+  encryption: {
+    getStatus: (): Promise<EncryptionStatus> =>
+      ipcRenderer.invoke(IPC.ENCRYPTION_GET_STATUS),
+    setPassword: (newPassword: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.ENCRYPTION_SET_PASSWORD, newPassword),
+    changePassword: (oldPassword: string, newPassword: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.ENCRYPTION_CHANGE_PASSWORD, oldPassword, newPassword),
+    removePassword: (currentPassword: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.ENCRYPTION_REMOVE_PASSWORD, currentPassword),
+    dismissLinuxNotice: (): Promise<void> =>
+      ipcRenderer.invoke(IPC.ENCRYPTION_DISMISS_LINUX_NOTICE),
+    unlockAttempt: (password: string): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC.ENCRYPTION_UNLOCK_ATTEMPT, password),
+    onLinuxNotice: (handler: () => void) => {
+      const listener = () => handler();
+      ipcRenderer.on(IPC.ENCRYPTION_LINUX_NOTICE, listener);
+      return () => ipcRenderer.off(IPC.ENCRYPTION_LINUX_NOTICE, listener);
+    },
+    onKeyRegeneratedWarning: (handler: () => void) => {
+      const listener = () => handler();
+      ipcRenderer.on(IPC.ENCRYPTION_KEY_REGENERATED_WARNING, listener);
+      return () => ipcRenderer.off(IPC.ENCRYPTION_KEY_REGENERATED_WARNING, listener);
+    },
+  },
+
   settings: {
     getProviderStatus: (): Promise<ProviderStatus[]> =>
       ipcRenderer.invoke(IPC.SETTINGS_GET_PROVIDER_STATUS),
@@ -206,4 +232,4 @@ contextBridge.exposeInMainWorld('polyphon', api);
 export type PolyphonAPI = typeof api;
 
 // Suppress unused import warning — these types are used in the api shape
-export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, UpdateInfo, ProbeModelResult };
+export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, UpdateInfo, EncryptionStatus, ProbeModelResult };

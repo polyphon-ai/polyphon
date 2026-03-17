@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { runMigrations } from '../migrations';
+import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import {
   listCustomProviders,
   getCustomProvider,
@@ -8,6 +9,8 @@ import {
   updateCustomProvider,
   softDeleteCustomProvider,
 } from './customProviders';
+
+const TEST_KEY = Buffer.alloc(32);
 
 function createTestDb(): DatabaseSync {
   const db = new DatabaseSync(':memory:');
@@ -19,8 +22,8 @@ function createTestDb(): DatabaseSync {
 describe('customProviders queries', () => {
   let db: DatabaseSync;
 
-  beforeEach(() => { db = createTestDb(); });
-  afterEach(() => { db.close(); });
+  beforeEach(() => { initFieldEncryption(TEST_KEY); db = createTestDb(); });
+  afterEach(() => { db.close(); _resetForTests(); });
 
   it('creates and retrieves a custom provider', () => {
     const cp = createCustomProvider(db, {
@@ -103,6 +106,25 @@ describe('customProviders queries', () => {
 
   it('returns null for unknown id', () => {
     expect(getCustomProvider(db, 'nonexistent-id')).toBeNull();
+  });
+
+  it('stores base_url as ENC:v1: ciphertext', () => {
+    const cp = createCustomProvider(db, { name: 'Enc', slug: 'enc', baseUrl: 'http://enc.test/v1', apiKeyEnvVar: null, defaultModel: null });
+    const row = db.prepare('SELECT base_url FROM custom_providers WHERE id = ?').get(cp.id) as { base_url: string };
+    expect(row.base_url).toMatch(/^ENC:v1:/);
+  });
+
+  it('decrypts base_url back to original value', () => {
+    const cp = createCustomProvider(db, { name: 'Enc', slug: 'enc2', baseUrl: 'http://enc.test/v1', apiKeyEnvVar: null, defaultModel: null });
+    expect(cp.baseUrl).toBe('http://enc.test/v1');
+  });
+
+  it('reads legacy plaintext base_url without error', () => {
+    const id = 'legacy-cp';
+    db.prepare('INSERT INTO custom_providers (id, name, slug, base_url, api_key_env_var, default_model, deleted, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)')
+      .run(id, 'Legacy', 'legacy', 'http://legacy.test/v1', null, null, Date.now(), Date.now());
+    const cp = getCustomProvider(db, id);
+    expect(cp!.baseUrl).toBe('http://legacy.test/v1');
   });
 
   it('stores apiKeyEnvVar when provided', () => {

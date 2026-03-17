@@ -108,6 +108,15 @@ export const IPC = {
   UPDATE_GET_STATE: 'update:get-state',
   UPDATE_DISMISS: 'update:dismiss',
   UPDATE_CHECK_NOW: 'update:check-now',
+
+  ENCRYPTION_GET_STATUS: 'settings:encryption:getStatus',
+  ENCRYPTION_SET_PASSWORD: 'settings:encryption:setPassword',
+  ENCRYPTION_CHANGE_PASSWORD: 'settings:encryption:changePassword',
+  ENCRYPTION_REMOVE_PASSWORD: 'settings:encryption:removePassword',
+  ENCRYPTION_DISMISS_LINUX_NOTICE: 'settings:encryption:dismissLinuxNotice',
+  ENCRYPTION_UNLOCK_ATTEMPT: 'settings:encryption:unlock-attempt',
+  ENCRYPTION_LINUX_NOTICE: 'settings:encryption:linux-notice',
+  ENCRYPTION_KEY_REGENERATED_WARNING: 'settings:encryption:key-regenerated-warning',
 } as const;
 
 export const CONTINUATION_MAX_ROUNDS_LIMIT = 3;

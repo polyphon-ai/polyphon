@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { MessageSquare, Music2, Settings2, Archive, Plus, PanelLeftClose, PanelLeftOpen, Pencil, Check, X, Camera, Wand2, BookOpen } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { MessageSquare, Music2, Settings2, Archive, Plus, PanelLeftClose, PanelLeftOpen, Pencil, Check, X, Camera, Wand2, BookOpen, AlertTriangle } from 'lucide-react';
 import wordmarkLightUrl from '../../assets/wordmark-light.svg?url';
 import wordmarkDarkUrl from '../../assets/wordmark-dark.svg?url';
 import iconLightUrl from '../../assets/icon-light-transparent.svg?url';
@@ -16,6 +16,7 @@ import { PROVIDER_METADATA, SETTINGS_PROVIDERS, PRESET_COLORS, PRESET_COLOR_NAME
 import { AvatarEditor } from './components/Settings/AvatarEditor';
 import { HelpTooltip } from './components/Shared';
 import UpdateBanner from './components/Shared/UpdateBanner';
+import PasswordPromptView from './components/PasswordPrompt/PasswordPromptView';
 
 
 function ArchiveToggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -952,6 +953,11 @@ function Dashboard({
 // ── Root ──────────────────────────────────────────────────────────────────────
 
 export default function App(): React.JSX.Element {
+  // Render password prompt if launched as the unlock window
+  if (new URLSearchParams(window.location.search).get('view') === 'unlock') {
+    return <PasswordPromptView />;
+  }
+
   const { activeView, setView, theme } = useUIStore();
   const {
     activeSessionId,
@@ -992,11 +998,17 @@ export default function App(): React.JSX.Element {
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
   const sidebarCompMap = Object.fromEntries(compositions.map((c) => [c.id, c]));
 
+  const [keyRegeneratedWarning, setKeyRegeneratedWarning] = useState(false);
+
   // On startup, load settings, compositions, and sessions for the store
   useEffect(() => {
     loadSettings();
     window.polyphon.composition.list().then(setCompositions).catch(() => {});
     window.polyphon.session.list(false).then(setSessions).catch(() => {});
+    const unsub = window.polyphon.encryption.onKeyRegeneratedWarning(() => {
+      setKeyRegeneratedWarning(true);
+    });
+    return () => { unsub(); };
   }, []);
 
   // Show onboarding modal on first run (profile loaded but no name set yet)
@@ -1116,6 +1128,21 @@ export default function App(): React.JSX.Element {
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 overflow-hidden">
       <UpdateBanner />
+      {keyRegeneratedWarning && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2 bg-amber-500 text-white text-sm shrink-0">
+          <span className="flex items-center gap-2">
+            <AlertTriangle size={16} strokeWidth={1.75} />
+            <span>Encryption key was regenerated. Previous messages may be unreadable. Go to Settings → Encryption to set a password.</span>
+          </span>
+          <button
+            onClick={() => setKeyRegeneratedWarning(false)}
+            aria-label="Dismiss"
+            className="p-1 rounded hover:bg-amber-400 transition-colors shrink-0"
+          >
+            <X size={16} strokeWidth={1.75} />
+          </button>
+        </div>
+      )}
       <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Skip to main content */}
       <a

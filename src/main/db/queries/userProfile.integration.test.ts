@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { runMigrations } from '../migrations';
+import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import { getUserProfile, upsertUserProfile } from './userProfile';
+
+const TEST_KEY = Buffer.alloc(32);
 
 function createTestDb(): DatabaseSync {
   const db = new DatabaseSync(':memory:');
@@ -13,8 +16,8 @@ function createTestDb(): DatabaseSync {
 describe('userProfile queries', () => {
   let db: DatabaseSync;
 
-  beforeEach(() => { db = createTestDb(); });
-  afterEach(() => { db.close(); });
+  beforeEach(() => { initFieldEncryption(TEST_KEY); db = createTestDb(); });
+  afterEach(() => { db.close(); _resetForTests(); });
 
   it('getUserProfile returns default profile when no row exists', () => {
     // migration004 seeds a row — delete it to exercise the fallback code path
@@ -114,5 +117,30 @@ describe('userProfile queries', () => {
     upsertUserProfile(db, { conductorName: '', pronouns: '', conductorContext: '', defaultTone: tone, conductorColor: '', conductorAvatar: '' });
     const profile = getUserProfile(db);
     expect(profile.defaultTone).toBe(tone);
+  });
+
+  it('stores conductor_name as ENC:v1: ciphertext', () => {
+    upsertUserProfile(db, { conductorName: 'Ada', pronouns: 'she/her', conductorContext: 'Engineer', defaultTone: 'collaborative', conductorColor: '', conductorAvatar: '' });
+    const row = db.prepare('SELECT conductor_name, pronouns, conductor_context FROM user_profile WHERE id = 1').get() as { conductor_name: string; pronouns: string; conductor_context: string };
+    expect(row.conductor_name).toMatch(/^ENC:v1:/);
+    expect(row.pronouns).toMatch(/^ENC:v1:/);
+    expect(row.conductor_context).toMatch(/^ENC:v1:/);
+  });
+
+  it('decrypts profile fields back to original values', () => {
+    upsertUserProfile(db, { conductorName: 'Ada', pronouns: 'she/her', conductorContext: 'Engineer', defaultTone: 'collaborative', conductorColor: '', conductorAvatar: '' });
+    const profile = getUserProfile(db);
+    expect(profile.conductorName).toBe('Ada');
+    expect(profile.pronouns).toBe('she/her');
+    expect(profile.conductorContext).toBe('Engineer');
+  });
+
+  it('reads legacy plaintext profile fields without error', () => {
+    db.prepare('UPDATE user_profile SET conductor_name = ?, pronouns = ?, conductor_context = ? WHERE id = 1')
+      .run('Legacy Name', 'they/them', 'Legacy context');
+    const profile = getUserProfile(db);
+    expect(profile.conductorName).toBe('Legacy Name');
+    expect(profile.pronouns).toBe('they/them');
+    expect(profile.conductorContext).toBe('Legacy context');
   });
 });

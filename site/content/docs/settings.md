@@ -6,7 +6,7 @@ description: "Configure voice providers, manage tones and system prompt template
 
 The Settings page lets you configure voice providers, manage tones and system prompt templates, set up your Conductor Profile, and view app information. Open it by clicking the **gear icon** in the bottom-left corner of the main window.
 
-Settings is organized into tabs: **Providers**, **Custom Providers**, **Tones**, **System Prompt Templates**, **Conductor Profile**, and **About**.
+Settings is organized into tabs: **Providers**, **Custom Providers**, **Tones**, **System Prompt Templates**, **Conductor Profile**, **Encryption**, and **About**.
 
 ![Full Settings page showing the tab navigation bar with all six tabs](/images/screenshots/settings/settings-overview.webp)
 <!-- Prerequisites: Settings open | Platform: any | Theme: any | Window: default -->
@@ -84,6 +84,41 @@ The **Conductor Profile** tab stores information about you that is shared with a
 
 ---
 
+## Encryption
+
+The **Encryption** tab lets you manage how Polyphon protects sensitive data stored in its local database — message content, conductor profile, system prompt templates, and voice configurations.
+
+### How it works
+
+Polyphon uses AES-256-GCM field-level encryption. When you first launch the app, a 256-bit database key is generated and stored in `polyphon.key.json` alongside the database. By default the key is wrapped using your operating system's secure storage:
+
+- **macOS** — macOS Keychain
+- **Windows** — Windows Data Protection API (DPAPI)
+- **Linux** — libsecret (falls back to basic text storage if libsecret is not installed)
+
+This all happens automatically with no user action required. Existing plaintext rows continue to load correctly after upgrading.
+
+### Setting a password
+
+For stronger protection — especially on Linux or shared machines — you can set a password. Polyphon will use `scrypt` to derive a wrapping key from your password, replacing the OS-level wrapping. On every subsequent startup a small unlock window will appear before the main window.
+
+1. Open **Settings → Encryption**.
+2. Click **Set password** and enter a password twice to confirm.
+3. Click **Save**.
+
+Your database key never changes when you set, change, or remove a password — only the wrapping changes, so all existing encrypted data remains readable.
+
+### Changing or removing a password
+
+- **Change password** — enter your current password and the new one, then click **Save**.
+- **Remove password** — enter your current password and click **Remove password**. The key reverts to OS-level wrapping and the unlock window no longer appears on startup.
+
+### Linux notice
+
+If you are on Linux and libsecret is not available, the OS-level wrapping falls back to plain text storage, which provides weaker protection. Polyphon will show a one-time notice recommending that you set a password. You can dismiss this notice permanently from the Encryption tab.
+
+---
+
 ## About
 
 The **About** tab shows information about your current installation:
@@ -103,15 +138,22 @@ The **About** tab shows information about your current installation:
 
 ## Data Location
 
-Polyphon stores all data locally. The database file is located at:
+Polyphon stores all data locally. The database and encryption key files are located at:
 
 | Platform | Path |
 |---|---|
-| macOS | `~/Library/Application Support/polyphon/polyphon.db` |
-| Windows | `%APPDATA%\polyphon\polyphon.db` |
-| Linux | `~/.config/polyphon/polyphon.db` |
+| macOS | `~/Library/Application Support/polyphon/` |
+| Windows | `%APPDATA%\polyphon\` |
+| Linux | `~/.config/polyphon/` |
 
-Your API keys, session history, and compositions are all in this file. Back it up if you want to preserve your data.
+Inside that directory:
+
+| File | Contents |
+|---|---|
+| `polyphon.db` | Your sessions, messages, compositions, API keys, and settings |
+| `polyphon.key.json` | The encryption key (wrapped by OS secure storage or your password) |
+
+Back up both files together to preserve your data and maintain the ability to decrypt it.
 
 ---
 

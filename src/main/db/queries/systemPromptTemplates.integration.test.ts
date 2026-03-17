@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { runMigrations } from '../migrations';
+import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import {
   listSystemPromptTemplates,
   getSystemPromptTemplate,
@@ -8,8 +9,10 @@ import {
   updateSystemPromptTemplate,
   deleteSystemPromptTemplate,
 } from './systemPromptTemplates';
-import { insertComposition } from './compositions';
+import { insertComposition, getComposition } from './compositions';
 import type { Composition, CompositionVoice } from '../../../shared/types';
+
+const TEST_KEY = Buffer.alloc(32);
 
 function createTestDb(): DatabaseSync {
   const db = new DatabaseSync(':memory:');
@@ -47,8 +50,8 @@ function makeCompositionWithTemplate(templateId: string): Composition {
 describe('systemPromptTemplates queries', () => {
   let db: DatabaseSync;
 
-  beforeEach(() => { db = createTestDb(); });
-  afterEach(() => { db.close(); });
+  beforeEach(() => { initFieldEncryption(TEST_KEY); db = createTestDb(); });
+  afterEach(() => { db.close(); _resetForTests(); });
 
   it('starts with seeded sample templates', () => {
     const list = listSystemPromptTemplates(db);
@@ -118,14 +121,32 @@ describe('systemPromptTemplates queries', () => {
     insertComposition(db, makeCompositionWithTemplate(t.id));
     deleteSystemPromptTemplate(db, t.id);
 
-    const row = db
-      .prepare('SELECT system_prompt FROM composition_voices WHERE composition_id = ?')
-      .get(`comp-${t.id}`) as { system_prompt: string } | undefined;
-    expect(row?.system_prompt).toBe('Snapshot content');
+    const comp = getComposition(db, `comp-${t.id}`);
+    expect(comp!.voices[0]!.systemPrompt).toBe('Snapshot content');
   });
 
   it('allows duplicate names (no uniqueness constraint on templates)', () => {
     createSystemPromptTemplate(db, { name: 'Same', content: 'Content A.' });
     expect(() => createSystemPromptTemplate(db, { name: 'Same', content: 'Content B.' })).not.toThrow();
+  });
+
+  it('stores template content as ENC:v1: ciphertext', () => {
+    const t = createSystemPromptTemplate(db, { name: 'Secret', content: 'Secret content' });
+    const row = db.prepare('SELECT content FROM system_prompt_templates WHERE id = ?').get(t.id) as { content: string };
+    expect(row.content).toMatch(/^ENC:v1:/);
+  });
+
+  it('decrypts content back to original value', () => {
+    const t = createSystemPromptTemplate(db, { name: 'Secret', content: 'Secret content' });
+    const retrieved = getSystemPromptTemplate(db, t.id);
+    expect(retrieved!.content).toBe('Secret content');
+  });
+
+  it('reads legacy plaintext content without error', () => {
+    const id = 'legacy-spt';
+    db.prepare('INSERT INTO system_prompt_templates (id, name, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
+      .run(id, 'Legacy', 'Legacy plaintext content', Date.now(), Date.now());
+    const t = getSystemPromptTemplate(db, id);
+    expect(t!.content).toBe('Legacy plaintext content');
   });
 });

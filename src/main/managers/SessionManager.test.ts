@@ -1,12 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { SessionManager } from './SessionManager';
 import { VoiceManager } from './VoiceManager';
 import { CREATE_TABLES_SQL } from '../db/schema';
 import { runMigrations } from '../db/migrations';
 import { listMessages, insertMessage } from '../db/queries/messages';
+import { initFieldEncryption, _resetForTests } from '../security/fieldEncryption';
 import { IPC } from '../../shared/constants';
 import type { Session, Message } from '../../shared/types';
+
+const TEST_KEY = Buffer.alloc(32);
 
 function makeSessionManager(): SessionManager {
   return new SessionManager(new VoiceManager());
@@ -265,8 +268,13 @@ describe('SessionManager.runBroadcastRound', () => {
   let win: ReturnType<typeof makeWin>;
 
   beforeEach(() => {
+    initFieldEncryption(TEST_KEY);
     db = makeTestDb();
     win = makeWin();
+  });
+
+  afterEach(() => {
+    _resetForTests();
   });
 
   it('calls send() on every voice in the ensemble', async () => {
@@ -421,8 +429,13 @@ describe('SessionManager.runDirectedRound', () => {
   let win: ReturnType<typeof makeWin>;
 
   beforeEach(() => {
+    initFieldEncryption(TEST_KEY);
     db = makeTestDb();
     win = makeWin();
+  });
+
+  afterEach(() => {
+    _resetForTests();
   });
 
   it('calls send() only on the targeted voice', async () => {

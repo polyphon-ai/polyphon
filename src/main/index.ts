@@ -1,12 +1,18 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, safeStorage } from 'electron';
 import path from 'path';
 import started from 'electron-squirrel-startup';
 import { registerIpcHandlers } from './ipc';
+import type { EncryptionContext } from './ipc/settingsHandlers';
 import { getDb, closeDb } from './db';
 import { loadShellEnv } from './utils/env';
 import { VoiceManager } from './managers/VoiceManager';
 import { SessionManager } from './managers/SessionManager';
 import { checkForUpdate } from './utils/updateChecker';
+import { loadOrCreateKey, readKeyFile } from './security/keyManager';
+import { initFieldEncryption } from './security/fieldEncryption';
+import { createUnlockWindow } from './security/unlockWindow';
+import { installCsp } from './security/csp';
+import { IPC } from '../shared/constants';
 
 // Handle Squirrel startup events on Windows
 if (started) app.quit();
@@ -52,6 +58,30 @@ app.whenReady().then(async () => {
   // ~/.zshrc, ~/.bashrc, etc. are visible regardless of how the app launched.
   loadShellEnv();
 
+  // Install CSP once, before any window is created, so the policy is in place
+  // before the renderer loads any content.
+  installCsp();
+
+  const e2e = process.env.POLYPHON_E2E === '1';
+  const userDataPath = app.getPath('userData');
+
+  // Resolve the database key before opening the DB. For password-wrapped keys
+  // this shows an unlock window and awaits the user's password.
+  const { key, keyWasAbsent } = await loadOrCreateKey(
+    userDataPath,
+    safeStorage,
+    e2e,
+    async (keyFile) => {
+      const { window: unlockWin, unlockPromise } = createUnlockWindow(keyFile);
+      const resolvedKey = await unlockPromise;
+      // Destroy the window without triggering the close→app.quit() handler.
+      unlockWin.destroy();
+      return resolvedKey;
+    },
+  );
+
+  initFieldEncryption(key);
+
   const db = getDb();
   const voiceManager = new VoiceManager();
   voiceManager.loadCustomProviders(db);
@@ -59,9 +89,33 @@ app.whenReady().then(async () => {
   voiceManager.loadSystemPromptTemplates(db);
   const sessionManager = new SessionManager(voiceManager);
 
-  registerIpcHandlers(db, voiceManager, sessionManager);
+  const encCtx: EncryptionContext = { userDataPath, dbKey: key, e2e };
+  registerIpcHandlers(db, voiceManager, sessionManager, encCtx);
   const win = createWindow();
   checkForUpdate(db, win);
+
+  // After the renderer finishes loading, send any one-time push notifications.
+  win.webContents.once('did-finish-load', () => {
+    if (e2e) return;
+
+    // Warn if the key was absent (key file missing on a non-fresh install).
+    if (keyWasAbsent) {
+      win.webContents.send(IPC.ENCRYPTION_KEY_REGENERATED_WARNING);
+    }
+
+    // Notify Linux users whose safeStorage backend is basic_text with no password.
+    const safeStorageTyped = safeStorage as typeof safeStorage & { getSelectedStorageBackend?(): string };
+    if (
+      safeStorage.isEncryptionAvailable() &&
+      safeStorageTyped.getSelectedStorageBackend?.() === 'basic_text'
+    ) {
+      const keyFilePath = path.join(userDataPath, 'polyphon.key.json');
+      const keyFile = readKeyFile(keyFilePath);
+      if (keyFile?.wrapping === 'safeStorage' && !keyFile.linuxNoticeDismissed) {
+        win.webContents.send(IPC.ENCRYPTION_LINUX_NOTICE);
+      }
+    }
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

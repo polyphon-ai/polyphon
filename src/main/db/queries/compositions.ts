@@ -1,5 +1,6 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import type { Composition, CompositionVoice } from '../../../shared/types';
+import { encryptField, decryptField, type EncryptedField } from '../encryption';
 
 interface CompositionRow {
   id: string;
@@ -18,9 +19,9 @@ interface CompositionVoiceRow {
   provider: string;
   model: string | null;
   cli_command: string | null;
-  cli_args: string | null;
+  cli_args: EncryptedField | null;
   display_name: string;
-  system_prompt: string | null;
+  system_prompt: EncryptedField | null;
   sort_order: number;
   color: string;
   avatar_icon: string;
@@ -30,15 +31,17 @@ interface CompositionVoiceRow {
 }
 
 function rowToCompositionVoice(row: CompositionVoiceRow): CompositionVoice {
+  const systemPromptDecrypted = row.system_prompt ? decryptField(row.system_prompt) : null;
+  const cliArgsDecrypted = row.cli_args ? decryptField(row.cli_args) : null;
   return {
     id: row.id,
     compositionId: row.composition_id,
     provider: row.provider,
     model: row.model ?? undefined,
     cliCommand: row.cli_command ?? undefined,
-    cliArgs: row.cli_args ? (JSON.parse(row.cli_args) as string[]) : undefined,
+    cliArgs: cliArgsDecrypted ? (JSON.parse(cliArgsDecrypted) as string[]) : undefined,
     displayName: row.display_name,
-    systemPrompt: row.system_prompt ?? undefined,
+    systemPrompt: systemPromptDecrypted ?? undefined,
     toneOverride: row.tone_override ?? undefined,
     systemPromptTemplateId: row.system_prompt_template_id ?? undefined,
     order: row.sort_order,
@@ -123,9 +126,9 @@ export function insertComposition(db: DatabaseSync, composition: Composition): v
         voice.provider,
         voice.model ?? null,
         voice.cliCommand ?? null,
-        voice.cliArgs ? JSON.stringify(voice.cliArgs) : null,
+        voice.cliArgs ? encryptField(JSON.stringify(voice.cliArgs)) : null,
         voice.displayName,
-        voice.systemPrompt ?? null,
+        voice.systemPrompt != null ? encryptField(voice.systemPrompt) : null,
         voice.order,
         voice.color,
         voice.avatarIcon,
@@ -207,9 +210,9 @@ export function upsertCompositionVoices(db: DatabaseSync, voices: CompositionVoi
         voice.provider,
         voice.model ?? null,
         voice.cliCommand ?? null,
-        voice.cliArgs ? JSON.stringify(voice.cliArgs) : null,
+        voice.cliArgs ? encryptField(JSON.stringify(voice.cliArgs)) : null,
         voice.displayName,
-        voice.systemPrompt ?? null,
+        voice.systemPrompt != null ? encryptField(voice.systemPrompt) : null,
         voice.order,
         voice.color,
         voice.avatarIcon,

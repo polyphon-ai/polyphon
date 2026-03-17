@@ -271,6 +271,26 @@ Icon sizing:
 
 ---
 
+## Security
+
+### Content Security Policy
+
+CSP is enforced on all renderer content via two complementary mechanisms:
+
+1. **HTTP header** (`installCsp()` in `src/main/security/csp.ts`) — registers `session.defaultSession.webRequest.onHeadersReceived` before any window is created. Effective for Vite dev server (HTTP) responses. Must remain the single registration point; never call `installCsp()` from the `activate` handler.
+
+2. **`<meta>` fallback** (`index.html`) — `onHeadersReceived` does not fire for `file://` responses in Electron 41. The `<meta http-equiv="Content-Security-Policy">` tag in `index.html` enforces the policy on production `file://` loads. Note: `frame-ancestors` and `form-action` are not supported in `<meta>` CSP and are only enforced via the HTTP header.
+
+**Production policy** (`isDev=false`): `default-src 'none'` deny-by-default with explicit allow-list (see `buildCspHeader` in `csp.ts`). Key invariants:
+- `connect-src 'none'` — the renderer makes zero network calls; all API traffic goes through IPC.
+- No `'unsafe-eval'` or `'unsafe-inline'` in production under any circumstance.
+
+**Development policy** (`isDev=true`): relaxed for Vite HMR. `connect-src` is derived from the actual `MAIN_WINDOW_VITE_DEV_SERVER_URL` at runtime (exact origin, not a wildcard). `'unsafe-eval'` and `'unsafe-inline'` are strictly gated behind the truthiness of that global — they never appear in a production build.
+
+**Adding renderer features:** future changes must not require adding `'unsafe-inline'` or `'unsafe-eval'` to the production policy. If a new feature would require this, raise it explicitly before implementing.
+
+---
+
 ## Dependency Policy
 
 Always use the **latest stable version** of every dependency. When adding or updating packages:
@@ -317,6 +337,58 @@ make test-e2e          # Playwright e2e with mocked voices
 make test-e2e-live     # e2e against real providers (opt-in, never CI)
 make test-watch        # Vitest in watch mode
 ```
+
+---
+
+## Encrypted Fields
+
+Certain database columns contain user-generated content, credentials, or PII and must
+be encrypted at rest using AES-256-GCM via `src/main/db/encryption.ts`.
+
+### Canonical manifest
+
+The authoritative list of encrypted fields lives in `src/main/db/encryptionManifest.ts`:
+
+```
+ENCRYPTED_FIELDS = {
+  messages:                ['content'],
+  user_profile:            ['conductor_name', 'pronouns', 'conductor_context'],
+  custom_providers:        ['base_url'],
+  system_prompt_templates: ['content'],
+  composition_voices:      ['system_prompt', 'cli_args'],
+}
+```
+
+### Branded type enforcement
+
+The `EncryptedField` branded type in `src/main/db/encryption.ts` makes it a **TypeScript
+compile error** to assign a plain `string` to an encrypted column or use an
+`EncryptedField` where a plain `string` is expected. All `*Row` interfaces in
+`src/main/db/queries/` use `EncryptedField` for encrypted columns. The `rowToX` /
+`xToRow` conversion functions are the only place that crosses the boundary via
+`encryptField()` / `decryptField()`.
+
+### Rules for adding or modifying fields
+
+1. **New field with user content, credentials, or PII?** Add it to `encryptionManifest.ts`
+   and use `EncryptedField` in the corresponding `*Row` interface. The TypeScript compiler
+   will flag any missing `encryptField()` / `decryptField()` calls.
+2. **New table?** Review every column against the criteria above before writing the query
+   file. If any column qualifies, add the table to the manifest before the first commit.
+3. **Never bypass the query layer** for encrypted tables — raw `db.prepare()` calls
+   outside of `src/main/db/queries/` must not write to encrypted columns.
+4. **Never send an `EncryptedField` value over IPC** — always decrypt before the value
+   leaves the query layer.
+
+### Manifest test (CI gate)
+
+`src/main/db/encryption.manifest.test.ts` is an integration test that inserts known
+sentinel values through the query layer and then reads raw rows directly from SQLite to
+assert the stored value is **not** the plaintext. This test fails automatically if any
+manifest field is written without encryption. It must pass in CI.
+
+When you add a new encrypted field, add a corresponding assertion to this test in the
+same commit.
 
 ---
 

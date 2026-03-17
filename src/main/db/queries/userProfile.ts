@@ -1,11 +1,12 @@
 import { DatabaseSync } from 'node:sqlite';
 import type { UserProfile, TonePreset } from '../../../shared/types';
+import { encryptField, decryptField, type EncryptedField } from '../encryption';
 
 interface UserProfileRow {
   id: number;
-  conductor_name: string;
-  pronouns: string;
-  conductor_context: string;
+  conductor_name: EncryptedField;
+  pronouns: EncryptedField;
+  conductor_context: EncryptedField;
   default_tone: string;
   conductor_color: string;
   conductor_avatar: string;
@@ -16,9 +17,9 @@ interface UserProfileRow {
 
 function rowToProfile(row: UserProfileRow): UserProfile {
   return {
-    conductorName: row.conductor_name,
-    pronouns: row.pronouns,
-    conductorContext: row.conductor_context,
+    conductorName: decryptField(row.conductor_name) ?? '',
+    pronouns: decryptField(row.pronouns) ?? '',
+    conductorContext: decryptField(row.conductor_context) ?? '',
     defaultTone: row.default_tone as TonePreset,
     conductorColor: row.conductor_color,
     conductorAvatar: row.conductor_avatar,
@@ -44,9 +45,8 @@ export function upsertUserProfile(
 ): UserProfile {
   const now = Date.now();
   db.prepare(`
-    INSERT OR REPLACE INTO user_profile (id, conductor_name, pronouns, conductor_context, default_tone, conductor_color, conductor_avatar, updated_at)
-    VALUES (1, ?, ?, ?, ?, ?, ?, ?)
-  `).run(profile.conductorName, profile.pronouns, profile.conductorContext, profile.defaultTone, profile.conductorColor, profile.conductorAvatar, now);
+    UPDATE user_profile SET conductor_name=?, pronouns=?, conductor_context=?, default_tone=?, conductor_color=?, conductor_avatar=?, updated_at=? WHERE id=1
+  `).run(encryptField(profile.conductorName), encryptField(profile.pronouns), encryptField(profile.conductorContext), profile.defaultTone, profile.conductorColor, profile.conductorAvatar, now);
 
   return getUserProfile(db);
 }

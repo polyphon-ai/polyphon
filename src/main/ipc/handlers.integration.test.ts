@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { CREATE_TABLES_SQL } from '../db/schema';
+import { initFieldEncryption, _resetForTests } from '../security/fieldEncryption';
 import { IPC } from '../../shared/constants';
 import { insertComposition } from '../db/queries/compositions';
 import { insertSession } from '../db/queries/sessions';
@@ -125,6 +126,7 @@ describe('IPC handlers integration', () => {
   let sessionManager: ReturnType<typeof makeMockSessionManager>;
 
   beforeEach(async () => {
+    initFieldEncryption(Buffer.alloc(32));
     handlers.clear();
     mockShellOpenExternal.mockClear();
     mockGetCachedUpdateInfo.mockClear().mockReturnValue(null);
@@ -135,6 +137,8 @@ describe('IPC handlers integration', () => {
     const { registerIpcHandlers } = await import('./index');
     registerIpcHandlers(db, voiceManager, sessionManager);
   });
+
+  afterEach(() => { db.close(); _resetForTests(); });
 
   // --- SESSION handlers ---
 

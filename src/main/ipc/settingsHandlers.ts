@@ -1,5 +1,6 @@
-import { ipcMain, dialog, nativeImage } from 'electron';
+import { ipcMain, dialog, nativeImage, safeStorage } from 'electron';
 import { execFileSync, spawnSync } from 'child_process';
+import path from 'node:path';
 import { randomUUID } from 'crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { IPC, PROVIDER_METADATA, SETTINGS_PROVIDERS } from '../../shared/constants';
@@ -13,7 +14,15 @@ import type {
   CustomProviderWithStatus,
   ToneDefinition,
   SystemPromptTemplate,
+  EncryptionStatus,
 } from '../../shared/types';
+import {
+  readKeyFile,
+  updateKeyWrapping,
+  wrapWithSafeStorage,
+  wrapWithPassword,
+  unwrapWithPassword,
+} from '../security/keyManager';
 import { resolveApiKey, resolveApiKeyStatus, maskApiKey } from '../utils/env';
 import {
   listProviderConfigs,
@@ -269,7 +278,13 @@ export async function fetchModelsForCustomProvider(
   }
 }
 
-export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceManager): void {
+export interface EncryptionContext {
+  userDataPath: string;
+  dbKey: Buffer;
+  e2e: boolean;
+}
+
+export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceManager, encCtx?: EncryptionContext): void {
   ipcMain.handle(IPC.SETTINGS_GET_PROVIDER_STATUS, () => getProviderStatus());
 
   ipcMain.handle(
@@ -472,5 +487,58 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
   ipcMain.handle(IPC.SETTINGS_SYSTEM_PROMPT_TEMPLATE_DELETE, (_event, id: string) => {
     deleteSystemPromptTemplate(db, id);
     voiceManager.loadSystemPromptTemplates(db);
+  });
+
+  if (!encCtx) return;
+  const { userDataPath, dbKey, e2e } = encCtx;
+  const keyFilePath = path.join(userDataPath, 'polyphon.key.json');
+
+  ipcMain.handle(IPC.ENCRYPTION_GET_STATUS, (): EncryptionStatus => {
+    if (e2e) return { available: true, mode: 'e2e-test', passwordSet: false, linuxBasicText: false, linuxNoticeDismissed: true };
+    const available = safeStorage.isEncryptionAvailable();
+    const keyFile = readKeyFile(keyFilePath);
+    const passwordSet = keyFile?.wrapping === 'password';
+    const backend = (safeStorage as typeof safeStorage & { getSelectedStorageBackend?(): string }).getSelectedStorageBackend?.() ?? '';
+    const linuxBasicText = backend === 'basic_text';
+    return {
+      available,
+      mode: passwordSet ? 'password' : 'safeStorage',
+      passwordSet,
+      linuxBasicText,
+      linuxNoticeDismissed: keyFile?.linuxNoticeDismissed ?? false,
+    };
+  });
+
+  ipcMain.handle(IPC.ENCRYPTION_SET_PASSWORD, (_event, newPassword: string) => {
+    if (!newPassword || newPassword.length > 1024) throw new Error('Invalid password');
+    const keyFile = readKeyFile(keyFilePath);
+    if (!keyFile || keyFile.wrapping !== 'safeStorage') throw new Error('Can only set password when using safeStorage wrapping');
+    const wrapped = wrapWithPassword(dbKey, newPassword);
+    updateKeyWrapping(userDataPath, { version: 1, wrapping: 'password', linuxNoticeDismissed: keyFile.linuxNoticeDismissed, ...wrapped });
+  });
+
+  ipcMain.handle(IPC.ENCRYPTION_CHANGE_PASSWORD, (_event, oldPassword: string, newPassword: string) => {
+    if (!newPassword || newPassword.length > 1024) throw new Error('Invalid new password');
+    const keyFile = readKeyFile(keyFilePath);
+    if (!keyFile || keyFile.wrapping !== 'password') throw new Error('No password is currently set');
+    // Verify old password
+    unwrapWithPassword(keyFile, oldPassword);
+    const wrapped = wrapWithPassword(dbKey, newPassword);
+    updateKeyWrapping(userDataPath, { version: 1, wrapping: 'password', linuxNoticeDismissed: keyFile.linuxNoticeDismissed, ...wrapped });
+  });
+
+  ipcMain.handle(IPC.ENCRYPTION_REMOVE_PASSWORD, (_event, currentPassword: string) => {
+    const keyFile = readKeyFile(keyFilePath);
+    if (!keyFile || keyFile.wrapping !== 'password') throw new Error('No password is currently set');
+    // Verify current password
+    unwrapWithPassword(keyFile, currentPassword);
+    const encryptedKey = wrapWithSafeStorage(dbKey, safeStorage);
+    updateKeyWrapping(userDataPath, { version: 1, wrapping: 'safeStorage', encryptedKey, linuxNoticeDismissed: keyFile.linuxNoticeDismissed });
+  });
+
+  ipcMain.handle(IPC.ENCRYPTION_DISMISS_LINUX_NOTICE, () => {
+    const keyFile = readKeyFile(keyFilePath);
+    if (!keyFile) return;
+    updateKeyWrapping(userDataPath, { ...keyFile, linuxNoticeDismissed: true });
   });
 }

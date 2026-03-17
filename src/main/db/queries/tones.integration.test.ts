@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { runMigrations } from '../migrations';
+import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import { listTones, getTone, createTone, updateTone, deleteTone } from './tones';
 import { upsertUserProfile } from './userProfile';
 import { insertComposition } from './compositions';
@@ -42,8 +43,8 @@ function makeCompositionWithTone(toneId: string): Composition {
 describe('tones queries', () => {
   let db: DatabaseSync;
 
-  beforeEach(() => { db = createTestDb(); });
-  afterEach(() => { db.close(); });
+  beforeEach(() => { initFieldEncryption(Buffer.alloc(32)); db = createTestDb(); });
+  afterEach(() => { db.close(); _resetForTests(); });
 
   it('seeds 5 built-in tones on migration', () => {
     const tones = listTones(db);
