@@ -105,6 +105,30 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+describe('ClaudeCodeVoice constructor validation', () => {
+  it('throws for cliCommand with path separator', () => {
+    expect(() => claudeCodeProvider.create(makeConfig({ cliCommand: '../../evil' }))).toThrow();
+  });
+
+  it('throws for cliCommand with shell metacharacter', () => {
+    expect(() => claudeCodeProvider.create(makeConfig({ cliCommand: 'cmd;rm' }))).toThrow();
+  });
+
+  it('throws for empty cliCommand', () => {
+    expect(() => claudeCodeProvider.create(makeConfig({ cliCommand: '' }))).toThrow();
+  });
+
+  it('accepts valid custom cliCommand', () => {
+    mockSpawnSync.mockReturnValue({ status: 0, error: undefined });
+    expect(() => claudeCodeProvider.create(makeConfig({ cliCommand: 'my-tool.exe' }))).not.toThrow();
+  });
+
+  it('accepts default cliCommand when none provided', () => {
+    mockSpawnSync.mockReturnValue({ status: 0, error: undefined });
+    expect(() => claudeCodeProvider.create(makeConfig())).not.toThrow();
+  });
+});
+
 describe('ClaudeCodeVoice.isAvailable()', () => {
   it('returns true when spawnSync exits with status 0', async () => {
     mockSpawnSync.mockReturnValue({ status: 0, error: undefined });

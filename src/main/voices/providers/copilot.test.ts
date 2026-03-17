@@ -94,6 +94,30 @@ function makeMockProcess() {
 
 afterEach(() => { vi.clearAllMocks(); });
 
+describe('CopilotVoice constructor validation', () => {
+  it('throws for cliCommand with path separator', () => {
+    expect(() => copilotProvider.create(makeConfig({ cliCommand: '../../evil' }))).toThrow();
+  });
+
+  it('throws for cliCommand with shell metacharacter', () => {
+    expect(() => copilotProvider.create(makeConfig({ cliCommand: 'cmd;rm' }))).toThrow();
+  });
+
+  it('throws for empty cliCommand', () => {
+    expect(() => copilotProvider.create(makeConfig({ cliCommand: '' }))).toThrow();
+  });
+
+  it('accepts valid custom cliCommand', () => {
+    mockSpawnSync.mockReturnValue({ status: 0, error: undefined });
+    expect(() => copilotProvider.create(makeConfig({ cliCommand: 'my-tool.exe' }))).not.toThrow();
+  });
+
+  it('accepts default cliCommand when none provided', () => {
+    mockSpawnSync.mockReturnValue({ status: 0, error: undefined });
+    expect(() => copilotProvider.create(makeConfig())).not.toThrow();
+  });
+});
+
 describe('CopilotVoice.isAvailable()', () => {
   it('returns true when spawnSync exits with status 0', async () => {
     mockSpawnSync.mockReturnValue({ status: 0, error: undefined });

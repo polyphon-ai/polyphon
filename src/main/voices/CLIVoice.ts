@@ -1,6 +1,7 @@
 import type { ChildProcess } from 'child_process';
 import type { Message } from '../../shared/types';
 import type { Voice, VoiceConfig } from './Voice';
+import { requireCliCommand } from '../ipc/validate';
 
 // Base class for all CLI-backed voices (claude, codex, gemini, etc.).
 // Spawns a subprocess and streams stdout back as tokens.
@@ -25,7 +26,13 @@ export abstract class CLIVoice implements Voice {
     this.color = config.color;
     this.avatarIcon = config.avatarIcon;
     this.toneOverride = config.toneOverride;
-    this.cliCommand = config.cliCommand ?? config.defaultCommand;
+    const cliCommand = config.cliCommand ?? config.defaultCommand;
+    // CLI voices are intentionally user-configured to run local binaries. This
+    // validation prevents shell metacharacter injection and path traversal —
+    // it does not prevent execution of any binary on PATH by name, which is
+    // by design and equivalent to the user running the command themselves.
+    requireCliCommand(cliCommand, 'cliCommand');
+    this.cliCommand = cliCommand;
     this.cliArgs = config.cliArgs ?? [];
     this.systemPrompt = config.systemPrompt;
   }

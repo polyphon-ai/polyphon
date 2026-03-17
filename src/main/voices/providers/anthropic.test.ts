@@ -228,3 +228,14 @@ describe('AnthropicVoice.send()', () => {
     expect(callArgs.messages[0]!.content).toBe('Please continue.');
   });
 });
+
+
+describe('AnthropicCLIVoice constructor validation (base-class guard via AnthropicCLIVoice)', () => {
+  it('throws for cliCommand with path separator', () => {
+    expect(() => anthropicProvider.create(makeConfig({ cliCommand: '../../evil' }))).toThrow();
+  });
+
+  it('accepts valid cliCommand and creates AnthropicCLIVoice', () => {
+    expect(() => anthropicProvider.create(makeConfig({ cliCommand: 'claude' }))).not.toThrow();
+  });
+});

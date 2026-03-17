@@ -1,4 +1,18 @@
 import { ipcMain, dialog, nativeImage, safeStorage } from 'electron';
+import {
+  requireId,
+  requireString,
+  requireNonEmptyString,
+  requireEnum,
+  requireObject,
+  requireUrl,
+  coerceBoolean,
+  requireCliCommand,
+  requireUserProfileShape,
+  MAX_NAME,
+  MAX_PROVIDER,
+  MAX_MODEL,
+} from './validate';
 import { execFileSync, spawnSync } from 'child_process';
 import path from 'node:path';
 import { randomUUID } from 'crypto';
@@ -56,6 +70,11 @@ export function getProviderStatus(): ProviderStatus[] {
 
 // Tests whether a CLI command is available on PATH.
 export function testCliVoice(command: string): CliTestResult {
+  // CLI voices are intentionally user-configured to run local binaries. This
+  // validation prevents shell metacharacter injection and path traversal —
+  // it does not prevent execution of any binary already on PATH, which is
+  // by design and equivalent to the user running the command themselves.
+  requireCliCommand(command, 'command');
   if (process.env.POLYPHON_MOCK_VOICES === '1') {
     return { success: true, path: `/mock/bin/${command}` };
   }
@@ -289,30 +308,46 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
 
   ipcMain.handle(
     IPC.SETTINGS_TEST_CLI_VOICE,
-    (_event, command: string) => testCliVoice(command),
+    async (_event, command: unknown) => {
+      requireCliCommand(command, 'command');
+      return testCliVoice(command as string);
+    },
   );
 
   ipcMain.handle(
     IPC.SETTINGS_SAVE_PROVIDER_CONFIG,
-    (_event, config: Omit<ProviderConfig, 'id' | 'createdAt' | 'updatedAt'>) =>
-      saveProviderConfig(db, config),
+    async (_event, config: unknown) => {
+      const obj = requireObject(config, 'config');
+      requireNonEmptyString(obj['provider'], 'provider', MAX_PROVIDER);
+      requireEnum(obj['voiceType'], 'voiceType', ['api', 'cli'] as const);
+      coerceBoolean(obj['enabled'], 'enabled');
+      if (obj['defaultModel'] != null) requireString(obj['defaultModel'], 'defaultModel', MAX_MODEL);
+      if (obj['cliCommand'] != null) requireCliCommand(obj['cliCommand'], 'cliCommand');
+      return saveProviderConfig(db, config as Omit<ProviderConfig, 'id' | 'createdAt' | 'updatedAt'>);
+    },
   );
 
   ipcMain.handle(IPC.SETTINGS_GET_PROVIDER_CONFIG, () => getAllProviderConfigs(db));
 
-  ipcMain.handle(IPC.SETTINGS_FETCH_MODELS, (_event, provider: string) =>
-    fetchModelsForProvider(provider),
-  );
+  ipcMain.handle(IPC.SETTINGS_FETCH_MODELS, async (_event, provider: unknown) => {
+    requireNonEmptyString(provider, 'provider', MAX_PROVIDER);
+    return fetchModelsForProvider(provider as string);
+  });
 
-  ipcMain.handle(IPC.SETTINGS_PROBE_MODEL, (_event, provider: string, model: string) =>
-    probeModel(provider, model),
-  );
+  ipcMain.handle(IPC.SETTINGS_PROBE_MODEL, async (_event, provider: unknown, model: unknown) => {
+    requireNonEmptyString(provider, 'provider', MAX_PROVIDER);
+    requireNonEmptyString(model, 'model', MAX_MODEL);
+    return probeModel(provider as string, model as string);
+  });
 
   ipcMain.handle(IPC.SETTINGS_GET_USER_PROFILE, () => getUserProfile(db));
 
   ipcMain.handle(
     IPC.SETTINGS_SAVE_USER_PROFILE,
-    (_event, profile: Omit<UserProfile, 'updatedAt'>) => upsertUserProfile(db, profile),
+    async (_event, profile: unknown) => {
+      requireUserProfileShape(profile);
+      return upsertUserProfile(db, profile as Omit<UserProfile, 'updatedAt'>);
+    },
   );
 
   ipcMain.handle(IPC.SETTINGS_UPLOAD_CONDUCTOR_AVATAR, async () => {
@@ -357,17 +392,19 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
 
   ipcMain.handle(
     IPC.SETTINGS_CUSTOM_PROVIDER_CREATE,
-    (_event, data: Omit<CustomProvider, 'id' | 'deleted' | 'createdAt' | 'updatedAt'>) => {
-      if (!data.name?.trim()) throw new Error('Provider name is required');
-      if (!data.slug?.trim()) throw new Error('Provider slug is required');
-      if (!data.baseUrl?.trim()) throw new Error('Base URL is required');
+    async (_event, data: unknown) => {
+      const obj = requireObject(data, 'data');
+      requireNonEmptyString(obj['name'], 'name', MAX_NAME);
+      if (!String(obj['slug'] ?? '').trim()) throw new Error('Provider slug is required');
+      requireUrl(obj['baseUrl'], 'baseUrl', ['http:', 'https:']);
+      const cpData = data as Omit<CustomProvider, 'id' | 'deleted' | 'createdAt' | 'updatedAt'>;
       try {
-        const cp = createCustomProvider(db, data);
+        const cp = createCustomProvider(db, cpData);
         voiceManager.loadCustomProviders(db);
         return resolveCustomProviderStatus(cp);
       } catch (err) {
         if (err instanceof Error && err.message.includes('UNIQUE')) {
-          throw new Error(`A custom provider with slug "${data.slug}" already exists`);
+          throw new Error(`A custom provider with slug "${cpData.slug}" already exists`);
         }
         throw err;
       }
@@ -376,27 +413,37 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
 
   ipcMain.handle(
     IPC.SETTINGS_CUSTOM_PROVIDER_UPDATE,
-    (
+    async (
       _event,
-      id: string,
-      data: Partial<Omit<CustomProvider, 'id' | 'slug' | 'deleted' | 'createdAt' | 'updatedAt'>>,
+      id: unknown,
+      data: unknown,
     ) => {
-      if (data.name !== undefined && !data.name.trim()) throw new Error('Provider name is required');
-      if (data.baseUrl !== undefined && !data.baseUrl.trim()) throw new Error('Base URL is required');
-      const cp = updateCustomProvider(db, id, data);
+      requireId(id, 'id');
+      const obj = requireObject(data, 'data');
+      if (obj['name'] !== undefined) requireNonEmptyString(obj['name'], 'name', MAX_NAME);
+      if (obj['baseUrl'] !== undefined) requireUrl(obj['baseUrl'], 'baseUrl', ['http:', 'https:']);
+      const cp = updateCustomProvider(
+        db,
+        id as string,
+        data as Partial<Omit<CustomProvider, 'id' | 'slug' | 'deleted' | 'createdAt' | 'updatedAt'>>,
+      );
       voiceManager.loadCustomProviders(db);
       return resolveCustomProviderStatus(cp);
     },
   );
 
-  ipcMain.handle(IPC.SETTINGS_CUSTOM_PROVIDER_DELETE, (_event, id: string) => {
-    softDeleteCustomProvider(db, id);
+  ipcMain.handle(IPC.SETTINGS_CUSTOM_PROVIDER_DELETE, async (_event, id: unknown) => {
+    requireId(id, 'id');
+    softDeleteCustomProvider(db, id as string);
     voiceManager.loadCustomProviders(db);
   });
 
   ipcMain.handle(
     IPC.SETTINGS_CUSTOM_PROVIDER_FETCH_MODELS,
-    (_event, customProviderId: string) => fetchModelsForCustomProvider(db, customProviderId),
+    async (_event, customProviderId: unknown) => {
+      requireId(customProviderId, 'customProviderId');
+      return fetchModelsForCustomProvider(db, customProviderId as string);
+    },
   );
 
   ipcMain.handle(IPC.SETTINGS_TONE_LIST, () => listTones(db));
@@ -423,7 +470,8 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
 
   ipcMain.handle(
     IPC.SETTINGS_TONE_UPDATE,
-    (_event, id: string, data: Partial<Pick<ToneDefinition, 'name' | 'description'>>) => {
+    async (_event, id: unknown, data: Partial<Pick<ToneDefinition, 'name' | 'description'>>) => {
+      requireId(id, 'id');
       if (data.name !== undefined) {
         const name = data.name.trim();
         if (!name) throw new Error('Tone name is required');
@@ -434,7 +482,7 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
         throw new Error('Tone description is required');
       }
       try {
-        const tone = updateTone(db, id, data);
+        const tone = updateTone(db, id as string, data);
         voiceManager.loadTones(db);
         return tone;
       } catch (err) {
@@ -446,8 +494,9 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
     },
   );
 
-  ipcMain.handle(IPC.SETTINGS_TONE_DELETE, (_event, id: string) => {
-    deleteTone(db, id);
+  ipcMain.handle(IPC.SETTINGS_TONE_DELETE, async (_event, id: unknown) => {
+    requireId(id, 'id');
+    deleteTone(db, id as string);
     voiceManager.loadTones(db);
   });
 
@@ -468,7 +517,8 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
 
   ipcMain.handle(
     IPC.SETTINGS_SYSTEM_PROMPT_TEMPLATE_UPDATE,
-    (_event, id: string, data: Partial<Pick<SystemPromptTemplate, 'name' | 'content'>>) => {
+    async (_event, id: unknown, data: Partial<Pick<SystemPromptTemplate, 'name' | 'content'>>) => {
+      requireId(id, 'id');
       if (data.name !== undefined) {
         const name = data.name.trim();
         if (!name) throw new Error('Template name is required');
@@ -478,14 +528,15 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
       if (data.content !== undefined && !data.content.trim()) {
         throw new Error('Template content is required');
       }
-      const template = updateSystemPromptTemplate(db, id, data);
+      const template = updateSystemPromptTemplate(db, id as string, data);
       voiceManager.loadSystemPromptTemplates(db);
       return template;
     },
   );
 
-  ipcMain.handle(IPC.SETTINGS_SYSTEM_PROMPT_TEMPLATE_DELETE, (_event, id: string) => {
-    deleteSystemPromptTemplate(db, id);
+  ipcMain.handle(IPC.SETTINGS_SYSTEM_PROMPT_TEMPLATE_DELETE, async (_event, id: unknown) => {
+    requireId(id, 'id');
+    deleteSystemPromptTemplate(db, id as string);
     voiceManager.loadSystemPromptTemplates(db);
   });
 

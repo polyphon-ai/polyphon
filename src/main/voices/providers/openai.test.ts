@@ -201,3 +201,14 @@ describe('OpenAIVoice.send()', () => {
     }).not.toThrow();
   });
 });
+
+
+describe('CodexVoice constructor validation (base-class guard via CodexVoice)', () => {
+  it('throws for cliCommand with shell metacharacter', () => {
+    expect(() => openaiProvider.create(makeConfig({ cliCommand: 'cmd;rm' }))).toThrow();
+  });
+
+  it('accepts valid cliCommand and creates CodexVoice', () => {
+    expect(() => openaiProvider.create(makeConfig({ cliCommand: 'codex' }))).not.toThrow();
+  });
+});
