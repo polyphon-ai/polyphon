@@ -9,6 +9,13 @@ import { VoiceManager } from '../managers/VoiceManager';
 import { SessionManager } from '../managers/SessionManager';
 import type { Composition, CompositionVoice, Message, Session } from '../../shared/types';
 
+// UUID fixture constants
+const COMP_ID  = '00000000-0000-0000-0000-000000000001';
+const SESS_ID  = '00000000-0000-0000-0000-000000000002';
+const VOICE_ID = '00000000-0000-0000-0000-000000000003';
+const MSG_ID   = '00000000-0000-0000-0000-000000000004';
+const CP_ID    = '00000000-0000-0000-0000-000000000005';
+
 function createTestDb(): DatabaseSync {
   const db = new DatabaseSync(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
@@ -18,8 +25,8 @@ function createTestDb(): DatabaseSync {
 
 function makeVoice(overrides: Partial<CompositionVoice> = {}): CompositionVoice {
   return {
-    id: 'v-1',
-    compositionId: 'comp-1',
+    id: VOICE_ID,
+    compositionId: COMP_ID,
     provider: 'anthropic',
     model: 'claude-opus-4-6',
     displayName: 'Alice',
@@ -32,7 +39,7 @@ function makeVoice(overrides: Partial<CompositionVoice> = {}): CompositionVoice 
 
 function makeComposition(): Composition {
   return {
-    id: 'comp-1',
+    id: COMP_ID,
     name: 'Test',
     mode: 'broadcast',
     continuationPolicy: 'none',
@@ -46,8 +53,8 @@ function makeComposition(): Composition {
 
 function makeSession(): Session {
   return {
-    id: 'sess-1',
-    compositionId: 'comp-1',
+    id: SESS_ID,
+    compositionId: COMP_ID,
     name: 'Test Session',
     mode: 'broadcast',
     continuationPolicy: 'none',
@@ -58,9 +65,9 @@ function makeSession(): Session {
   };
 }
 
-function makeConductorMessage(sessionId = 'sess-1'): Message {
+function makeConductorMessage(sessionId = SESS_ID): Message {
   return {
-    id: 'msg-conductor',
+    id: MSG_ID,
     sessionId,
     role: 'conductor',
     voiceId: null,
@@ -95,7 +102,7 @@ describe('SessionManager + DB integration', () => {
 
       // Create a mock voice that yields 3 tokens
       const mockVoice = {
-        id: 'v-1',
+        id: VOICE_ID,
         name: 'Alice',
         provider: 'anthropic',
         type: 'api' as const,
@@ -111,7 +118,7 @@ describe('SessionManager + DB integration', () => {
         setEnsembleSystemPrompt: vi.fn(),
       };
 
-      voiceManager.initSession('sess-1', [mockVoice], 'broadcast');
+      voiceManager.initSession(SESS_ID, [mockVoice], 'broadcast');
 
       const win = {
         webContents: {
@@ -129,25 +136,25 @@ describe('SessionManager + DB integration', () => {
 
       // Token events should have been sent
       const tokenCalls = win.webContents.send.mock.calls.filter(
-        (c: any[]) => c[0] === 'voice:token:sess-1',
+        (c: any[]) => c[0] === `voice:token:${SESS_ID}`,
       );
       expect(tokenCalls).toHaveLength(3);
-      expect(tokenCalls[0][1]).toEqual({ voiceId: 'v-1', token: 'Hello' });
-      expect(tokenCalls[1][1]).toEqual({ voiceId: 'v-1', token: ' ' });
-      expect(tokenCalls[2][1]).toEqual({ voiceId: 'v-1', token: 'world' });
+      expect(tokenCalls[0][1]).toEqual({ voiceId: VOICE_ID, token: 'Hello' });
+      expect(tokenCalls[1][1]).toEqual({ voiceId: VOICE_ID, token: ' ' });
+      expect(tokenCalls[2][1]).toEqual({ voiceId: VOICE_ID, token: 'world' });
 
       // Done event should have been sent
       const doneCalls = win.webContents.send.mock.calls.filter(
-        (c: any[]) => c[0] === 'voice:done:sess-1',
+        (c: any[]) => c[0] === `voice:done:${SESS_ID}`,
       );
       expect(doneCalls).toHaveLength(1);
-      expect(doneCalls[0][1]).toEqual({ voiceId: 'v-1' });
+      expect(doneCalls[0][1]).toEqual({ voiceId: VOICE_ID });
 
       // Message should be in DB
-      const messages = listMessages(db, 'sess-1');
+      const messages = listMessages(db, SESS_ID);
       expect(messages).toHaveLength(1);
       expect(messages[0]!.role).toBe('voice');
-      expect(messages[0]!.voiceId).toBe('v-1');
+      expect(messages[0]!.voiceId).toBe(VOICE_ID);
       expect(messages[0]!.content).toBe('Hello world');
     });
 
@@ -155,8 +162,10 @@ describe('SessionManager + DB integration', () => {
       const voice1Responses: Message[][] = [];
       const voice2Responses: Message[][] = [];
 
+      const VOICE_ID_2 = '00000000-0000-0000-0000-000000000020';
+
       const mockVoice1 = {
-        id: 'v-1',
+        id: VOICE_ID,
         name: 'Alice',
         provider: 'anthropic',
         type: 'api' as const,
@@ -172,7 +181,7 @@ describe('SessionManager + DB integration', () => {
       };
 
       const mockVoice2 = {
-        id: 'v-2',
+        id: VOICE_ID_2,
         name: 'Bob',
         provider: 'openai',
         type: 'api' as const,
@@ -190,12 +199,12 @@ describe('SessionManager + DB integration', () => {
       insertComposition(db, {
         ...makeComposition(),
         voices: [
-          makeVoice({ id: 'v-1', displayName: 'Alice', order: 0 }),
-          makeVoice({ id: 'v-2', displayName: 'Bob', order: 1, compositionId: 'comp-1' }),
+          makeVoice({ id: VOICE_ID, displayName: 'Alice', order: 0 }),
+          makeVoice({ id: VOICE_ID_2, displayName: 'Bob', order: 1, compositionId: COMP_ID }),
         ],
       });
       insertSession(db, makeSession());
-      voiceManager.initSession('sess-1', [mockVoice1, mockVoice2], 'broadcast');
+      voiceManager.initSession(SESS_ID, [mockVoice1, mockVoice2], 'broadcast');
 
       const win = { webContents: { send: vi.fn() } } as any;
       const session = makeSession();
@@ -213,8 +222,10 @@ describe('SessionManager + DB integration', () => {
 
   describe('runDirectedRound with mocked voice provider', () => {
     it('only calls the targeted voice', async () => {
+      const VOICE_ID_2 = '00000000-0000-0000-0000-000000000020';
+
       const mockVoice1 = {
-        id: 'v-1',
+        id: VOICE_ID,
         name: 'Alice',
         provider: 'anthropic',
         type: 'api' as const,
@@ -226,7 +237,7 @@ describe('SessionManager + DB integration', () => {
         setEnsembleSystemPrompt: vi.fn(),
       };
       const mockVoice2 = {
-        id: 'v-2',
+        id: VOICE_ID_2,
         name: 'Bob',
         provider: 'openai',
         type: 'api' as const,
@@ -239,19 +250,19 @@ describe('SessionManager + DB integration', () => {
       };
 
       insertSession(db, makeSession());
-      voiceManager.initSession('sess-1', [mockVoice1, mockVoice2], 'broadcast');
+      voiceManager.initSession(SESS_ID, [mockVoice1, mockVoice2], 'broadcast');
 
       const win = { webContents: { send: vi.fn() } } as any;
       const session = makeSession();
       const conductorMsg = makeConductorMessage();
 
-      await sessionManager.runDirectedRound(win, session, conductorMsg, 'v-2', db);
+      await sessionManager.runDirectedRound(win, session, conductorMsg, VOICE_ID_2, db);
 
       expect(mockVoice1.send).not.toHaveBeenCalled();
       expect(mockVoice2.send).toHaveBeenCalledOnce();
 
-      const messages = listMessages(db, 'sess-1');
-      expect(messages[0]!.voiceId).toBe('v-2');
+      const messages = listMessages(db, SESS_ID);
+      expect(messages[0]!.voiceId).toBe(VOICE_ID_2);
       expect(messages[0]!.content).toBe('Bob reply');
     });
   });
