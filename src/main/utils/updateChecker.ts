@@ -15,10 +15,26 @@ export function getCachedUpdateInfo(): UpdateInfo | null {
   return cachedUpdateInfo;
 }
 
-interface GitHubRelease {
-  tag_name: string;
-  prerelease: boolean;
-  draft: boolean;
+// Test isolation — reset module-level cache between tests.
+export function _resetForTests(): void { cachedUpdateInfo = null; }
+
+const GITHUB_RELEASES_URL = 'https://api.github.com/repos/polyphon-ai/releases/releases/latest';
+const MAX_TAG_NAME_LENGTH = 30;
+const STRICT_VERSION_RE = /^\d+\.\d+\.\d+$/;
+
+// Single fetch-layer gate: validates the three fields consumed downstream (draft,
+// prerelease, tag_name) before any version string reaches further code. Downstream
+// logic (isNewerVersion, cache, IPC) only ever sees a validated "X.Y.Z" string.
+function parseReleaseVersion(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const r = payload as Record<string, unknown>;
+  if (typeof r.draft !== 'boolean') return null;
+  if (typeof r.prerelease !== 'boolean') return null;
+  if (r.draft || r.prerelease) return null;
+  if (typeof r.tag_name !== 'string') return null;
+  if (r.tag_name.length > MAX_TAG_NAME_LENGTH) return null;
+  const version = r.tag_name.startsWith('v') ? r.tag_name.slice(1) : r.tag_name;
+  return STRICT_VERSION_RE.test(version) ? version : null;
 }
 
 // Manual on-demand check — bypasses dismissal preferences, clears and resets the cache.
@@ -27,18 +43,15 @@ export async function checkForUpdateNow(win: BrowserWindow): Promise<UpdateInfo 
   try {
     const currentVersion = app.getVersion();
     const response = await fetch(
-      'https://api.github.com/repos/polyphon-ai/releases/releases/latest',
+      GITHUB_RELEASES_URL,
       { headers: { 'User-Agent': `polyphon/${currentVersion}` } },
     );
 
     if (!response.ok) return null;
 
-    const release = await response.json() as GitHubRelease;
-
-    if (release.draft || release.prerelease) return null;
-
-    const rawTag = release.tag_name ?? '';
-    const latestVersion = rawTag.startsWith('v') ? rawTag.slice(1) : rawTag;
+    const data = await response.json() as unknown;
+    const latestVersion = parseReleaseVersion(data);
+    if (!latestVersion) return null;
 
     if (!isNewerVersion(currentVersion, latestVersion)) {
       cachedUpdateInfo = null;
@@ -62,18 +75,15 @@ export async function checkForUpdate(db: DatabaseSync, win: BrowserWindow, now =
   try {
     const currentVersion = app.getVersion();
     const response = await fetch(
-      'https://api.github.com/repos/polyphon-ai/releases/releases/latest',
+      GITHUB_RELEASES_URL,
       { headers: { 'User-Agent': `polyphon/${currentVersion}` } },
     );
 
     if (!response.ok) return;
 
-    const release = await response.json() as GitHubRelease;
-
-    if (release.draft || release.prerelease) return;
-
-    const rawTag = release.tag_name ?? '';
-    const latestVersion = rawTag.startsWith('v') ? rawTag.slice(1) : rawTag;
+    const data = await response.json() as unknown;
+    const latestVersion = parseReleaseVersion(data);
+    if (!latestVersion) return;
 
     if (!isNewerVersion(currentVersion, latestVersion)) return;
 

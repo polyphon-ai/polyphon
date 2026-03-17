@@ -8,6 +8,17 @@ import { insertSession } from '../db/queries/sessions';
 import { insertMessage } from '../db/queries/messages';
 import type { Composition, Session, Message } from '../../shared/types';
 
+// UUID fixture constants
+const COMP_ID   = '00000000-0000-0000-0000-000000000001';
+const SESS_ID   = '00000000-0000-0000-0000-000000000002';
+const VOICE_ID  = '00000000-0000-0000-0000-000000000003';
+const MSG_ID    = '00000000-0000-0000-0000-000000000004';
+const CP_ID     = '00000000-0000-0000-0000-000000000005';
+const MSG_ID_2  = '00000000-0000-0000-0000-000000000006';
+const SESS_ID_ACTIVE   = '00000000-0000-0000-0000-000000000010';
+const SESS_ID_ARCHIVED = '00000000-0000-0000-0000-000000000011';
+const UNKNOWN_ID = '00000000-0000-0000-0000-000000000099';
+
 const handlers = new Map<string, Function>();
 
 const mockShellOpenExternal = vi.fn().mockResolvedValue(undefined);
@@ -46,10 +57,10 @@ function createTestDb(): DatabaseSync {
 
 function makeMockVoiceManager() {
   return {
-    createVoice: vi.fn().mockReturnValue({ id: 'v-1', name: 'Alice' }),
+    createVoice: vi.fn().mockReturnValue({ id: VOICE_ID, name: 'Alice' }),
     getVoice: vi.fn().mockReturnValue(undefined),
     initSession: vi.fn(),
-    getEnsemble: vi.fn().mockReturnValue([{ id: 'v-1', name: 'Alice' }]),
+    getEnsemble: vi.fn().mockReturnValue([{ id: VOICE_ID, name: 'Alice' }]),
     buildEnsembleSystemPrompt: vi.fn().mockReturnValue(''),
     disposeSession: vi.fn(),
   } as any;
@@ -65,7 +76,7 @@ function makeMockSessionManager() {
 }
 
 function makeComposition(overrides: Partial<Composition> = {}): Composition {
-  const id = overrides.id ?? 'comp-1';
+  const id = overrides.id ?? COMP_ID;
   return {
     id,
     name: 'Test Composition',
@@ -93,8 +104,8 @@ function makeComposition(overrides: Partial<Composition> = {}): Composition {
 
 function makeSession(overrides: Partial<Session> = {}): Session {
   return {
-    id: 'sess-1',
-    compositionId: 'comp-1',
+    id: SESS_ID,
+    compositionId: COMP_ID,
     name: 'Test Session',
     mode: 'broadcast',
     continuationPolicy: 'none',
@@ -108,8 +119,8 @@ function makeSession(overrides: Partial<Session> = {}): Session {
 
 function makeMessage(overrides: Partial<Message> = {}): Message {
   return {
-    id: 'msg-1',
-    sessionId: 'sess-1',
+    id: MSG_ID,
+    sessionId: SESS_ID,
     role: 'conductor',
     voiceId: null,
     voiceName: null,
@@ -146,10 +157,10 @@ describe('IPC handlers integration', () => {
     it('creates a session, inserts into DB, returns session with correct fields, calls voiceManager.initSession', async () => {
       insertComposition(db, makeComposition());
 
-      const result = await handlers.get(IPC.SESSION_CREATE)!({}, 'comp-1', 'My Session');
+      const result = await handlers.get(IPC.SESSION_CREATE)!({}, COMP_ID, 'My Session');
 
       expect(result).toMatchObject({
-        compositionId: 'comp-1',
+        compositionId: COMP_ID,
         name: 'My Session',
         mode: 'broadcast',
         continuationPolicy: 'none',
@@ -163,8 +174,21 @@ describe('IPC handlers integration', () => {
 
     it('throws when composition not found', async () => {
       await expect(
-        handlers.get(IPC.SESSION_CREATE)!({}, 'nonexistent', 'My Session'),
-      ).rejects.toThrow('Composition not found: nonexistent');
+        handlers.get(IPC.SESSION_CREATE)!({}, UNKNOWN_ID, 'My Session'),
+      ).rejects.toThrow('Composition not found');
+    });
+
+    it('throws for non-UUID compositionId', async () => {
+      await expect(
+        handlers.get(IPC.SESSION_CREATE)!({}, 'not-a-uuid', 'My Session'),
+      ).rejects.toThrow('Invalid compositionId: must be a valid UUID');
+    });
+
+    it('throws when name exceeds 200 characters', async () => {
+      insertComposition(db, makeComposition());
+      await expect(
+        handlers.get(IPC.SESSION_CREATE)!({}, COMP_ID, 'a'.repeat(201)),
+      ).rejects.toThrow('name exceeds maximum length of 200');
     });
   });
 
@@ -180,28 +204,28 @@ describe('IPC handlers integration', () => {
 
       const result = await handlers.get(IPC.SESSION_LIST)!({});
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('sess-1');
+      expect(result[0].id).toBe(SESS_ID);
     });
 
     it('respects archived flag — false excludes archived sessions', async () => {
       insertComposition(db, makeComposition());
-      insertSession(db, makeSession({ id: 'active' }));
-      insertSession(db, makeSession({ id: 'archived', archived: false }));
-      await handlers.get(IPC.SESSION_ARCHIVE)!({}, 'archived', true);
+      insertSession(db, makeSession({ id: SESS_ID_ACTIVE }));
+      insertSession(db, makeSession({ id: SESS_ID_ARCHIVED, archived: false }));
+      await handlers.get(IPC.SESSION_ARCHIVE)!({}, SESS_ID_ARCHIVED, true);
 
       const active = await handlers.get(IPC.SESSION_LIST)!({}, false);
-      expect(active.map((s: Session) => s.id)).not.toContain('archived');
+      expect(active.map((s: Session) => s.id)).not.toContain(SESS_ID_ARCHIVED);
     });
 
     it('respects archived flag — true returns only archived sessions', async () => {
       insertComposition(db, makeComposition());
-      insertSession(db, makeSession({ id: 'active' }));
-      insertSession(db, makeSession({ id: 'archived', archived: false }));
-      await handlers.get(IPC.SESSION_ARCHIVE)!({}, 'archived', true);
+      insertSession(db, makeSession({ id: SESS_ID_ACTIVE }));
+      insertSession(db, makeSession({ id: SESS_ID_ARCHIVED, archived: false }));
+      await handlers.get(IPC.SESSION_ARCHIVE)!({}, SESS_ID_ARCHIVED, true);
 
       const archived = await handlers.get(IPC.SESSION_LIST)!({}, true);
-      expect(archived.map((s: Session) => s.id)).toContain('archived');
-      expect(archived.map((s: Session) => s.id)).not.toContain('active');
+      expect(archived.map((s: Session) => s.id)).toContain(SESS_ID_ARCHIVED);
+      expect(archived.map((s: Session) => s.id)).not.toContain(SESS_ID_ACTIVE);
     });
   });
 
@@ -210,13 +234,19 @@ describe('IPC handlers integration', () => {
       insertComposition(db, makeComposition());
       insertSession(db, makeSession());
 
-      const result = await handlers.get(IPC.SESSION_GET)!({}, 'sess-1');
-      expect(result).toMatchObject({ id: 'sess-1', name: 'Test Session' });
+      const result = await handlers.get(IPC.SESSION_GET)!({}, SESS_ID);
+      expect(result).toMatchObject({ id: SESS_ID, name: 'Test Session' });
     });
 
     it('returns null for unknown id', async () => {
-      const result = await handlers.get(IPC.SESSION_GET)!({}, 'nope');
+      const result = await handlers.get(IPC.SESSION_GET)!({}, UNKNOWN_ID);
       expect(result).toBeNull();
+    });
+
+    it('throws for non-UUID id', async () => {
+      await expect(handlers.get(IPC.SESSION_GET)!({}, 'not-a-uuid')).rejects.toThrow(
+        'Invalid id: must be a valid UUID',
+      );
     });
   });
 
@@ -225,11 +255,17 @@ describe('IPC handlers integration', () => {
       insertComposition(db, makeComposition());
       insertSession(db, makeSession());
 
-      await handlers.get(IPC.SESSION_DELETE)!({}, 'sess-1');
+      await handlers.get(IPC.SESSION_DELETE)!({}, SESS_ID);
 
-      const result = await handlers.get(IPC.SESSION_GET)!({}, 'sess-1');
+      const result = await handlers.get(IPC.SESSION_GET)!({}, SESS_ID);
       expect(result).toBeNull();
-      expect(sessionManager.disposeSession).toHaveBeenCalledWith('sess-1');
+      expect(sessionManager.disposeSession).toHaveBeenCalledWith(SESS_ID);
+    });
+
+    it('throws for non-UUID id', async () => {
+      await expect(handlers.get(IPC.SESSION_DELETE)!({}, 'bad-id')).rejects.toThrow(
+        'Invalid id: must be a valid UUID',
+      );
     });
   });
 
@@ -238,23 +274,39 @@ describe('IPC handlers integration', () => {
       insertComposition(db, makeComposition());
       insertSession(db, makeSession());
 
-      await handlers.get(IPC.SESSION_ARCHIVE)!({}, 'sess-1', true);
+      await handlers.get(IPC.SESSION_ARCHIVE)!({}, SESS_ID, true);
 
       const archived = await handlers.get(IPC.SESSION_LIST)!({}, true);
-      expect(archived.some((s: Session) => s.id === 'sess-1')).toBe(true);
+      expect(archived.some((s: Session) => s.id === SESS_ID)).toBe(true);
     });
 
     it('unarchives a session (archived=false)', async () => {
       insertComposition(db, makeComposition());
       insertSession(db, makeSession());
-      await handlers.get(IPC.SESSION_ARCHIVE)!({}, 'sess-1', true);
+      await handlers.get(IPC.SESSION_ARCHIVE)!({}, SESS_ID, true);
 
-      await handlers.get(IPC.SESSION_ARCHIVE)!({}, 'sess-1', false);
+      await handlers.get(IPC.SESSION_ARCHIVE)!({}, SESS_ID, false);
 
       const active = await handlers.get(IPC.SESSION_LIST)!({}, false);
-      expect(active.some((s: Session) => s.id === 'sess-1')).toBe(true);
+      expect(active.some((s: Session) => s.id === SESS_ID)).toBe(true);
       const archivedList = await handlers.get(IPC.SESSION_LIST)!({}, true);
-      expect(archivedList.some((s: Session) => s.id === 'sess-1')).toBe(false);
+      expect(archivedList.some((s: Session) => s.id === SESS_ID)).toBe(false);
+    });
+
+    it('throws for non-UUID id', async () => {
+      await expect(handlers.get(IPC.SESSION_ARCHIVE)!({}, 'bad-id', true)).rejects.toThrow(
+        'Invalid id: must be a valid UUID',
+      );
+    });
+
+    it('coerces archived=1 to true', async () => {
+      insertComposition(db, makeComposition());
+      insertSession(db, makeSession());
+
+      await handlers.get(IPC.SESSION_ARCHIVE)!({}, SESS_ID, 1 as unknown as boolean);
+
+      const archived = await handlers.get(IPC.SESSION_LIST)!({}, true);
+      expect(archived.some((s: Session) => s.id === SESS_ID)).toBe(true);
     });
   });
 
@@ -263,12 +315,12 @@ describe('IPC handlers integration', () => {
       insertComposition(db, makeComposition());
       insertSession(db, makeSession());
       insertMessage(db, makeMessage());
-      insertMessage(db, makeMessage({ id: 'msg-2', content: 'World', timestamp: 3000 }));
+      insertMessage(db, makeMessage({ id: MSG_ID_2, content: 'World', timestamp: 3000 }));
 
-      const result = await handlers.get(IPC.SESSION_MESSAGES_LIST)!({}, 'sess-1');
+      const result = await handlers.get(IPC.SESSION_MESSAGES_LIST)!({}, SESS_ID);
       expect(result).toHaveLength(2);
-      expect(result[0].id).toBe('msg-1');
-      expect(result[1].id).toBe('msg-2');
+      expect(result[0].id).toBe(MSG_ID);
+      expect(result[1].id).toBe(MSG_ID_2);
     });
   });
 
@@ -295,6 +347,45 @@ describe('IPC handlers integration', () => {
       expect(result.voices[0].compositionId).toBe(result.id);
       expect(result.archived).toBe(false);
     });
+
+    it('throws for invalid mode', async () => {
+      const data = {
+        name: 'New Comp',
+        mode: 'roundrobin',
+        continuationPolicy: 'none',
+        continuationMaxRounds: 1,
+        voices: [],
+      };
+      await expect(handlers.get(IPC.COMPOSITION_CREATE)!({}, data)).rejects.toThrow(
+        'Invalid mode: must be one of: conductor, broadcast',
+      );
+    });
+
+    it('throws for invalid continuationPolicy', async () => {
+      const data = {
+        name: 'New Comp',
+        mode: 'broadcast',
+        continuationPolicy: 'always',
+        continuationMaxRounds: 1,
+        voices: [],
+      };
+      await expect(handlers.get(IPC.COMPOSITION_CREATE)!({}, data)).rejects.toThrow(
+        'Invalid continuationPolicy',
+      );
+    });
+
+    it('throws for continuationMaxRounds = 4', async () => {
+      const data = {
+        name: 'New Comp',
+        mode: 'broadcast',
+        continuationPolicy: 'none',
+        continuationMaxRounds: 4,
+        voices: [],
+      };
+      await expect(handlers.get(IPC.COMPOSITION_CREATE)!({}, data)).rejects.toThrow(
+        'must be an integer between 1 and 3',
+      );
+    });
   });
 
   describe('COMPOSITION_LIST', () => {
@@ -303,7 +394,7 @@ describe('IPC handlers integration', () => {
 
       const result = await handlers.get(IPC.COMPOSITION_LIST)!({});
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('comp-1');
+      expect(result[0].id).toBe(COMP_ID);
     });
   });
 
@@ -311,12 +402,12 @@ describe('IPC handlers integration', () => {
     it('returns composition by id', async () => {
       insertComposition(db, makeComposition());
 
-      const result = await handlers.get(IPC.COMPOSITION_GET)!({}, 'comp-1');
-      expect(result).toMatchObject({ id: 'comp-1', name: 'Test Composition' });
+      const result = await handlers.get(IPC.COMPOSITION_GET)!({}, COMP_ID);
+      expect(result).toMatchObject({ id: COMP_ID, name: 'Test Composition' });
     });
 
     it('returns null for unknown id', async () => {
-      const result = await handlers.get(IPC.COMPOSITION_GET)!({}, 'nope');
+      const result = await handlers.get(IPC.COMPOSITION_GET)!({}, UNKNOWN_ID);
       expect(result).toBeNull();
     });
   });
@@ -325,11 +416,24 @@ describe('IPC handlers integration', () => {
     it('updates name field', async () => {
       insertComposition(db, makeComposition());
 
-      const result = await handlers.get(IPC.COMPOSITION_UPDATE)!({}, 'comp-1', { name: 'Renamed' });
+      const result = await handlers.get(IPC.COMPOSITION_UPDATE)!({}, COMP_ID, { name: 'Renamed' });
       expect(result.name).toBe('Renamed');
 
-      const fetched = await handlers.get(IPC.COMPOSITION_GET)!({}, 'comp-1');
+      const fetched = await handlers.get(IPC.COMPOSITION_GET)!({}, COMP_ID);
       expect(fetched.name).toBe('Renamed');
+    });
+
+    it('throws for non-UUID id', async () => {
+      await expect(
+        handlers.get(IPC.COMPOSITION_UPDATE)!({}, 'bad-id', { name: 'X' }),
+      ).rejects.toThrow('Invalid id: must be a valid UUID');
+    });
+
+    it('throws for invalid mode if provided', async () => {
+      insertComposition(db, makeComposition());
+      await expect(
+        handlers.get(IPC.COMPOSITION_UPDATE)!({}, COMP_ID, { mode: 'roundrobin' }),
+      ).rejects.toThrow('Invalid mode: must be one of: conductor, broadcast');
     });
 
     it('inserts system message when a voice is added to a composition with existing sessions', async () => {
@@ -337,15 +441,15 @@ describe('IPC handlers integration', () => {
       insertSession(db, makeSession());
 
       const updatedVoices = [
-        { id: 'cv-1', compositionId: 'comp-1', provider: 'anthropic', model: 'claude-sonnet-4-5', displayName: 'Alice', order: 0, color: '#D4763B', avatarIcon: 'bot' },
-        { id: 'cv-new', compositionId: 'comp-1', provider: 'openai', model: 'gpt-4o', displayName: 'Bob', order: 1, color: '#10A37F', avatarIcon: 'bot' },
+        { id: 'cv-1', compositionId: COMP_ID, provider: 'anthropic', model: 'claude-sonnet-4-5', displayName: 'Alice', order: 0, color: '#D4763B', avatarIcon: 'bot' },
+        { id: 'cv-new', compositionId: COMP_ID, provider: 'openai', model: 'gpt-4o', displayName: 'Bob', order: 1, color: '#10A37F', avatarIcon: 'bot' },
       ];
 
-      await handlers.get(IPC.COMPOSITION_UPDATE)!({}, 'comp-1', { voices: updatedVoices });
+      await handlers.get(IPC.COMPOSITION_UPDATE)!({}, COMP_ID, { voices: updatedVoices });
 
-      const messages = await handlers.get(IPC.SESSION_MESSAGES_LIST)!({}, 'sess-1');
+      const messages = await handlers.get(IPC.SESSION_MESSAGES_LIST)!({}, SESS_ID);
       expect(messages.some((m: Message) => m.content.includes('Bob') && m.content.includes('added'))).toBe(true);
-      expect(voiceManager.disposeSession).toHaveBeenCalledWith('sess-1');
+      expect(voiceManager.disposeSession).toHaveBeenCalledWith(SESS_ID);
     });
 
     it('inserts system message when a voice is removed from a composition with existing sessions', async () => {
@@ -354,14 +458,14 @@ describe('IPC handlers integration', () => {
 
       // Replace cv-1 (Alice) with a different voice (cv-new / Bob) so Alice appears in removed
       const replacementVoices = [
-        { id: 'cv-new', compositionId: 'comp-1', provider: 'openai', model: 'gpt-4o', displayName: 'Bob', order: 0, color: '#10A37F', avatarIcon: 'bot' },
+        { id: 'cv-new', compositionId: COMP_ID, provider: 'openai', model: 'gpt-4o', displayName: 'Bob', order: 0, color: '#10A37F', avatarIcon: 'bot' },
       ];
 
-      await handlers.get(IPC.COMPOSITION_UPDATE)!({}, 'comp-1', { voices: replacementVoices });
+      await handlers.get(IPC.COMPOSITION_UPDATE)!({}, COMP_ID, { voices: replacementVoices });
 
-      const messages = await handlers.get(IPC.SESSION_MESSAGES_LIST)!({}, 'sess-1');
+      const messages = await handlers.get(IPC.SESSION_MESSAGES_LIST)!({}, SESS_ID);
       expect(messages.some((m: Message) => m.content.includes('Alice') && m.content.includes('removed'))).toBe(true);
-      expect(voiceManager.disposeSession).toHaveBeenCalledWith('sess-1');
+      expect(voiceManager.disposeSession).toHaveBeenCalledWith(SESS_ID);
     });
   });
 
@@ -369,10 +473,16 @@ describe('IPC handlers integration', () => {
     it('removes composition', async () => {
       insertComposition(db, makeComposition());
 
-      await handlers.get(IPC.COMPOSITION_DELETE)!({}, 'comp-1');
+      await handlers.get(IPC.COMPOSITION_DELETE)!({}, COMP_ID);
 
-      const result = await handlers.get(IPC.COMPOSITION_GET)!({}, 'comp-1');
+      const result = await handlers.get(IPC.COMPOSITION_GET)!({}, COMP_ID);
       expect(result).toBeNull();
+    });
+
+    it('throws for non-UUID id', async () => {
+      await expect(handlers.get(IPC.COMPOSITION_DELETE)!({}, 'bad-id')).rejects.toThrow(
+        'Invalid id: must be a valid UUID',
+      );
     });
   });
 
@@ -380,13 +490,13 @@ describe('IPC handlers integration', () => {
     it('archives a composition', async () => {
       insertComposition(db, makeComposition());
 
-      await handlers.get(IPC.COMPOSITION_ARCHIVE)!({}, 'comp-1', true);
+      await handlers.get(IPC.COMPOSITION_ARCHIVE)!({}, COMP_ID, true);
 
       const active = await handlers.get(IPC.COMPOSITION_LIST)!({}, false);
-      expect(active.some((c: Composition) => c.id === 'comp-1')).toBe(false);
+      expect(active.some((c: Composition) => c.id === COMP_ID)).toBe(false);
 
       const archived = await handlers.get(IPC.COMPOSITION_LIST)!({}, true);
-      expect(archived.some((c: Composition) => c.id === 'comp-1')).toBe(true);
+      expect(archived.some((c: Composition) => c.id === COMP_ID)).toBe(true);
     });
   });
 
@@ -395,20 +505,40 @@ describe('IPC handlers integration', () => {
   describe('VOICE_SEND', () => {
     it('throws when session not found', async () => {
       await expect(
-        handlers.get(IPC.VOICE_SEND)!({ sender: {} }, 'nonexistent', makeMessage()),
-      ).rejects.toThrow('Session not found: nonexistent');
+        handlers.get(IPC.VOICE_SEND)!({ sender: {} }, UNKNOWN_ID, makeMessage()),
+      ).rejects.toThrow('Session not found');
+    });
+
+    it('throws for non-UUID sessionId', async () => {
+      await expect(
+        handlers.get(IPC.VOICE_SEND)!({ sender: {} }, 'not-a-uuid', makeMessage()),
+      ).rejects.toThrow('Invalid sessionId: must be a valid UUID');
+    });
+
+    it('throws for missing message.content', async () => {
+      const badMessage = { ...makeMessage(), content: '' };
+      await expect(
+        handlers.get(IPC.VOICE_SEND)!({ sender: {} }, SESS_ID, badMessage),
+      ).rejects.toThrow('message.content is required');
+    });
+
+    it('throws for invalid message.role', async () => {
+      const badMessage = { ...makeMessage(), role: 'admin' };
+      await expect(
+        handlers.get(IPC.VOICE_SEND)!({ sender: {} }, SESS_ID, badMessage),
+      ).rejects.toThrow('Invalid message.role');
     });
 
     it('calls runBroadcastRound for a broadcast session', async () => {
       insertComposition(db, makeComposition());
       insertSession(db, makeSession({ mode: 'broadcast' }));
 
-      await handlers.get(IPC.VOICE_SEND)!({ sender: {} }, 'sess-1', makeMessage());
+      await handlers.get(IPC.VOICE_SEND)!({ sender: {} }, SESS_ID, makeMessage());
 
       expect(sessionManager.runBroadcastRound).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ id: 'sess-1', mode: 'broadcast' }),
-        expect.objectContaining({ id: 'msg-1' }),
+        expect.objectContaining({ id: SESS_ID, mode: 'broadcast' }),
+        expect.objectContaining({ id: MSG_ID }),
         db,
       );
     });
@@ -420,15 +550,15 @@ describe('IPC handlers integration', () => {
 
       await handlers.get(IPC.VOICE_SEND)!(
         { sender: {} },
-        'sess-1',
+        SESS_ID,
         makeMessage({ content: '@Alice hello' }),
       );
 
       expect(sessionManager.runDirectedRound).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ id: 'sess-1' }),
+        expect.objectContaining({ id: SESS_ID }),
         expect.objectContaining({ content: '@Alice hello' }),
-        'v-1',
+        VOICE_ID,
         db,
       );
       expect(sessionManager.runBroadcastRound).not.toHaveBeenCalled();
@@ -441,15 +571,15 @@ describe('IPC handlers integration', () => {
 
       await handlers.get(IPC.VOICE_SEND)!(
         { sender: {} },
-        'sess-1',
+        SESS_ID,
         makeMessage({ content: '@Alice hello' }),
       );
 
       expect(sessionManager.runDirectedRound).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ id: 'sess-1' }),
+        expect.objectContaining({ id: SESS_ID }),
         expect.objectContaining({ content: '@Alice hello' }),
-        'v-1',
+        VOICE_ID,
         db,
       );
     });
@@ -463,12 +593,12 @@ describe('IPC handlers integration', () => {
       const { BrowserWindow } = await import('electron');
       vi.mocked(BrowserWindow.fromWebContents).mockReturnValueOnce(mockWin as any);
 
-      await handlers.get(IPC.VOICE_SEND)!({ sender: {} }, 'sess-1', makeMessage());
+      await handlers.get(IPC.VOICE_SEND)!({ sender: {} }, SESS_ID, makeMessage());
 
       expect(sessionManager.runBroadcastRound).not.toHaveBeenCalled();
       expect(sessionManager.runDirectedRound).not.toHaveBeenCalled();
       expect(mockWin.webContents.send).toHaveBeenCalledWith(
-        `${IPC.SESSION_NO_TARGET}:sess-1`,
+        `${IPC.SESSION_NO_TARGET}:${SESS_ID}`,
         expect.objectContaining({ voiceNames: expect.any(Array) }),
       );
     });
@@ -476,8 +606,8 @@ describe('IPC handlers integration', () => {
 
   describe('VOICE_ABORT', () => {
     it('calls voiceManager.disposeSession', async () => {
-      await handlers.get(IPC.VOICE_ABORT)!({}, 'sess-1');
-      expect(voiceManager.disposeSession).toHaveBeenCalledWith('sess-1');
+      await handlers.get(IPC.VOICE_ABORT)!({}, SESS_ID);
+      expect(voiceManager.disposeSession).toHaveBeenCalledWith(SESS_ID);
     });
   });
 
@@ -567,6 +697,30 @@ describe('IPC handlers integration', () => {
         .prepare('SELECT dismissed_update_version FROM user_profile WHERE id = 1')
         .get() as { dismissed_update_version: string };
       expect(row.dismissed_update_version).toBe('');
+    });
+
+    it('rejects version with pre-release suffix', async () => {
+      await handlers.get(IPC.UPDATE_DISMISS)!({}, '1.2.3-beta', true);
+      const row = db
+        .prepare('SELECT dismissed_update_version FROM user_profile WHERE id = 1')
+        .get() as { dismissed_update_version: string };
+      expect(row.dismissed_update_version).toBe('');
+    });
+
+    it('rejects version with extra dot segment', async () => {
+      await handlers.get(IPC.UPDATE_DISMISS)!({}, '1.2.3.4', true);
+      const row = db
+        .prepare('SELECT dismissed_update_version FROM user_profile WHERE id = 1')
+        .get() as { dismissed_update_version: string };
+      expect(row.dismissed_update_version).toBe('');
+    });
+
+    it('still accepts valid exact semver', async () => {
+      await handlers.get(IPC.UPDATE_DISMISS)!({}, '1.2.3', true);
+      const row = db
+        .prepare('SELECT dismissed_update_version FROM user_profile WHERE id = 1')
+        .get() as { dismissed_update_version: string };
+      expect(row.dismissed_update_version).toBe('1.2.3');
     });
   });
 });
