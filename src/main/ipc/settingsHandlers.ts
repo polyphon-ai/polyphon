@@ -359,6 +359,7 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
     if (canceled || filePaths.length === 0) return null;
 
     const img = nativeImage.createFromPath(filePaths[0]!);
+    if (img.isEmpty()) return null;
     const resized = img.resize({ width: 100, height: 100 });
     const dataUrl = `data:image/png;base64,${resized.toPNG().toString('base64')}`;
 
@@ -378,6 +379,7 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
     if (canceled || filePaths.length === 0) return null;
 
     const img = nativeImage.createFromPath(filePaths[0]!);
+    if (img.isEmpty()) return null;
     const size = img.getSize();
     const maxDim = 1200;
     if (size.width > maxDim || size.height > maxDim) {
