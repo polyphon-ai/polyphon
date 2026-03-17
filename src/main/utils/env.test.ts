@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { maskApiKey, resolveApiKey, resolveApiKeyStatus } from './env';
+import { maskApiKey, resolveApiKey, resolveApiKeyStatus, parseEnvBlock, SHELL_ENV_MAX_LEN, ENV_VALUE_MAX_BYTES } from './env';
 
 describe('maskApiKey', () => {
   it('masks a normal key with first 3 and last 3 chars', () => {
@@ -51,6 +51,100 @@ describe('resolveApiKey', () => {
   it('handles hyphenated provider names (normalises to SNAKE_CASE)', () => {
     vi.stubEnv('POLYPHON_CLAUDE_CODE_API_KEY', 'cli-key');
     expect(resolveApiKey('claude-code')).toBe('cli-key');
+  });
+});
+
+describe('parseEnvBlock', () => {
+  afterEach(() => {
+    delete process.env['KEY'];
+    delete process.env['KEY2'];
+    delete process.env['MY_KEY'];
+    delete process.env['MY_KEY2'];
+  });
+
+  it('happy path: merges standard uppercase keys and returns true', () => {
+    const result = parseEnvBlock('KEY=value\nKEY2=value2\n');
+    expect(result).toBe(true);
+    expect(process.env['KEY']).toBe('value');
+    expect(process.env['KEY2']).toBe('value2');
+  });
+
+  it('empty block: no writes, no crash, returns true', () => {
+    const result = parseEnvBlock('');
+    expect(result).toBe(true);
+  });
+
+  it('key with lowercase letters: not written, returns true, warns with key name', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = parseEnvBlock('my_key=value');
+    expect(result).toBe(true);
+    expect(process.env['my_key']).toBeUndefined();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('my_key'));
+    warnSpy.mockRestore();
+  });
+
+  it('key with dot: not written, returns true', () => {
+    const result = parseEnvBlock('MY.KEY=value');
+    expect(result).toBe(true);
+    expect(process.env['MY.KEY']).toBeUndefined();
+  });
+
+  it('key with space: not written, returns true', () => {
+    const result = parseEnvBlock('MY KEY=value');
+    expect(result).toBe(true);
+    expect(process.env['MY KEY']).toBeUndefined();
+  });
+
+  it('empty key (line starts with =): skipped, returns true', () => {
+    const before = { ...process.env };
+    const result = parseEnvBlock('=value');
+    expect(result).toBe(true);
+    // no new keys should have been added
+    expect(Object.keys(process.env).length).toBe(Object.keys(before).length);
+  });
+
+  it('no = in line: skipped, no crash, returns true', () => {
+    const result = parseEnvBlock('NOEQUALS');
+    expect(result).toBe(true);
+    expect(process.env['NOEQUALS']).toBeUndefined();
+  });
+
+  it('value exactly at limit: written, returns true', () => {
+    const value = 'A'.repeat(ENV_VALUE_MAX_BYTES);
+    const result = parseEnvBlock(`KEY=${value}`);
+    expect(result).toBe(true);
+    expect(process.env['KEY']).toBe(value);
+  });
+
+  it('value over limit: not written, returns true, warns with key name', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const value = 'A'.repeat(ENV_VALUE_MAX_BYTES + 1);
+    const result = parseEnvBlock(`KEY=${value}`);
+    expect(result).toBe(true);
+    expect(process.env['KEY']).toBeUndefined();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KEY'));
+    warnSpy.mockRestore();
+  });
+
+  it('multi-= value: splits on first = only, returns true', () => {
+    const result = parseEnvBlock('KEY=a=b=c');
+    expect(result).toBe(true);
+    expect(process.env['KEY']).toBe('a=b=c');
+  });
+
+  it('empty value: written as empty string, returns true', () => {
+    const result = parseEnvBlock('KEY=');
+    expect(result).toBe(true);
+    expect(process.env['KEY']).toBe('');
+  });
+
+  it('size cap: no writes, returns false, console.warn called with "size cap"', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const block = 'A'.repeat(SHELL_ENV_MAX_LEN + 1);
+    const result = parseEnvBlock(block);
+    expect(result).toBe(false);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('size cap'));
+    warnSpy.mockRestore();
   });
 });
 

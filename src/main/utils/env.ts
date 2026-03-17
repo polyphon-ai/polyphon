@@ -14,12 +14,73 @@ export function maskApiKey(key: string): string {
   return `${key.slice(0, 3)}...${key.slice(-3)}`;
 }
 
+export const SHELL_ENV_MAX_LEN = 512 * 1024; // JS string .length units (UTF-16 code units, ≈ bytes for ASCII)
+export const ENV_VALUE_MAX_BYTES = 8 * 1024; // same units
+export const ENV_KEY_RE = /^[A-Z0-9_]+$/;
+
+// Parses a captured env block (the stdout segment between delimiters) and
+// merges matching variables into process.env. Returns false if the block
+// exceeds the size cap (so the caller can try the next candidate shell),
+// true otherwise (including when individual entries were skipped).
+//
+// Filters applied:
+//   - Block size: > SHELL_ENV_MAX_LEN chars → return false
+//   - Key name: must match ENV_KEY_RE ([A-Z0-9_]+) — lowercase and dotted
+//     names are intentionally excluded (policy decision, not a bug)
+//   - Value length: > ENV_VALUE_MAX_BYTES chars → entry skipped
+export function parseEnvBlock(block: string): boolean {
+  if (block.length > SHELL_ENV_MAX_LEN) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(
+        '[loadShellEnv] env block exceeds size cap; skipping shell env merge — ' +
+          'API keys from shell config will not be available from this shell',
+      );
+    }
+    return false;
+  }
+
+  for (const line of block.split('\n')) {
+    const eq = line.indexOf('=');
+    if (eq <= 0) continue;
+    const key = line.slice(0, eq);
+    const value = line.slice(eq + 1);
+    if (!ENV_KEY_RE.test(key)) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[loadShellEnv] skipping env var with non-standard name: ${key}`);
+      }
+      continue;
+    }
+    if (value.length > ENV_VALUE_MAX_BYTES) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[loadShellEnv] skipping env var with oversized value: ${key}`);
+      }
+      continue;
+    }
+    process.env[key] = value;
+  }
+
+  return true;
+}
+
 // Merges shell-exported environment variables into process.env.
 //
 // GUI apps launched from the Dock, Spotlight, or an app launcher inherit a
 // minimal environment that often lacks shell-exported variables (API keys,
 // PATH additions, etc.). We spawn the user's login shell to capture the full
 // environment and apply it to the main process before any voice is created.
+//
+// The shell is invoked with -ilc: -i makes it interactive (loads aliases and
+// functions), -l makes it a login shell (sources ~/.zshrc, ~/.bash_profile,
+// etc. so API keys and PATH additions are available), and -c runs the capture
+// command and exits. Security implication: the user's shell init files execute
+// inside Polyphon's process space during this call. This is intentional and
+// acceptable for a local-first desktop app — a user who controls ~/.zshrc
+// already has the ability to run arbitrary code as themselves; running their
+// own init files in Polyphon's process space grants no additional privilege.
+//
+// The Windows early-return exists because there is no POSIX login-shell
+// convention on Windows: -ilc semantics do not apply to cmd.exe or PowerShell,
+// and environment propagation works differently on that platform.
 //
 // Uses child_process.spawnSync so this is bundled directly into main.js and
 // works correctly in the packaged ASAR app (no external ESM dependency needed).
@@ -57,12 +118,7 @@ export function loadShellEnv(): void {
     const parts = result.stdout.split(DELIM);
     if (parts.length < 2) continue;
 
-    for (const line of parts[1]!.split('\n')) {
-      const eq = line.indexOf('=');
-      if (eq > 0) {
-        process.env[line.slice(0, eq)] = line.slice(eq + 1);
-      }
-    }
+    if (!parseEnvBlock(parts[1]!)) continue;
     return;
   }
 }
