@@ -12,6 +12,7 @@ import {
   MAX_NAME,
   MAX_PROVIDER,
   MAX_MODEL,
+  MAX_SHORT_NAME,
 } from './validate';
 import { execFileSync, spawnSync } from 'child_process';
 import path from 'node:path';
@@ -473,7 +474,7 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
   ipcMain.handle(
     IPC.SETTINGS_TONE_UPDATE,
     async (_event, id: unknown, data: Partial<Pick<ToneDefinition, 'name' | 'description'>>) => {
-      requireId(id, 'id');
+      requireNonEmptyString(id, 'id', MAX_SHORT_NAME);
       if (data.name !== undefined) {
         const name = data.name.trim();
         if (!name) throw new Error('Tone name is required');
@@ -497,7 +498,7 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
   );
 
   ipcMain.handle(IPC.SETTINGS_TONE_DELETE, async (_event, id: unknown) => {
-    requireId(id, 'id');
+    requireNonEmptyString(id, 'id', MAX_SHORT_NAME);
     deleteTone(db, id as string);
     voiceManager.loadTones(db);
   });

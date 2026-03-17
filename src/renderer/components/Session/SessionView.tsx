@@ -174,7 +174,7 @@ export default function SessionView({
         : -1;
 
     const conductorMsg: Message = {
-      id: `msg-${Date.now()}-conductor`,
+      id: crypto.randomUUID(),
       sessionId: session.id,
       role: 'conductor',
       voiceId: null,
@@ -195,7 +195,7 @@ export default function SessionView({
   function handleContinue() {
     if (!continuationNudge) return;
     const continueMsg: Message = {
-      id: `msg-${Date.now()}-continue`,
+      id: crypto.randomUUID(),
       sessionId: session.id,
       role: 'conductor',
       voiceId: null,

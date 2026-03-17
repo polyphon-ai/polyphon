@@ -515,11 +515,12 @@ describe('IPC handlers integration', () => {
       ).rejects.toThrow('Invalid sessionId: must be a valid UUID');
     });
 
-    it('throws for missing message.content', async () => {
-      const badMessage = { ...makeMessage(), content: '' };
+    it('accepts empty message.content (continuation messages)', async () => {
+      const emptyContentMsg = { ...makeMessage(), content: '' };
+      // Validation passes; throws later because session does not exist in this test
       await expect(
-        handlers.get(IPC.VOICE_SEND)!({ sender: {} }, SESS_ID, badMessage),
-      ).rejects.toThrow('message.content is required');
+        handlers.get(IPC.VOICE_SEND)!({ sender: {} }, SESS_ID, emptyContentMsg),
+      ).rejects.toThrow('Session not found');
     });
 
     it('throws for invalid message.role', async () => {

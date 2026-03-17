@@ -429,10 +429,8 @@ describe('requireMessageShape', () => {
     );
   });
 
-  it('throws for empty content', () => {
-    expect(() => requireMessageShape(makeMsg({ content: '' }))).toThrow(
-      'message.content is required',
-    );
+  it('accepts empty content (continuation messages have no user text)', () => {
+    expect(() => requireMessageShape(makeMsg({ content: '' }))).not.toThrow();
   });
 
   it('returns the value as Message', () => {

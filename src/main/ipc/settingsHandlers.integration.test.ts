@@ -441,19 +441,19 @@ describe('settings IPC handler validation', () => {
 
   // SETTINGS_TONE_UPDATE
   describe('SETTINGS_TONE_UPDATE validation', () => {
-    it('throws for non-UUID id', async () => {
+    it('throws for empty id', async () => {
       await expect(
-        settingsIpcHandlers.get(IPC.SETTINGS_TONE_UPDATE)!({}, 'bad-id', { name: 'X' }),
-      ).rejects.toThrow('Invalid id: must be a valid UUID');
+        settingsIpcHandlers.get(IPC.SETTINGS_TONE_UPDATE)!({}, '', { name: 'X' }),
+      ).rejects.toThrow('id is required');
     });
   });
 
   // SETTINGS_TONE_DELETE
   describe('SETTINGS_TONE_DELETE validation', () => {
-    it('throws for non-UUID id', async () => {
+    it('throws for empty id', async () => {
       await expect(
-        settingsIpcHandlers.get(IPC.SETTINGS_TONE_DELETE)!({}, 'bad-id'),
-      ).rejects.toThrow('Invalid id: must be a valid UUID');
+        settingsIpcHandlers.get(IPC.SETTINGS_TONE_DELETE)!({}, ''),
+      ).rejects.toThrow('id is required');
     });
   });
 

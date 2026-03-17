@@ -118,7 +118,7 @@ export function requireMessageShape(value: unknown): Message {
   requireId(obj['id'], 'message.id');
   requireId(obj['sessionId'], 'message.sessionId');
   requireEnum(obj['role'], 'message.role', ['conductor', 'voice', 'system'] as const);
-  requireNonEmptyString(obj['content'], 'message.content', MAX_MESSAGE_CONTENT);
+  requireString(obj['content'], 'message.content', MAX_MESSAGE_CONTENT);
   requireInteger(obj['roundIndex'], 'message.roundIndex', -1, 100000);
   requireInteger(obj['timestamp'], 'message.timestamp', 0, Number.MAX_SAFE_INTEGER);
   if (obj['voiceId'] != null) requireNonEmptyString(obj['voiceId'], 'message.voiceId', MAX_SHORT_NAME);
