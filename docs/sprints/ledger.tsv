@@ -6,4 +6,7 @@ sprint_id	title	status	created_at	updated_at
 005	IPC Input Validation	completed	2026-03-17T20:07:10Z	2026-03-17T20:42:02Z
 006	Renderer Content Security Policy	completed	2026-03-17T19:13:34Z	2026-03-17T19:53:37Z
 007	Encryption Hardening — Branded Types, Manifest, and CI Gate	completed	2026-03-17T19:36:48Z	2026-03-17T20:01:43Z
-008	CLI Command Hardening	in_progress	2026-03-17T20:47:01Z	2026-03-17T20:48:41Z
+008	CLI Command Hardening	completed	2026-03-17T20:47:01Z	2026-03-17T20:51:41Z
+009	GitHub API Response Hardening	completed	2026-03-17T21:05:39Z	2026-03-17T21:09:19Z
+010	loadShellEnv() Security Hardening	completed	2026-03-17T21:11:50Z	2026-03-17T21:13:55Z
+011	Conductor Avatar Upload Hardening	completed	2026-03-17T21:10:43Z	2026-03-17T21:29:39Z
