@@ -1,6 +1,13 @@
 items:
   # ── Active / upcoming ──────────────────────────────────────
 
+  - title: "Encryption at Rest"
+    description: "Your sessions, compositions, and settings are encrypted on disk. Your data is protected even if your device is compromised."
+    pricing: free
+    status: planned
+    discussion:
+    feature_request:
+
   - title: "Sync"
     description: "End-to-end encrypted sync of your sessions, compositions, and settings across all your devices. Your data stays private — we can't read it."
     pricing: paid
