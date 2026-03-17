@@ -167,7 +167,8 @@ polyphon/
 │   │   │   └── SessionManager.ts    # Round orchestration (broadcast, continuation)
 │   │   ├── ipc/
 │   │   │   ├── index.ts             # IPC handler registration
-│   │   │   └── settingsHandlers.ts  # Settings-specific IPC handlers
+│   │   │   ├── settingsHandlers.ts  # Settings-specific IPC handlers
+│   │   │   └── validate.ts          # IPC argument validation helpers
 │   │   ├── utils/                   # generateId, env resolution helpers
 │   │   └── index.ts                 # Electron app entry point
 │   ├── renderer/                    # React renderer process
@@ -210,6 +211,7 @@ suffixed with `:${sessionId}` at runtime to scope them to a single session.
 | System Prompt Templates | `settings:systemPromptTemplate:list`, `settings:systemPromptTemplate:create`, `settings:systemPromptTemplate:update`, `settings:systemPromptTemplate:delete` |
 | Updates | `update:available` (main→renderer push), `update:get-state` (renderer invoke), `update:dismiss` (renderer invoke) |
 
+All IPC handlers validate their arguments using `src/main/ipc/validate.ts` before touching the DB or voice system. New handlers must apply validation — see the file for available helpers. `CONTINUATION_MAX_ROUNDS_LIMIT` in `shared/constants.ts` is the authoritative cap for `continuationMaxRounds` validation.
 
 ---
 
