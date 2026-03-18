@@ -46,22 +46,22 @@ const LIVE_TEST_MODELS: Record<string, string> = {
 
 // ── Provider availability helpers ─────────────────────────────────────────────
 
-async function enableProvider(win: Page, providerId: string) {
-  const model = LIVE_TEST_MODELS[providerId] ?? null;
+async function enableProvider(win: Page, providerId: string, voiceType: 'api' | 'cli' = 'api') {
+  const model = voiceType === 'api' ? (LIVE_TEST_MODELS[providerId] ?? null) : null;
   await win.evaluate(
-    async ({ id, model }: { id: string; model: string | null }) => {
+    async ({ id, model, voiceType }: { id: string; model: string | null; voiceType: 'api' | 'cli' }) => {
       const configs = await window.polyphon.settings.getProviderConfig();
-      const existing = configs.find((c) => c.provider === id);
+      const existing = configs.find((c) => c.provider === id && c.voiceType === voiceType);
       await window.polyphon.settings.saveProviderConfig({
         provider: id,
         enabled: true,
-        voiceType: existing?.voiceType ?? 'api',
+        voiceType,
         defaultModel: model ?? existing?.defaultModel ?? null,
         cliCommand: existing?.cliCommand ?? null,
         cliArgs: existing?.cliArgs ?? null,
       });
     },
-    { id: providerId, model },
+    { id: providerId, model, voiceType },
   );
 }
 
@@ -248,9 +248,14 @@ test.describe.serial('built-in providers', () => {
     ({ pause, longPause } = makePause(win));
     await pause();
 
-    // Enable all built-in providers so they appear in the composition builder
+    // Enable all built-in providers so they appear in the composition builder.
+    // API type for all; CLI type for providers that support it (so the CLI
+    // toggle renders in VoiceSelector when both types are enabled).
     for (const id of ['anthropic', 'openai', 'gemini', 'copilot']) {
-      await enableProvider(win, id);
+      await enableProvider(win, id, 'api');
+    }
+    for (const id of ['anthropic', 'openai', 'copilot']) {
+      await enableProvider(win, id, 'cli');
     }
 
     // Navigate to Settings so the SettingsPage mounts and calls load(), refreshing
