@@ -19,11 +19,12 @@
  *   to extending the field-level manifest.
  */
 export const ENCRYPTED_FIELDS = {
-  messages: ['content'],
+  messages: ['content', 'metadata'],
   user_profile: ['conductor_name', 'pronouns', 'conductor_context', 'conductor_avatar'],
   custom_providers: ['base_url'],
   system_prompt_templates: ['content'],
-  composition_voices: ['system_prompt', 'cli_args'],
+  composition_voices: ['system_prompt', 'cli_args', 'cli_command'],
+  tones: ['description'],
   // provider_configs.cli_args is intentionally NOT encrypted. The column stores
   // standard CLI flag strings (e.g. "--model gpt-4o") for built-in provider
   // settings, not user-supplied content or credentials. Users who need to pass

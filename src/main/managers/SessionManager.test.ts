@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { SessionManager } from './SessionManager';
 import { VoiceManager } from './VoiceManager';
@@ -54,12 +54,23 @@ describe('SessionManager.parseMention', () => {
 });
 
 describe('VoiceManager.buildEnsembleSystemPrompt', () => {
-  const vm = new VoiceManager();
-  // Load tones from a real in-memory DB so tone resolution works
-  const testDb = new DatabaseSync(':memory:');
-  testDb.exec('PRAGMA journal_mode = WAL');
-  runMigrations(testDb);
-  vm.loadTones(testDb);
+  let vm: VoiceManager;
+  let testDb: DatabaseSync;
+
+  beforeAll(() => {
+    initFieldEncryption(TEST_KEY);
+    vm = new VoiceManager();
+    // Load tones from a real in-memory DB so tone resolution works
+    testDb = new DatabaseSync(':memory:');
+    testDb.exec('PRAGMA journal_mode = WAL');
+    runMigrations(testDb);
+    vm.loadTones(testDb);
+  });
+
+  afterAll(() => {
+    testDb.close();
+    _resetForTests();
+  });
 
   function makeVoice(id: string, name: string, provider = 'anthropic') {
     return { id, name, provider, type: 'api' as const, color: '#fff', avatarIcon: 'star' };

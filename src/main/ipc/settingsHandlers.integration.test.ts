@@ -112,11 +112,13 @@ describe('saveProviderConfig and getAllProviderConfigs', () => {
   let db: DatabaseSync;
 
   beforeEach(() => {
+    initFieldEncryption(Buffer.alloc(32));
     db = createTestDb();
   });
 
   afterEach(() => {
     db.close();
+    _resetForTests();
   });
 
   it('saves and retrieves a provider config', () => {

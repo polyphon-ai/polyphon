@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { runMigrations } from '../migrations';
+import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import { listSessions, getSession, insertSession, deleteSession, archiveSession, listSessionsByCompositionId } from './sessions';
 import type { Session } from '../../../shared/types';
+
+const TEST_KEY = Buffer.alloc(32);
 
 function createTestDb(): DatabaseSync {
   const db = new DatabaseSync(':memory:');
@@ -29,8 +32,8 @@ function makeSession(overrides: Partial<Session> = {}): Session {
 describe('sessions queries', () => {
   let db: DatabaseSync;
 
-  beforeEach(() => { db = createTestDb(); });
-  afterEach(() => { db.close(); });
+  beforeEach(() => { initFieldEncryption(TEST_KEY); db = createTestDb(); });
+  afterEach(() => { db.close(); _resetForTests(); });
 
   it('insertSession + getSession round-trip', () => {
     const session = makeSession();
@@ -75,8 +78,8 @@ describe('sessions queries', () => {
 describe('archiveSession', () => {
   let db: DatabaseSync;
 
-  beforeEach(() => { db = createTestDb(); });
-  afterEach(() => { db.close(); });
+  beforeEach(() => { initFieldEncryption(TEST_KEY); db = createTestDb(); });
+  afterEach(() => { db.close(); _resetForTests(); });
 
   it('sets archived=true on the session', () => {
     insertSession(db, makeSession({ id: 'sess-arc-1' }));
@@ -115,8 +118,8 @@ describe('archiveSession', () => {
 describe('listSessionsByCompositionId', () => {
   let db: DatabaseSync;
 
-  beforeEach(() => { db = createTestDb(); });
-  afterEach(() => { db.close(); });
+  beforeEach(() => { initFieldEncryption(TEST_KEY); db = createTestDb(); });
+  afterEach(() => { db.close(); _resetForTests(); });
 
   it('returns only sessions with matching compositionId', () => {
     insertSession(db, makeSession({ id: 'sess-c1-a', compositionId: 'comp-x', createdAt: 100, updatedAt: 100 }));

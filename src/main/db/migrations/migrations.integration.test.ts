@@ -1,10 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { runMigrations } from './index';
+import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import { up as migration002 } from './002_add_update_preferences';
 
+const TEST_KEY = Buffer.alloc(32);
+
 describe('runMigrations (fresh install)', () => {
-  it('creates all tables and sets schema_version to 3', () => {
+  beforeEach(() => { initFieldEncryption(TEST_KEY); });
+  afterEach(() => { _resetForTests(); });
+
+  it('creates all tables and sets schema_version to 4', () => {
     const db = new DatabaseSync(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
 
@@ -33,7 +39,7 @@ describe('runMigrations (fresh install)', () => {
     }
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(3);
+    expect(row.version).toBe(4);
   });
 
   it('seeds built-in tones', () => {
@@ -80,11 +86,14 @@ describe('runMigrations (fresh install)', () => {
     expect(templates).toHaveLength(5);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(3);
+    expect(row.version).toBe(4);
   });
 });
 
 describe('migration 002 — update preferences', () => {
+  beforeEach(() => { initFieldEncryption(TEST_KEY); });
+  afterEach(() => { _resetForTests(); });
+
   it('runs cleanly on a v1 in-memory DB and adds new columns', () => {
     const db = new DatabaseSync(':memory:');
     db.exec('PRAGMA journal_mode = WAL');

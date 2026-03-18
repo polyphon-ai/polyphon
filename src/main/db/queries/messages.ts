@@ -11,7 +11,7 @@ interface MessageRow {
   content: EncryptedField;
   timestamp: number;
   round_index: number;
-  metadata: string | null;
+  metadata: EncryptedField | null;
 }
 
 function rowToMessage(row: MessageRow): Message {
@@ -24,7 +24,7 @@ function rowToMessage(row: MessageRow): Message {
     content: decryptField(row.content) ?? '',
     timestamp: row.timestamp,
     roundIndex: row.round_index,
-    metadata: row.metadata ? (JSON.parse(row.metadata) as Record<string, unknown>) : undefined,
+    metadata: row.metadata ? (JSON.parse(decryptField(row.metadata) ?? '{}') as Record<string, unknown>) : undefined,
   };
 }
 
@@ -48,7 +48,7 @@ export function insertMessage(db: DatabaseSync, message: Message): void {
     encryptField(message.content),
     message.timestamp,
     message.roundIndex,
-    message.metadata ? JSON.stringify(message.metadata) : null,
+    message.metadata ? encryptField(JSON.stringify(message.metadata)) : null,
   );
 }
 

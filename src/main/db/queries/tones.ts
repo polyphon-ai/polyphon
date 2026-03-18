@@ -1,11 +1,12 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import { randomUUID } from 'crypto';
 import type { ToneDefinition } from '../../../shared/types';
+import { encryptField, decryptField, type EncryptedField } from '../encryption';
 
 interface ToneRow {
   id: string;
   name: string;
-  description: string;
+  description: EncryptedField;
   is_builtin: number;
   sort_order: number;
   created_at: number;
@@ -16,7 +17,7 @@ function rowToToneDefinition(row: ToneRow): ToneDefinition {
   return {
     id: row.id,
     name: row.name,
-    description: row.description,
+    description: decryptField(row.description) ?? '',
     isBuiltin: row.is_builtin === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -52,7 +53,7 @@ export function createTone(
   db.prepare(`
     INSERT INTO tones (id, name, description, is_builtin, sort_order, created_at, updated_at)
     VALUES (?, ?, ?, 0, ?, ?, ?)
-  `).run(id, data.name, data.description, sortOrder, now, now);
+  `).run(id, data.name, encryptField(data.description), sortOrder, now, now);
   return getTone(db, id)!;
 }
 
@@ -66,7 +67,7 @@ export function updateTone(
   const values: SQLInputValue[] = [now];
 
   if (data.name !== undefined) { sets.push('name = ?'); values.push(data.name); }
-  if (data.description !== undefined) { sets.push('description = ?'); values.push(data.description); }
+  if (data.description !== undefined) { sets.push('description = ?'); values.push(encryptField(data.description)); }
 
   values.push(id);
   db.prepare(`UPDATE tones SET ${sets.join(', ')} WHERE id = ?`).run(...values);

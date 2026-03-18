@@ -140,33 +140,36 @@ describe('compositions queries', () => {
     expect(retrieved!.voices[1]!.displayName).toBe('NewBob');
   });
 
-  it('stores system_prompt and cli_args as ENC:v1: ciphertext', () => {
+  it('stores system_prompt, cli_args, and cli_command as ENC:v1: ciphertext', () => {
     const comp = makeComposition({
-      voices: [makeVoice({ id: 'v-enc', systemPrompt: 'Secret prompt', cliArgs: ['--verbose'] })],
+      voices: [makeVoice({ id: 'v-enc', systemPrompt: 'Secret prompt', cliCommand: 'claude', cliArgs: ['--verbose'] })],
     });
     insertComposition(db, comp);
-    const row = db.prepare('SELECT system_prompt, cli_args FROM composition_voices WHERE id = ?').get('v-enc') as { system_prompt: string; cli_args: string };
+    const row = db.prepare('SELECT system_prompt, cli_args, cli_command FROM composition_voices WHERE id = ?').get('v-enc') as { system_prompt: string; cli_args: string; cli_command: string };
     expect(row.system_prompt).toMatch(/^ENC:v1:/);
     expect(row.cli_args).toMatch(/^ENC:v1:/);
+    expect(row.cli_command).toMatch(/^ENC:v1:/);
   });
 
-  it('decrypts system_prompt and cli_args back to original values', () => {
+  it('decrypts system_prompt, cli_args, and cli_command back to original values', () => {
     const comp = makeComposition({
-      voices: [makeVoice({ id: 'v-enc', systemPrompt: 'Secret prompt', cliArgs: ['--verbose'] })],
+      voices: [makeVoice({ id: 'v-enc', systemPrompt: 'Secret prompt', cliCommand: 'claude', cliArgs: ['--verbose'] })],
     });
     insertComposition(db, comp);
     const retrieved = getComposition(db, 'comp-1');
     expect(retrieved!.voices[0]!.systemPrompt).toBe('Secret prompt');
     expect(retrieved!.voices[0]!.cliArgs).toEqual(['--verbose']);
+    expect(retrieved!.voices[0]!.cliCommand).toBe('claude');
   });
 
-  it('reads legacy plaintext system_prompt and cli_args without error', () => {
+  it('reads legacy plaintext system_prompt, cli_args, and cli_command without error', () => {
     const comp = makeComposition({ voices: [] });
     insertComposition(db, comp);
     db.prepare('INSERT INTO composition_voices (id, composition_id, provider, model, cli_command, cli_args, display_name, system_prompt, sort_order, color, avatar_icon) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .run('legacy-v', 'comp-1', 'anthropic', 'claude-opus-4-6', null, '["--flag"]', 'Legacy', 'Legacy system prompt', 0, '#000', 'star');
+      .run('legacy-v', 'comp-1', 'anthropic', 'claude-opus-4-6', 'claude', '["--flag"]', 'Legacy', 'Legacy system prompt', 0, '#000', 'star');
     const retrieved = getComposition(db, 'comp-1');
     expect(retrieved!.voices[0]!.systemPrompt).toBe('Legacy system prompt');
     expect(retrieved!.voices[0]!.cliArgs).toEqual(['--flag']);
+    expect(retrieved!.voices[0]!.cliCommand).toBe('claude');
   });
 });

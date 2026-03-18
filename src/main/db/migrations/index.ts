@@ -1,8 +1,10 @@
 import { DatabaseSync } from 'node:sqlite';
 import { TONE_PRESETS } from '../../../shared/constants';
 import { CREATE_TABLES_SQL, SCHEMA_VERSION } from '../schema';
+import { encryptField } from '../encryption';
 import { up as migration002 } from './002_add_update_preferences';
 import { up as migration003 } from './003_encrypt_conductor_avatar';
+import { up as migration004 } from './004_encrypt_tones_metadata_cli_command';
 
 const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
   [
@@ -50,7 +52,7 @@ export function runMigrations(db: DatabaseSync): void {
     VALUES (?, ?, ?, 1, ?, ?, ?)
   `);
   for (const [id, name, description, sortOrder] of tonePresets) {
-    insertTone.run(id, name, description, sortOrder, now, now);
+    insertTone.run(id, name, encryptField(description), sortOrder, now, now);
   }
 
   const insertTemplate = db.prepare(`
@@ -58,7 +60,7 @@ export function runMigrations(db: DatabaseSync): void {
     VALUES (?, ?, ?, ?, ?)
   `);
   for (const [id, name, content] of SAMPLE_TEMPLATES) {
-    insertTemplate.run(id, name, content, now, now);
+    insertTemplate.run(id, name, encryptField(content), now, now);
   }
 
   db.prepare(`
@@ -80,6 +82,10 @@ export function runMigrations(db: DatabaseSync): void {
 
   if (row !== undefined && currentVersion < 3) {
     migration003(db);
+  }
+
+  if (row !== undefined && currentVersion < 4) {
+    migration004(db);
   }
 
   if (row === undefined) {

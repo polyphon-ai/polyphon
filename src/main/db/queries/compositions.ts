@@ -18,7 +18,7 @@ interface CompositionVoiceRow {
   composition_id: string;
   provider: string;
   model: string | null;
-  cli_command: string | null;
+  cli_command: EncryptedField | null;
   cli_args: EncryptedField | null;
   display_name: string;
   system_prompt: EncryptedField | null;
@@ -33,12 +33,13 @@ interface CompositionVoiceRow {
 function rowToCompositionVoice(row: CompositionVoiceRow): CompositionVoice {
   const systemPromptDecrypted = row.system_prompt ? decryptField(row.system_prompt) : null;
   const cliArgsDecrypted = row.cli_args ? decryptField(row.cli_args) : null;
+  const cliCommandDecrypted = row.cli_command ? decryptField(row.cli_command) : null;
   return {
     id: row.id,
     compositionId: row.composition_id,
     provider: row.provider,
     model: row.model ?? undefined,
-    cliCommand: row.cli_command ?? undefined,
+    cliCommand: cliCommandDecrypted ?? undefined,
     cliArgs: cliArgsDecrypted ? (JSON.parse(cliArgsDecrypted) as string[]) : undefined,
     displayName: row.display_name,
     systemPrompt: systemPromptDecrypted ?? undefined,
@@ -125,7 +126,7 @@ export function insertComposition(db: DatabaseSync, composition: Composition): v
         voice.compositionId,
         voice.provider,
         voice.model ?? null,
-        voice.cliCommand ?? null,
+        voice.cliCommand ? encryptField(voice.cliCommand) : null,
         voice.cliArgs ? encryptField(JSON.stringify(voice.cliArgs)) : null,
         voice.displayName,
         voice.systemPrompt != null ? encryptField(voice.systemPrompt) : null,
@@ -209,7 +210,7 @@ export function upsertCompositionVoices(db: DatabaseSync, voices: CompositionVoi
         voice.compositionId,
         voice.provider,
         voice.model ?? null,
-        voice.cliCommand ?? null,
+        voice.cliCommand ? encryptField(voice.cliCommand) : null,
         voice.cliArgs ? encryptField(JSON.stringify(voice.cliArgs)) : null,
         voice.displayName,
         voice.systemPrompt != null ? encryptField(voice.systemPrompt) : null,
