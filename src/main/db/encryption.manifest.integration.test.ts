@@ -53,18 +53,21 @@ describe('Encryption manifest — all encrypted fields are stored as ciphertext'
     expect(messages.find((m) => m.id === 'm1')!.content).toBe(SENTINEL);
   });
 
-  it('user_profile.conductor_name, pronouns, conductor_context are stored as ENC:v1:…', () => {
-    upsertUserProfile(db, { conductorName: SENTINEL, pronouns: SENTINEL, conductorContext: SENTINEL, defaultTone: 'collaborative', conductorColor: '', conductorAvatar: '' });
-    const row = db.prepare('SELECT conductor_name, pronouns, conductor_context FROM user_profile WHERE id = 1').get() as { conductor_name: string; pronouns: string; conductor_context: string };
+  it('user_profile.conductor_name, pronouns, conductor_context, conductor_avatar are stored as ENC:v1:…', () => {
+    upsertUserProfile(db, { conductorName: SENTINEL, pronouns: SENTINEL, conductorContext: SENTINEL, defaultTone: 'collaborative', conductorColor: '', conductorAvatar: SENTINEL });
+    const row = db.prepare('SELECT conductor_name, pronouns, conductor_context, conductor_avatar FROM user_profile WHERE id = 1').get() as { conductor_name: string; pronouns: string; conductor_context: string; conductor_avatar: string };
     expect(row.conductor_name).toMatch(/^ENC:v1:/);
     expect(row.conductor_name).not.toContain(SENTINEL);
     expect(row.pronouns).toMatch(/^ENC:v1:/);
     expect(row.conductor_context).toMatch(/^ENC:v1:/);
+    expect(row.conductor_avatar).toMatch(/^ENC:v1:/);
+    expect(row.conductor_avatar).not.toContain(SENTINEL);
     // Round-trip: query layer must decrypt back to the original values
     const profile = getUserProfile(db);
     expect(profile.conductorName).toBe(SENTINEL);
     expect(profile.pronouns).toBe(SENTINEL);
     expect(profile.conductorContext).toBe(SENTINEL);
+    expect(profile.conductorAvatar).toBe(SENTINEL);
   });
 
   it('custom_providers.base_url is stored as ENC:v1:…', () => {

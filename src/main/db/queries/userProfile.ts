@@ -9,7 +9,7 @@ interface UserProfileRow {
   conductor_context: EncryptedField;
   default_tone: string;
   conductor_color: string;
-  conductor_avatar: string;
+  conductor_avatar: EncryptedField;
   dismissed_update_version: string;
   update_remind_after: number;
   updated_at: number;
@@ -22,7 +22,7 @@ function rowToProfile(row: UserProfileRow): UserProfile {
     conductorContext: decryptField(row.conductor_context) ?? '',
     defaultTone: row.default_tone as TonePreset,
     conductorColor: row.conductor_color,
-    conductorAvatar: row.conductor_avatar,
+    conductorAvatar: decryptField(row.conductor_avatar) ?? '',
     updatedAt: row.updated_at,
   };
 }
@@ -46,7 +46,7 @@ export function upsertUserProfile(
   const now = Date.now();
   db.prepare(`
     UPDATE user_profile SET conductor_name=?, pronouns=?, conductor_context=?, default_tone=?, conductor_color=?, conductor_avatar=?, updated_at=? WHERE id=1
-  `).run(encryptField(profile.conductorName), encryptField(profile.pronouns), encryptField(profile.conductorContext), profile.defaultTone, profile.conductorColor, profile.conductorAvatar, now);
+  `).run(encryptField(profile.conductorName), encryptField(profile.pronouns), encryptField(profile.conductorContext), profile.defaultTone, profile.conductorColor, encryptField(profile.conductorAvatar), now);
 
   return getUserProfile(db);
 }

@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { TONE_PRESETS } from '../../../shared/constants';
 import { CREATE_TABLES_SQL, SCHEMA_VERSION } from '../schema';
 import { up as migration002 } from './002_add_update_preferences';
+import { up as migration003 } from './003_encrypt_conductor_avatar';
 
 const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
   [
@@ -75,6 +76,10 @@ export function runMigrations(db: DatabaseSync): void {
   // CREATE_TABLES_SQL already includes the latest schema for new databases).
   if (row !== undefined && currentVersion < 2) {
     migration002(db);
+  }
+
+  if (row !== undefined && currentVersion < 3) {
+    migration003(db);
   }
 
   if (row === undefined) {

@@ -4,7 +4,7 @@ import { runMigrations } from './index';
 import { up as migration002 } from './002_add_update_preferences';
 
 describe('runMigrations (fresh install)', () => {
-  it('creates all tables and sets schema_version to 2', () => {
+  it('creates all tables and sets schema_version to 3', () => {
     const db = new DatabaseSync(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
 
@@ -33,7 +33,7 @@ describe('runMigrations (fresh install)', () => {
     }
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(2);
+    expect(row.version).toBe(3);
   });
 
   it('seeds built-in tones', () => {
@@ -80,7 +80,7 @@ describe('runMigrations (fresh install)', () => {
     expect(templates).toHaveLength(5);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(2);
+    expect(row.version).toBe(3);
   });
 });
 
