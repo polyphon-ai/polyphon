@@ -399,17 +399,17 @@
           </div>
         </div>
         <div class="download-files">
-          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-arm64.dmg" onclick="gtag('event', 'download_click', { platform: 'macos', arch: 'arm64', version: '{{ $version }}' })">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-arm64.dmg" onclick="gtag('event', 'download_click', { platform: 'macos', arch: 'arm64', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
-              <span class="download-filename">Polyphon-{{ $version }}-arm64.dmg</span>
+              <span class="download-filename">Polyphon-arm64.dmg</span>
               <span class="download-arch">Apple Silicon</span>
             </span>
           </a>
-          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-x64.dmg" onclick="gtag('event', 'download_click', { platform: 'macos', arch: 'x64', version: '{{ $version }}' })">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-x64.dmg" onclick="gtag('event', 'download_click', { platform: 'macos', arch: 'x64', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
-              <span class="download-filename">Polyphon-{{ $version }}-x64.dmg</span>
+              <span class="download-filename">Polyphon-x64.dmg</span>
               <span class="download-arch">Intel</span>
             </span>
           </a>
@@ -435,22 +435,22 @@
           </div>
           <div>
             <h3 class="download-platform-name">Linux</h3>
-            <p class="download-platform-sub">x86_64 &amp; arm64</p>
+            <p class="download-platform-sub">x86_64 &amp; arm64 · any distro</p>
           </div>
         </div>
         <div class="download-files">
-          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-x64.AppImage" onclick="gtag('event', 'download_click', { platform: 'linux', arch: 'x64', version: '{{ $version }}' })">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-x64.flatpak" onclick="gtag('event', 'download_click', { platform: 'linux', arch: 'x64', format: 'flatpak', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
-              <span class="download-filename">Polyphon-{{ $version }}-x64.AppImage</span>
-              <span class="download-arch">AppImage · x86_64</span>
+              <span class="download-filename">Polyphon-x64.flatpak</span>
+              <span class="download-arch">x86_64</span>
             </span>
           </a>
-          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-arm64.AppImage" onclick="gtag('event', 'download_click', { platform: 'linux', arch: 'arm64', version: '{{ $version }}' })">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-arm64.flatpak" onclick="gtag('event', 'download_click', { platform: 'linux', arch: 'arm64', format: 'flatpak', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
-              <span class="download-filename">Polyphon-{{ $version }}-arm64.AppImage</span>
-              <span class="download-arch">AppImage · arm64</span>
+              <span class="download-filename">Polyphon-arm64.flatpak</span>
+              <span class="download-arch">arm64</span>
             </span>
           </a>
         </div>
@@ -461,9 +461,25 @@
           </span>
           <div class="gatekeeper-command">
             <span class="gatekeeper-prompt" aria-hidden="true">$</span>
-            <code>chmod +x Polyphon-{{ $version }}-*.AppImage</code>
+            <code>flatpak install Polyphon-x64.flatpak</code>
           </div>
-          <p class="gatekeeper-desc">Run in a terminal after downloading to make the AppImage executable.</p>
+          <p class="gatekeeper-desc">Works on Ubuntu, Fedora, Arch, and any other distro with Flatpak installed.</p>
+        </div>
+        <div class="download-alt-formats">
+          <div class="download-alt-links">
+            <span class="download-alt-group">
+              <span class="download-alt-label">deb</span>
+              <a href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-x64.deb" onclick="gtag('event', 'download_click', { platform: 'linux', arch: 'x64', format: 'deb', version: '{{ $version }}' })">x64</a>
+              <span class="download-alt-sep" aria-hidden="true">·</span>
+              <a href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-arm64.deb" onclick="gtag('event', 'download_click', { platform: 'linux', arch: 'arm64', format: 'deb', version: '{{ $version }}' })">arm64</a>
+            </span>
+            <span class="download-alt-group">
+              <span class="download-alt-label">rpm</span>
+              <a href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-x64.rpm" onclick="gtag('event', 'download_click', { platform: 'linux', arch: 'x64', format: 'rpm', version: '{{ $version }}' })">x64</a>
+              <span class="download-alt-sep" aria-hidden="true">·</span>
+              <a href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-arm64.rpm" onclick="gtag('event', 'download_click', { platform: 'linux', arch: 'arm64', format: 'rpm', version: '{{ $version }}' })">arm64</a>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -479,18 +495,18 @@
           </div>
         </div>
         <div class="download-files">
-          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-x64-Setup.exe" onclick="gtag('event', 'download_click', { platform: 'windows', arch: 'x64', version: '{{ $version }}' })">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-x64-Setup.exe" onclick="gtag('event', 'download_click', { platform: 'windows', arch: 'x64', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
-              <span class="download-filename">Polyphon-{{ $version }}-x64-Setup.exe</span>
-              <span class="download-arch">x64 installer</span>
+              <span class="download-filename">Polyphon-x64-Setup.exe</span>
+              <span class="download-arch">x64</span>
             </span>
           </a>
-          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-{{ $version }}-arm64-Setup.exe" onclick="gtag('event', 'download_click', { platform: 'windows', arch: 'arm64', version: '{{ $version }}' })">
+          <a class="download-file-btn" href="https://github.com/polyphon-ai/releases/releases/download/v{{ $version }}/Polyphon-arm64-Setup.exe" onclick="gtag('event', 'download_click', { platform: 'windows', arch: 'arm64', version: '{{ $version }}' })">
             {{ partial "icon.html" (dict "name" "download" "size" 14) }}
             <span class="download-file-info">
-              <span class="download-filename">Polyphon-{{ $version }}-arm64-Setup.exe</span>
-              <span class="download-arch">arm64 installer</span>
+              <span class="download-filename">Polyphon-arm64-Setup.exe</span>
+              <span class="download-arch">arm64</span>
             </span>
           </a>
         </div>
