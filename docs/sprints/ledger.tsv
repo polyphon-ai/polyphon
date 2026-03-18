@@ -10,3 +10,4 @@ sprint_id	title	status	created_at	updated_at
 009	GitHub API Response Hardening	completed	2026-03-17T21:05:39Z	2026-03-17T21:09:19Z
 010	loadShellEnv() Security Hardening	completed	2026-03-17T21:11:50Z	2026-03-17T21:13:55Z
 011	Conductor Avatar Upload Hardening	completed	2026-03-17T21:10:43Z	2026-03-17T21:29:39Z
+012	Linux Sandboxed Packaging — Replace --no-sandbox AppImage Wrapper	completed	2026-03-17T22:51:51Z	2026-03-17T23:15:09Z
