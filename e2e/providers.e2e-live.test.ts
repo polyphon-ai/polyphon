@@ -183,6 +183,43 @@ async function buildCompositionLive(
 }
 
 /**
+ * Expand the voice sidebar and assert each named voice shows the expected type badge
+ * (CLI or API). The sidebar is left expanded so the badges remain visible throughout
+ * the rest of the test.
+ */
+async function expandSidebarAndAssertVoiceTypes(
+  win: Page,
+  pause: () => Promise<void>,
+  voices: Array<{ displayName: string; voiceType: 'api' | 'cli' }>,
+): Promise<void> {
+  await win.getByRole('button', { name: /expand sidebar/i }).click();
+  await pause();
+
+  for (const { displayName, voiceType } of voices) {
+    const panel = win.locator(`[aria-label*="Voice: ${displayName}"]`);
+    const expectedBadge = voiceType === 'cli' ? 'CLI' : 'API';
+    await expect(panel.getByText(expectedBadge, { exact: true })).toBeVisible({ timeout: 5_000 });
+  }
+}
+
+/**
+ * Assert that the most recent response bubble from the named voice shows the correct
+ * type badge (CLI or API) in its header.
+ */
+async function assertMessageBubbleType(
+  win: Page,
+  displayName: string,
+  voiceType: 'api' | 'cli',
+): Promise<void> {
+  const expectedBadge = voiceType === 'cli' ? 'CLI' : 'API';
+  const article = win
+    .locator(`[role="article"][aria-label*="Message from ${displayName}"]`)
+    .filter({ hasText: /\S/ })
+    .first();
+  await expect(article.getByText(expectedBadge, { exact: true })).toBeVisible({ timeout: 10_000 });
+}
+
+/**
  * Assert that the named voice has at least one non-empty response bubble visible.
  * The aria-label pattern is: "Message from <displayName>" on role="article" elements.
  */
@@ -322,6 +359,11 @@ test.describe.serial('built-in providers', () => {
         { providerId: 'gemini', voiceType: 'api', displayName: 'Gemini API', model: LIVE_TEST_MODELS.gemini },
       ]);
       await startSession(win, pause, 'Live API Trio', 'API Trio Session');
+      await expandSidebarAndAssertVoiceTypes(win, pause, [
+        { displayName: 'Anthropic API', voiceType: 'api' },
+        { displayName: 'OpenAI API', voiceType: 'api' },
+        { displayName: 'Gemini API', voiceType: 'api' },
+      ]);
 
       await win
         .getByPlaceholder('Message the ensemble\u2026')
@@ -332,6 +374,9 @@ test.describe.serial('built-in providers', () => {
       await waitForVoiceResponse(win, 'Anthropic API');
       await waitForVoiceResponse(win, 'OpenAI API');
       await waitForVoiceResponse(win, 'Gemini API');
+      await assertMessageBubbleType(win, 'Anthropic API', 'api');
+      await assertMessageBubbleType(win, 'OpenAI API', 'api');
+      await assertMessageBubbleType(win, 'Gemini API', 'api');
       await waitForRoundIdle(win);
       await expect(win.locator('[role="alert"]')).not.toBeVisible();
       await longPause();
@@ -355,6 +400,11 @@ test.describe.serial('built-in providers', () => {
         { providerId: 'copilot', voiceType: 'cli', displayName: 'Copilot CLI' },
       ]);
       await startSession(win, pause, 'Live CLI Trio', 'CLI Trio Session');
+      await expandSidebarAndAssertVoiceTypes(win, pause, [
+        { displayName: 'Anthropic CLI', voiceType: 'cli' },
+        { displayName: 'OpenAI CLI', voiceType: 'cli' },
+        { displayName: 'Copilot CLI', voiceType: 'cli' },
+      ]);
 
       await win
         .getByPlaceholder('Message the ensemble\u2026')
@@ -365,6 +415,9 @@ test.describe.serial('built-in providers', () => {
       await waitForVoiceResponse(win, 'Anthropic CLI');
       await waitForVoiceResponse(win, 'OpenAI CLI');
       await waitForVoiceResponse(win, 'Copilot CLI');
+      await assertMessageBubbleType(win, 'Anthropic CLI', 'cli');
+      await assertMessageBubbleType(win, 'OpenAI CLI', 'cli');
+      await assertMessageBubbleType(win, 'Copilot CLI', 'cli');
       await waitForRoundIdle(win);
       await expect(win.locator('[role="alert"]')).not.toBeVisible();
       await longPause();
@@ -386,6 +439,10 @@ test.describe.serial('built-in providers', () => {
         { providerId: 'copilot', voiceType: 'cli', displayName: 'Copilot CLI' },
       ]);
       await startSession(win, pause, 'Live Mix Duo', 'Mix Duo Session');
+      await expandSidebarAndAssertVoiceTypes(win, pause, [
+        { displayName: 'Anthropic API', voiceType: 'api' },
+        { displayName: 'Copilot CLI', voiceType: 'cli' },
+      ]);
 
       // Round 1
       await win
@@ -395,6 +452,8 @@ test.describe.serial('built-in providers', () => {
       await win.keyboard.press('Enter');
       await waitForVoiceResponse(win, 'Anthropic API');
       await waitForVoiceResponse(win, 'Copilot CLI');
+      await assertMessageBubbleType(win, 'Anthropic API', 'api');
+      await assertMessageBubbleType(win, 'Copilot CLI', 'cli');
       await waitForRoundIdle(win);
       await longPause();
 
@@ -440,6 +499,10 @@ test.describe.serial('built-in providers', () => {
         { mode: 'conductor' },
       );
       await startSession(win, pause, 'Live Dir Mix', 'Dir Mix Session');
+      await expandSidebarAndAssertVoiceTypes(win, pause, [
+        { displayName: 'Anthropic API', voiceType: 'api' },
+        { displayName: 'Copilot CLI', voiceType: 'cli' },
+      ]);
 
       // --- Round 1: target Anthropic API ---
       const anthropicBefore = await countVoiceResponses(win, 'Anthropic API');
@@ -452,6 +515,7 @@ test.describe.serial('built-in providers', () => {
       await win.keyboard.press('Enter');
 
       await waitForVoiceResponse(win, 'Anthropic API');
+      await assertMessageBubbleType(win, 'Anthropic API', 'api');
       await waitForRoundIdle(win);
       await longPause();
 
@@ -473,6 +537,7 @@ test.describe.serial('built-in providers', () => {
       await win.keyboard.press('Enter');
 
       await waitForVoiceResponse(win, 'Copilot CLI');
+      await assertMessageBubbleType(win, 'Copilot CLI', 'cli');
       await waitForRoundIdle(win);
       await longPause();
 
