@@ -150,6 +150,7 @@ export default function MessageFeed({
               voiceColor={voice?.color}
               voiceName={voice?.name}
               voiceProvider={voice?.provider}
+              voiceType={voice?.type}
               voiceSide={voice?.side}
             />
           );
