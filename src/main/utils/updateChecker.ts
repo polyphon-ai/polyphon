@@ -44,7 +44,7 @@ export async function checkForUpdateNow(win: BrowserWindow): Promise<UpdateInfo 
     const currentVersion = app.getVersion();
     const response = await fetch(
       GITHUB_RELEASES_URL,
-      { headers: { 'User-Agent': `polyphon/${currentVersion}` } },
+      { headers: { 'User-Agent': `polyphon/${currentVersion}` }, signal: AbortSignal.timeout(10000) },
     );
 
     if (!response.ok) return null;
@@ -76,7 +76,7 @@ export async function checkForUpdate(db: DatabaseSync, win: BrowserWindow, now =
     const currentVersion = app.getVersion();
     const response = await fetch(
       GITHUB_RELEASES_URL,
-      { headers: { 'User-Agent': `polyphon/${currentVersion}` } },
+      { headers: { 'User-Agent': `polyphon/${currentVersion}` }, signal: AbortSignal.timeout(10000) },
     );
 
     if (!response.ok) return;

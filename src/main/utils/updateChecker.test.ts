@@ -164,6 +164,31 @@ describe('parseReleaseVersion (via checkForUpdateNow)', () => {
   });
 });
 
+describe('GitHub releases URL', () => {
+  let checkForUpdateNow: typeof import('./updateChecker').checkForUpdateNow;
+  let _resetForTests: typeof import('./updateChecker')._resetForTests;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.stubGlobal('fetch', vi.fn());
+    const mod = await import('./updateChecker');
+    checkForUpdateNow = mod.checkForUpdateNow;
+    _resetForTests = mod._resetForTests;
+    _resetForTests();
+    mockSend.mockClear();
+    mockGetVersion.mockReturnValue('1.0.0');
+  });
+
+  it('fetches the correct GitHub releases API endpoint', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: false } as any);
+    await checkForUpdateNow(makeWin());
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.github.com/repos/polyphon-ai/releases/releases/latest',
+      expect.objectContaining({ headers: expect.objectContaining({ 'User-Agent': 'polyphon/1.0.0' }) }),
+    );
+  });
+});
+
 describe('checkForUpdateNow', () => {
   let checkForUpdateNow: typeof import('./updateChecker').checkForUpdateNow;
   let getCachedUpdateInfo: typeof import('./updateChecker').getCachedUpdateInfo;
