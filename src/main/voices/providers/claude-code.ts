@@ -36,7 +36,7 @@ class ClaudeCodeVoice extends CLIVoice {
     const systemPrompt = this.buildSystemPrompt();
     const prompt = buildPrompt(context, systemPrompt);
 
-    const proc = spawn(this.cliCommand, [...this.cliArgs], {
+    const proc = spawn(this.cliCommand, [...this.cliArgs, '--print'], {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     this.setActiveProcess(proc);

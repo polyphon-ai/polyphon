@@ -113,7 +113,8 @@ class CodexVoice extends CLIVoice {
 
   async *send(_message: Message, context: Message[]): AsyncIterable<string> {
     const prompt = buildPrompt(context, this.buildSystemPrompt());
-    const proc = spawn(this.cliCommand, [...this.cliArgs], {
+    // `codex exec -` reads the prompt from stdin and runs non-interactively
+    const proc = spawn(this.cliCommand, [...this.cliArgs, 'exec', '-'], {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     this.setActiveProcess(proc);

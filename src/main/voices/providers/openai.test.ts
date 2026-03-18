@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { EventEmitter } from 'events';
 
 const mockCompletionsStream = vi.fn();
 
@@ -14,10 +15,19 @@ vi.mock('../../utils/env', () => ({
   resolveApiKey: vi.fn(),
 }));
 
+vi.mock('child_process', () => ({
+  spawn: vi.fn(),
+  spawnSync: vi.fn(),
+}));
+
+import { spawn, spawnSync } from 'child_process';
 import { resolveApiKey } from '../../utils/env';
 import { openaiProvider } from './openai';
 import type { Message } from '../../../shared/types';
 import type { VoiceConfig } from '../Voice';
+
+const mockSpawn = spawn as ReturnType<typeof vi.fn>;
+const mockSpawnSync = spawnSync as ReturnType<typeof vi.fn>;
 
 const mockResolveApiKey = resolveApiKey as ReturnType<typeof vi.fn>;
 
@@ -202,6 +212,161 @@ describe('OpenAIVoice.send()', () => {
   });
 });
 
+
+function makeMockProcess() {
+  const stdout = new EventEmitter() as EventEmitter & { [Symbol.asyncIterator](): AsyncIterator<Buffer> };
+  const stdin = { write: vi.fn(), end: vi.fn() };
+  const proc = new EventEmitter() as EventEmitter & {
+    stdin: typeof stdin;
+    stdout: typeof stdout;
+    kill: ReturnType<typeof vi.fn>;
+  };
+  proc.stdin = stdin;
+  proc.stdout = stdout;
+  proc.kill = vi.fn();
+
+  const chunks: Buffer[] = [];
+  let resolveNext: ((val: IteratorResult<Buffer>) => void) | null = null;
+  let done = false;
+
+  stdout.on('data', (chunk: Buffer) => {
+    if (resolveNext) {
+      const r = resolveNext;
+      resolveNext = null;
+      r({ value: chunk, done: false });
+    } else {
+      chunks.push(chunk);
+    }
+  });
+
+  stdout[Symbol.asyncIterator] = function () {
+    return {
+      next(): Promise<IteratorResult<Buffer>> {
+        if (chunks.length > 0) {
+          return Promise.resolve({ value: chunks.shift()!, done: false });
+        }
+        if (done) {
+          return Promise.resolve({ value: undefined as unknown as Buffer, done: true });
+        }
+        return new Promise((resolve) => { resolveNext = resolve; });
+      },
+      return(): Promise<IteratorResult<Buffer>> {
+        done = true;
+        return Promise.resolve({ value: undefined as unknown as Buffer, done: true });
+      },
+    };
+  };
+
+  function emitData(text: string) { stdout.emit('data', Buffer.from(text)); }
+  function emitEnd() {
+    done = true;
+    if (resolveNext) {
+      const r = resolveNext;
+      resolveNext = null;
+      r({ value: undefined as unknown as Buffer, done: true });
+    }
+  }
+
+  return { proc, emitData, emitEnd };
+}
+
+describe('CodexVoice.send()', () => {
+  it('spawns "codex exec -" and writes prompt to stdin', async () => {
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = openaiProvider.create(makeConfig({ cliCommand: 'codex' }));
+    const context: Message[] = [makeMsg({ role: 'conductor', content: 'Hello' })];
+
+    const sendPromise = (async () => {
+      for await (const _ of voice.send(makeMsg(), context)) { /* drain */ }
+    })();
+
+    emitEnd();
+    await sendPromise;
+
+    expect(mockSpawn).toHaveBeenCalledOnce();
+    const [cmd, args] = mockSpawn.mock.calls[0] as [string, string[]];
+    expect(cmd).toBe('codex');
+    expect(args).toContain('exec');
+    expect(args).toContain('-');
+    expect(proc.stdin.write).toHaveBeenCalledOnce();
+    const written = proc.stdin.write.mock.calls[0]![0] as string;
+    expect(written).toContain('Hello');
+  });
+
+  it('yields complete lines from stdout', async () => {
+    const { proc, emitData, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = openaiProvider.create(makeConfig({ cliCommand: 'codex' }));
+
+    const sendPromise = (async () => {
+      const tokens: string[] = [];
+      for await (const t of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) tokens.push(t);
+      return tokens;
+    })();
+
+    emitData('line one\nline two\n');
+    emitEnd();
+    const tokens = await sendPromise;
+
+    expect(tokens).toEqual(['line one\n', 'line two\n']);
+  });
+
+  it('yields remaining buffer content after stream ends', async () => {
+    const { proc, emitData, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = openaiProvider.create(makeConfig({ cliCommand: 'codex' }));
+
+    const sendPromise = (async () => {
+      const tokens: string[] = [];
+      for await (const t of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) tokens.push(t);
+      return tokens;
+    })();
+
+    emitData('no newline at end');
+    emitEnd();
+    const tokens = await sendPromise;
+
+    expect(tokens).toContain('no newline at end');
+  });
+
+  it('includes system prompt in stdin content', async () => {
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = openaiProvider.create(makeConfig({ cliCommand: 'codex' }));
+    voice.setEnsembleSystemPrompt('Be concise.');
+
+    const sendPromise = (async () => {
+      for await (const _ of voice.send(makeMsg(), [makeMsg({ role: 'conductor', content: 'Hi' })])) { /* drain */ }
+    })();
+
+    emitEnd();
+    await sendPromise;
+
+    const written = proc.stdin.write.mock.calls[0]![0] as string;
+    expect(written).toContain('Be concise.');
+  });
+
+  it('abort() kills the active process', async () => {
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = openaiProvider.create(makeConfig({ cliCommand: 'codex' }));
+    const gen = voice.send(makeMsg(), [makeMsg({ content: 'Hi' })]);
+
+    const nextPromise = gen[Symbol.asyncIterator]().next();
+    voice.abort();
+    emitEnd();
+
+    await nextPromise.catch(() => { /* may resolve or reject after kill */ });
+
+    expect(proc.kill).toHaveBeenCalled();
+  });
+});
 
 describe('CodexVoice constructor validation (base-class guard via CodexVoice)', () => {
   it('throws for cliCommand with shell metacharacter', () => {
