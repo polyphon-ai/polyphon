@@ -13,7 +13,7 @@
  *   3. Mixed API+CLI broadcast — multi-round (Anthropic API + Copilot CLI, 2 rounds)
  *   4. Mixed conductor routing — @mention directed (Anthropic API + Copilot CLI, 2 directed rounds)
  *   5. Broadcast with "Prompt me" continuation — nudge appears, Allow triggers round 2
- *   6. Broadcast with "Auto" continuation — round 2 fires automatically (maxRounds = 2)
+ *   6. Broadcast with "Auto" continuation — round cap enforced for maxRounds = 1, 2, and 3
  *
  * Keyword-anchor prompts ("include the word X") are used for human-observer clarity only.
  * The specific keyword is NOT asserted programmatically — LLM output is non-deterministic.
@@ -125,9 +125,10 @@ async function buildCompositionLive(
   opts: {
     mode?: 'broadcast' | 'conductor';
     continuationPolicy?: 'none' | 'prompt' | 'auto';
+    continuationMaxRounds?: number;
   } = {},
 ): Promise<void> {
-  const { mode = 'broadcast', continuationPolicy = 'none' } = opts;
+  const { mode = 'broadcast', continuationPolicy = 'none', continuationMaxRounds } = opts;
 
   await win.getByRole('button', { name: /compositions/i }).click();
   await pause();
@@ -143,6 +144,16 @@ async function buildCompositionLive(
       const label = continuationPolicy === 'prompt' ? 'Prompt me' : 'Auto';
       await win.getByRole('button', { name: label }).click();
       await pause();
+
+      if (continuationPolicy === 'auto' && continuationMaxRounds !== undefined) {
+        const slider = win.locator('input[type="range"]').first();
+        await slider.evaluate((el: HTMLInputElement, v: string) => {
+          const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+          setter?.call(el, v);
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+        }, String(continuationMaxRounds));
+        await pause();
+      }
     }
   }
 
@@ -613,10 +624,24 @@ test.describe.serial('built-in providers', () => {
     });
   });
 
-  // ── Scenario 6: Broadcast with "Auto" continuation ─────────────────────────
+  // ── Scenario 6: Broadcast with "Auto" continuation — round cap enforcement ──
+  //
+  // maxRounds semantics (from SessionManager):
+  //   maxDepth = continuationMaxRounds - 1
+  //   auto fires when depth < maxDepth (initial send is depth 0)
+  //
+  //   maxRounds = 1 → maxDepth = 0 → condition never satisfied → 1 response set
+  //   maxRounds = 2 → maxDepth = 1 → fires once   → 2 response sets
+  //   maxRounds = 3 → maxDepth = 2 → fires twice  → 3 response sets
 
   test.describe.serial('broadcast — auto continuation', () => {
-    test('second round fires automatically without user interaction', async () => {
+    async function runAutoRoundsTest(
+      maxRounds: 1 | 2 | 3,
+      compositionName: string,
+      sessionName: string,
+      voiceA: string,
+      voiceB: string,
+    ): Promise<void> {
       const ok = await requireProviders(win, [
         { providerId: 'anthropic', voiceType: 'api', label: 'Anthropic API' },
         { providerId: 'openai', voiceType: 'api', label: 'OpenAI API' },
@@ -627,35 +652,56 @@ test.describe.serial('built-in providers', () => {
         win,
         pause,
         longPause,
-        'Live Auto Cont',
+        compositionName,
         [
-          { providerId: 'anthropic', voiceType: 'api', displayName: 'Anthropic Auto', model: LIVE_TEST_MODELS.anthropic },
-          { providerId: 'openai', voiceType: 'api', displayName: 'OpenAI Auto', model: LIVE_TEST_MODELS.openai },
+          { providerId: 'anthropic', voiceType: 'api', displayName: voiceA, model: LIVE_TEST_MODELS.anthropic },
+          { providerId: 'openai', voiceType: 'api', displayName: voiceB, model: LIVE_TEST_MODELS.openai },
         ],
-        { mode: 'broadcast', continuationPolicy: 'auto' },
+        { mode: 'broadcast', continuationPolicy: 'auto', continuationMaxRounds: maxRounds },
       );
-      await startSession(win, pause, 'Live Auto Cont', 'Auto Cont Session');
+      await startSession(win, pause, compositionName, sessionName);
       await expandSidebarAndAssertVoiceTypes(win, pause, [
-        { displayName: 'Anthropic Auto', voiceType: 'api' },
-        { displayName: 'OpenAI Auto', voiceType: 'api' },
+        { displayName: voiceA, voiceType: 'api' },
+        { displayName: voiceB, voiceType: 'api' },
       ]);
 
       await win
         .getByPlaceholder('Message the ensemble\u2026')
-        .fill('Reply in one sentence and include the word "first".');
+        .fill('Reply in one sentence only.');
       await pause();
       await win.keyboard.press('Enter');
 
-      // Both voices should respond twice automatically (maxRounds default = 2: initial + 1 auto)
+      // Wait for all rounds to complete and textarea to re-enable
+      const perRoundTimeout = 90_000;
+      const totalTimeout = maxRounds * perRoundTimeout;
+
       await expect(
-        win.locator('[role="article"][aria-label*="Anthropic Auto"]').filter({ hasText: /\S/ }),
-      ).toHaveCount(2, { timeout: 180_000 });
+        win.locator(`[role="article"][aria-label*="${voiceA}"]`).filter({ hasText: /\S/ }),
+      ).toHaveCount(maxRounds, { timeout: totalTimeout });
       await expect(
-        win.locator('[role="article"][aria-label*="OpenAI Auto"]').filter({ hasText: /\S/ }),
-      ).toHaveCount(2, { timeout: 180_000 });
+        win.locator(`[role="article"][aria-label*="${voiceB}"]`).filter({ hasText: /\S/ }),
+      ).toHaveCount(maxRounds, { timeout: totalTimeout });
+
       await waitForRoundIdle(win);
+
+      // Assert the cap is enforced — no extra rounds should have fired
+      expect(await countVoiceResponses(win, voiceA)).toBe(maxRounds);
+      expect(await countVoiceResponses(win, voiceB)).toBe(maxRounds);
+
       await expect(win.locator('[role="alert"]')).not.toBeVisible();
       await longPause();
+    }
+
+    test('maxRounds=1: exactly 1 response set, no auto continuation fires', async () => {
+      await runAutoRoundsTest(1, 'Live Auto 1R', 'Auto 1R Session', 'Anthropic Auto 1R', 'OpenAI Auto 1R');
+    });
+
+    test('maxRounds=2: exactly 2 response sets, 1 auto continuation fires', async () => {
+      await runAutoRoundsTest(2, 'Live Auto 2R', 'Auto 2R Session', 'Anthropic Auto 2R', 'OpenAI Auto 2R');
+    });
+
+    test('maxRounds=3: exactly 3 response sets, 2 auto continuations fire', async () => {
+      await runAutoRoundsTest(3, 'Live Auto 3R', 'Auto 3R Session', 'Anthropic Auto 3R', 'OpenAI Auto 3R');
     });
   });
 });
