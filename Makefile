@@ -448,7 +448,7 @@ vm-ubuntu-dist: ## Build Linux x64 + arm64 packages (.deb/.flatpak) on the Linux
 	@ssh $(_LINUX_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
 		{ echo "ERROR: Node 24 not found on Linux VM. Run: make vm-ubuntu-provision"; exit 1; }
 	@echo "==> Installing build dependencies..."
-	@ssh $(_LINUX_VM) 'sudo apt-get update -q && sudo apt-get install -y -q libgtk-3-0 libgbm1 libnss3 libasound2t64 libxshmfence1 flatpak flatpak-builder elfutils dpkg fakeroot'
+	@ssh $(_LINUX_VM) 'sudo apt-get update -q && sudo apt-get install -y -q libgtk-3-0 libgbm1 libnss3 libasound2t64 libxshmfence1 flatpak flatpak-builder elfutils dpkg fakeroot qemu-user-static binfmt-support'
 	@echo "==> Setting up Flatpak runtimes..."
 	@ssh $(_LINUX_VM) 'flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo'
 	@ssh $(_LINUX_VM) 'flatpak install --user --noninteractive --or-update flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 org.electronjs.Electron2.BaseApp//24.08'

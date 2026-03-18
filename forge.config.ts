@@ -1,3 +1,5 @@
+import { rmSync } from 'node:fs';
+import { join } from 'node:path';
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerDMG } from '@electron-forge/maker-dmg';
@@ -13,6 +15,20 @@ const config: ForgeConfig = {
     asar: true,
     icon: 'assets/icons/icon',
     executableName: 'polyphon',
+    // Remove chrome-sandbox from Linux packages. electron-installer-flatpak
+    // checks for chrome-sandbox to decide whether to compile zypak from source
+    // (via bwrap), which fails in VM/CI environments. Without chrome-sandbox,
+    // requiresSandboxWrapper() returns false and no module compilation occurs.
+    // On deb/rpm, Electron falls back to the kernel namespace sandbox (fine on
+    // any kernel >= 3.8 with user namespaces enabled, i.e. all modern distros).
+    afterCopy: [
+      (_buildPath, _electronVersion, platform, _arch, callback) => {
+        if (platform === 'linux') {
+          rmSync(join(_buildPath, 'chrome-sandbox'), { force: true });
+        }
+        callback();
+      },
+    ],
   },
   rebuildConfig: {},
   makers: [
@@ -48,17 +64,6 @@ const config: ForgeConfig = {
         description: 'One chat. Many voices.',
         icon: 'assets/icons/icon.png',
         files: [],
-        // Explicitly empty: prevents the installer from auto-injecting a zypak
-        // build-from-source module (triggered when chrome-sandbox is present in
-        // the packaged app). org.electronjs.Electron2.BaseApp already ships
-        // zypak pre-built, so compiling it again from git is both unnecessary
-        // and broken in headless VM environments.
-        modules: [],
-        // Disable bwrap sandbox during build — required in VM/CI environments
-        // where user namespaces are unavailable. Not in MakerFlatpakOptionsConfig
-        // types but passed through to @malept/flatpak-bundler via the flat merge
-        // in electron-installer-common (installer.js:217).
-        ...(({ extraFlatpakBuilderArgs: ['--disable-sandbox'] }) as object),
       },
     }, ['linux']),
   ],
