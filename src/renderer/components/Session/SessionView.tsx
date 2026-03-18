@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, PanelRightClose, PanelRightOpen, Square, X, Pencil, Check } from 'lucide-react';
 import type { Session, Message, VoiceDescriptor } from '../../../shared/types';
+import { PROVIDER_METADATA } from '../../../shared/constants';
 import { useSessionStore } from '../../store/sessionStore';
 import MessageFeed from './MessageFeed';
 import VoicePanel from './VoicePanel';
@@ -77,7 +78,7 @@ export default function SessionView({
       const voices: VoiceDescriptor[] = comp.voices.map((v, i) => ({
         id: v.id,
         name: v.displayName,
-        type: v.cliCommand ? 'cli' : 'api',
+        type: v.cliCommand || PROVIDER_METADATA[v.provider]?.defaultVoiceType === 'cli' ? 'cli' : 'api',
         provider: v.provider,
         color: v.color,
         avatarIcon: v.avatarIcon,
