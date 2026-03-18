@@ -48,6 +48,11 @@ const config: ForgeConfig = {
         description: 'One chat. Many voices.',
         icon: 'assets/icons/icon.png',
         files: [],
+        // Disable bwrap sandbox during build — required in VM/CI environments
+        // where user namespaces are unavailable. Not in MakerFlatpakOptionsConfig
+        // types but passed through to @malept/flatpak-bundler via the flat merge
+        // in electron-installer-common (installer.js:217).
+        ...(({ extraFlatpakBuilderArgs: ['--disable-sandbox'] }) as object),
       },
     }, ['linux']),
   ],

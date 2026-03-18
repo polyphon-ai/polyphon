@@ -460,9 +460,9 @@ vm-ubuntu-dist: ## Build Linux x64 + arm64 packages (.deb/.flatpak) on the Linux
 	@echo "==> Building Linux arm64 .deb..."
 	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch arm64 --targets @electron-forge/maker-deb'
 	@echo "==> Building Linux x64 Flatpak..."
-	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch x64 --targets @electron-forge/maker-flatpak'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && DEBUG="@malept/flatpak-bundler" npm run make -- --arch x64 --targets @electron-forge/maker-flatpak'
 	@echo "==> Building Linux arm64 Flatpak..."
-	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch arm64 --targets @electron-forge/maker-flatpak'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && DEBUG="@malept/flatpak-bundler" npm run make -- --arch arm64 --targets @electron-forge/maker-flatpak'
 	@echo "==> Fetching artifacts..."
 	@mkdir -p "$(CURDIR)/out/dist/linux"
 	@rsync -az $(_LINUX_VM):$(LINUX_VM_PATH)/out/make/ "$(CURDIR)/out/dist/linux/"
