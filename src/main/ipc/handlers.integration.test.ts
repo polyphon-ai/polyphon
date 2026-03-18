@@ -612,6 +612,61 @@ describe('IPC handlers integration', () => {
     });
   });
 
+  // --- Encryption at the IPC layer ---
+
+  describe('Encryption at the IPC layer', () => {
+    const SENTINEL = 'SENTINEL_PLAINTEXT_MUST_NOT_APPEAR';
+
+    it('COMPOSITION_CREATE stores composition_voices encrypted fields as ciphertext', async () => {
+      const data = {
+        name: 'Encrypted Comp',
+        mode: 'broadcast',
+        continuationPolicy: 'none',
+        continuationMaxRounds: 1,
+        voices: [
+          {
+            id: 'cv-enc',
+            provider: 'anthropic',
+            model: 'claude-opus-4-6',
+            displayName: 'Alice',
+            systemPrompt: SENTINEL,
+            cliCommand: SENTINEL,
+            cliArgs: [SENTINEL],
+            order: 0,
+            color: '#000',
+            avatarIcon: 'star',
+          },
+        ],
+      };
+
+      const result = await handlers.get(IPC.COMPOSITION_CREATE)!({}, data);
+      const row = db
+        .prepare('SELECT system_prompt, cli_command, cli_args FROM composition_voices WHERE composition_id = ?')
+        .get(result.id) as { system_prompt: string; cli_command: string; cli_args: string };
+
+      expect(row.system_prompt).toMatch(/^ENC:v1:/);
+      expect(row.system_prompt).not.toContain(SENTINEL);
+      expect(row.cli_command).toMatch(/^ENC:v1:/);
+      expect(row.cli_command).not.toContain(SENTINEL);
+      expect(row.cli_args).toMatch(/^ENC:v1:/);
+      expect(row.cli_args).not.toContain(SENTINEL);
+    });
+
+    it('VOICE_SEND stores messages.content as ciphertext', async () => {
+      insertComposition(db, makeComposition());
+      insertSession(db, makeSession());
+
+      await handlers.get(IPC.VOICE_SEND)!({ sender: {} }, SESS_ID, makeMessage({ content: SENTINEL }));
+
+      const row = db
+        .prepare('SELECT content FROM messages WHERE id = ?')
+        .get(MSG_ID) as { content: string };
+
+      expect(row.content).toMatch(/^ENC:v1:/);
+      expect(row.content).not.toContain(SENTINEL);
+    });
+  });
+
   // --- SHELL handlers ---
 
   describe('SHELL_OPEN_EXTERNAL', () => {
