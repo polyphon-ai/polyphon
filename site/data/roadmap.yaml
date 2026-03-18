@@ -4,6 +4,13 @@ items:
   - title: "Encryption at Rest"
     description: "Your sessions, compositions, and settings are encrypted on disk. Your data is protected even if your device is compromised."
     pricing: free
+    status: working-on
+    discussion:
+    feature_request:
+
+  - title: "YOLO Mode for CLI Voices"
+    description: "Per-voice checkboxes to enable non-interactive / auto-approve mode for CLI providers like Claude Code and Codex. Let them run without confirmation prompts when you trust the session."
+    pricing: free
     status: planned
     discussion:
     feature_request:
