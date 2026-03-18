@@ -250,6 +250,79 @@ vm-ubuntu-test: ## Sync project to Linux VM and run lint + unit + integration + 
 	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && CI=1 xvfb-run --auto-servernum --server-args="-screen 0 1280x720x16" npx playwright test'
 	@[ -z "$(LINUX_VM_NAME)" ] || utmctl suspend "$(LINUX_VM_NAME)" 2>/dev/null || true
 
+.PHONY: vm-ubuntu-test-unit
+vm-ubuntu-test-unit: ## Sync project to Linux VM and run unit tests only
+	@[ -z "$(LINUX_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(LINUX_VM_NAME)'..."; \
+		utmctl start "$(LINUX_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_LINUX_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_LINUX_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify LINUX_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-ubuntu-provision' if missing)..."
+	@ssh $(_LINUX_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
+		{ echo "ERROR: Node 24 not found on Linux VM. Run: make vm-ubuntu-provision"; exit 1; }
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_LINUX_VM):$(LINUX_VM_PATH)/
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm ci'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run test:unit'
+	@[ -z "$(LINUX_VM_NAME)" ] || utmctl suspend "$(LINUX_VM_NAME)" 2>/dev/null || true
+
+.PHONY: vm-ubuntu-test-integration
+vm-ubuntu-test-integration: ## Sync project to Linux VM and run integration tests only
+	@[ -z "$(LINUX_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(LINUX_VM_NAME)'..."; \
+		utmctl start "$(LINUX_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_LINUX_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_LINUX_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify LINUX_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-ubuntu-provision' if missing)..."
+	@ssh $(_LINUX_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
+		{ echo "ERROR: Node 24 not found on Linux VM. Run: make vm-ubuntu-provision"; exit 1; }
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_LINUX_VM):$(LINUX_VM_PATH)/
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm ci'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run test:integration'
+	@[ -z "$(LINUX_VM_NAME)" ] || utmctl suspend "$(LINUX_VM_NAME)" 2>/dev/null || true
+
+.PHONY: vm-ubuntu-test-e2e
+vm-ubuntu-test-e2e: ## Sync project to Linux VM and run e2e tests only
+	@[ -z "$(LINUX_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(LINUX_VM_NAME)'..."; \
+		utmctl start "$(LINUX_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_LINUX_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_LINUX_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify LINUX_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-ubuntu-provision' if missing)..."
+	@ssh $(_LINUX_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
+		{ echo "ERROR: Node 24 not found on Linux VM. Run: make vm-ubuntu-provision"; exit 1; }
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_LINUX_VM):$(LINUX_VM_PATH)/
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm ci'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run build:e2e'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && CI=1 xvfb-run --auto-servernum --server-args="-screen 0 1280x720x16" npx playwright test'
+	@[ -z "$(LINUX_VM_NAME)" ] || utmctl suspend "$(LINUX_VM_NAME)" 2>/dev/null || true
+
 .PHONY: vm-windows-test
 vm-windows-test: ## Sync project to Windows VM and run lint + unit + integration + e2e
 	@[ -z "$(WINDOWS_VM_NAME)" ] || { \
@@ -275,6 +348,80 @@ vm-windows-test: ## Sync project to Windows VM and run lint + unit + integration
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm run lint'
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm run test:unit'
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm run test:integration'
+	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm run build:e2e'
+	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && CI=1 npx playwright test'
+	@[ -z "$(WINDOWS_VM_NAME)" ] || utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
+
+.PHONY: vm-windows-test-unit
+vm-windows-test-unit: ## Sync project to Windows VM and run unit tests only
+	@[ -z "$(WINDOWS_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(WINDOWS_VM_NAME)'..."; \
+		utmctl start "$(WINDOWS_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_WINDOWS_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_WINDOWS_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok || \
+		{ echo "ERROR: SSH failed. Verify WINDOWS_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-windows-provision' if missing)..."
+	@ssh $(_WINDOWS_VM) "node --version" 2>/dev/null | grep -q "v24" || \
+		{ echo "ERROR: Node 24 not found on Windows VM. Run: make vm-windows-provision"; exit 1; }
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_WINDOWS_VM):$(WINDOWS_VM_PATH)/
+	@ssh $(_WINDOWS_VM) 'taskkill //F //IM electron.exe 2>/dev/null; cd $(WINDOWS_VM_PATH) && rm -rf node_modules && npm ci'
+	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm run test:unit'
+	@[ -z "$(WINDOWS_VM_NAME)" ] || utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
+
+.PHONY: vm-windows-test-integration
+vm-windows-test-integration: ## Sync project to Windows VM and run integration tests only
+	@[ -z "$(WINDOWS_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(WINDOWS_VM_NAME)'..."; \
+		utmctl start "$(WINDOWS_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_WINDOWS_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_WINDOWS_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok || \
+		{ echo "ERROR: SSH failed. Verify WINDOWS_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-windows-provision' if missing)..."
+	@ssh $(_WINDOWS_VM) "node --version" 2>/dev/null | grep -q "v24" || \
+		{ echo "ERROR: Node 24 not found on Windows VM. Run: make vm-windows-provision"; exit 1; }
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_WINDOWS_VM):$(WINDOWS_VM_PATH)/
+	@ssh $(_WINDOWS_VM) 'taskkill //F //IM electron.exe 2>/dev/null; cd $(WINDOWS_VM_PATH) && rm -rf node_modules && npm ci'
+	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm run test:integration'
+	@[ -z "$(WINDOWS_VM_NAME)" ] || utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
+
+.PHONY: vm-windows-test-e2e
+vm-windows-test-e2e: ## Sync project to Windows VM and run e2e tests only
+	@[ -z "$(WINDOWS_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(WINDOWS_VM_NAME)'..."; \
+		utmctl start "$(WINDOWS_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_WINDOWS_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_WINDOWS_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_WINDOWS_VM) "echo ok" 2>/dev/null | grep -q ok || \
+		{ echo "ERROR: SSH failed. Verify WINDOWS_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-windows-provision' if missing)..."
+	@ssh $(_WINDOWS_VM) "node --version" 2>/dev/null | grep -q "v24" || \
+		{ echo "ERROR: Node 24 not found on Windows VM. Run: make vm-windows-provision"; exit 1; }
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_WINDOWS_VM):$(WINDOWS_VM_PATH)/
+	@ssh $(_WINDOWS_VM) 'taskkill //F //IM electron.exe 2>/dev/null; cd $(WINDOWS_VM_PATH) && rm -rf node_modules && npm ci'
+	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npx playwright install --with-deps chromium'
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && npm run build:e2e'
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && CI=1 npx playwright test'
 	@[ -z "$(WINDOWS_VM_NAME)" ] || utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
@@ -411,6 +558,79 @@ vm-fedora-test: ## Sync project to Fedora VM and run lint + unit + integration +
 	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run lint'
 	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run test:unit'
 	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run test:integration'
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run build:e2e'
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && CI=1 xvfb-run --auto-servernum --server-args="-screen 0 1280x720x16" npx playwright test'
+	@[ -z "$(FEDORA_VM_NAME)" ] || utmctl suspend "$(FEDORA_VM_NAME)" 2>/dev/null || true
+
+.PHONY: vm-fedora-test-unit
+vm-fedora-test-unit: ## Sync project to Fedora VM and run unit tests only
+	@[ -z "$(FEDORA_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(FEDORA_VM_NAME)'..."; \
+		utmctl start "$(FEDORA_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_FEDORA_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_FEDORA_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify FEDORA_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-fedora-provision' if missing)..."
+	@ssh $(_FEDORA_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
+		{ echo "ERROR: Node 24 not found on Fedora VM. Run: make vm-fedora-provision"; exit 1; }
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_FEDORA_VM):$(FEDORA_VM_PATH)/
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm ci'
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run test:unit'
+	@[ -z "$(FEDORA_VM_NAME)" ] || utmctl suspend "$(FEDORA_VM_NAME)" 2>/dev/null || true
+
+.PHONY: vm-fedora-test-integration
+vm-fedora-test-integration: ## Sync project to Fedora VM and run integration tests only
+	@[ -z "$(FEDORA_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(FEDORA_VM_NAME)'..."; \
+		utmctl start "$(FEDORA_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_FEDORA_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_FEDORA_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify FEDORA_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-fedora-provision' if missing)..."
+	@ssh $(_FEDORA_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
+		{ echo "ERROR: Node 24 not found on Fedora VM. Run: make vm-fedora-provision"; exit 1; }
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_FEDORA_VM):$(FEDORA_VM_PATH)/
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm ci'
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run test:integration'
+	@[ -z "$(FEDORA_VM_NAME)" ] || utmctl suspend "$(FEDORA_VM_NAME)" 2>/dev/null || true
+
+.PHONY: vm-fedora-test-e2e
+vm-fedora-test-e2e: ## Sync project to Fedora VM and run e2e tests only
+	@[ -z "$(FEDORA_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(FEDORA_VM_NAME)'..."; \
+		utmctl start "$(FEDORA_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_FEDORA_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_FEDORA_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify FEDORA_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-fedora-provision' if missing)..."
+	@ssh $(_FEDORA_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
+		{ echo "ERROR: Node 24 not found on Fedora VM. Run: make vm-fedora-provision"; exit 1; }
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_FEDORA_VM):$(FEDORA_VM_PATH)/
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm ci'
 	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run build:e2e'
 	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && CI=1 xvfb-run --auto-servernum --server-args="-screen 0 1280x720x16" npx playwright test'
 	@[ -z "$(FEDORA_VM_NAME)" ] || utmctl suspend "$(FEDORA_VM_NAME)" 2>/dev/null || true
