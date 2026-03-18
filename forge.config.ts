@@ -1,36 +1,18 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerDMG } from '@electron-forge/maker-dmg';
-import { MakerAppImage } from '@reforged/maker-appimage';
+import { MakerDeb } from '@electron-forge/maker-deb';
+import { MakerRpm } from '@electron-forge/maker-rpm';
+import { MakerFlatpak } from '@electron-forge/maker-flatpak';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
-import { renameSync, writeFileSync, chmodSync } from 'fs';
-import { join } from 'path';
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: 'assets/icons/icon',
     executableName: 'polyphon',
-    // On Linux, rename the electron binary and replace it with a wrapper shell
-    // script that passes --no-sandbox. The SUID sandbox check in chrome's zygote
-    // fires before JS runs, so app.commandLine.appendSwitch is too late to stop it.
-    afterComplete: [
-      (buildPath, electronVersion, platform, arch, done) => {
-        if (platform !== 'linux') return done();
-        try {
-          const bin = join(buildPath, 'polyphon');
-          const real = join(buildPath, 'polyphon.bin');
-          renameSync(bin, real);
-          writeFileSync(bin, '#!/bin/sh\nexec "$APPDIR/usr/lib/polyphon/polyphon.bin" --no-sandbox "$@"\n');
-          chmodSync(bin, 0o755);
-          done();
-        } catch (err) {
-          done(err as Error);
-        }
-      },
-    ],
   },
   rebuildConfig: {},
   makers: [
@@ -40,7 +22,34 @@ const config: ForgeConfig = {
       setupExe: process.env.BUILD_ARCH ? `Polyphon-${process.env.npm_package_version}-${process.env.BUILD_ARCH}-Setup.exe` : 'Polyphon-Setup.exe',
     }),
     new MakerDMG({}, ['darwin']),
-    new MakerAppImage({}),
+    new MakerDeb({
+      options: {
+        maintainer: 'Polyphon AI',
+        homepage: 'https://polyphon.ai',
+        icon: 'assets/icons/icon.png',
+      },
+    }, ['linux']),
+    new MakerRpm({
+      options: {
+        license: 'Proprietary',
+        homepage: 'https://polyphon.ai',
+        icon: 'assets/icons/icon.png',
+      },
+    }, ['linux']),
+    new MakerFlatpak({
+      options: {
+        id: 'ai.polyphon.Polyphon',
+        runtime: 'org.freedesktop.Platform',
+        runtimeVersion: '24.08',
+        sdk: 'org.freedesktop.Sdk',
+        base: 'org.electronjs.Electron2.BaseApp',
+        baseVersion: '24.08',
+        categories: ['Utility'],
+        description: 'One chat. Many voices.',
+        icon: 'assets/icons/icon.png',
+        files: [],
+      },
+    }, ['linux']),
   ],
   plugins: [
     new VitePlugin({

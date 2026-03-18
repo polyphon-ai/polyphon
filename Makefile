@@ -2,26 +2,35 @@
 
 # ── VM configuration ──────────────────────────────────────────────────────────
 # Override any of these on the command line, e.g.:
-#   make vm-linux-test LINUX_VM_HOST=192.168.64.10
+#   make vm-ubuntu-test LINUX_VM_HOST=192.168.64.10
 #
-# LINUX_VM_NAME / WINDOWS_VM_NAME enable UTM auto-start/suspend (requires
-# utmctl in PATH). When set the target starts the VM, waits for SSH, runs,
-# then suspends. Leave unset to skip UTM lifecycle management.
+# *_VM_NAME variables enable UTM auto-start/suspend (requires utmctl in PATH).
+# When set the target starts the VM, waits for SSH, runs, then suspends.
+# Leave unset to skip UTM lifecycle management.
 #
-# Prerequisites: run vm-linux-provision / vm-windows-provision once first.
+# Prerequisites: run vm-ubuntu-provision / vm-fedora-provision /
+# vm-windows-provision once first.
 # Windows: Git for Windows must be installed before provisioning.
-
-LINUX_VM_USER  ?= corey
-LINUX_VM_HOST  ?= 192.168.64.7
-LINUX_VM_PATH  ?= ~/polyphon
-LINUX_VM_NAME  ?= Polyphon CI - Linux
 
 WINDOWS_VM_USER ?= corey
 WINDOWS_VM_HOST ?= 192.168.64.6
 WINDOWS_VM_PATH ?= ~/polyphon
 WINDOWS_VM_NAME ?= Polyphon CI - Windows
 
+LINUX_VM_USER  ?= corey
+LINUX_VM_HOST  ?= 192.168.64.7
+LINUX_VM_PATH  ?= ~/polyphon
+LINUX_VM_NAME  ?= Polyphon CI - Ubuntu
+
+FEDORA_VM_USER ?= corey
+FEDORA_VM_HOST ?= 192.168.64.8
+FEDORA_VM_PATH ?= ~/polyphon
+FEDORA_VM_NAME ?= Polyphon CI - Fedora
+
+
+
 _LINUX_VM   := $(LINUX_VM_USER)@$(LINUX_VM_HOST)
+_FEDORA_VM  := $(FEDORA_VM_USER)@$(FEDORA_VM_HOST)
 _WINDOWS_VM := $(WINDOWS_VM_USER)@$(WINDOWS_VM_HOST)
 
 _VM_RSYNC_OPTS := -az --delete \
@@ -54,7 +63,7 @@ hooks-install: ## Install pre-commit and pre-push git hooks via pre-commit
 
 .PHONY: dev
 dev: ## Start the Electron app in development mode (hot reload)
-	POLYPHON_TEST_USER_DATA=$(CURDIR)/.dev-data npm start
+	POLYPHON_TEST_USER_DATA=$(CURDIR)/.dev-data ELECTRON_DISABLE_SECURITY_WARNINGS=true npm start
 
 .PHONY: run
 run: dev ## Alias for dev
@@ -78,15 +87,14 @@ dist-macos: ## Build macOS arm64 + x64 DMGs locally; output to out/make/
 	npm run make -- --arch x64
 
 .PHONY: dist-linux-arm64
-dist-linux-arm64: ## Build Linux arm64 AppImage via Docker (no Linux VM required)
+dist-linux-arm64: ## Build Linux arm64 packages (.deb/.rpm) via Docker (no Linux VM required)
 	docker run --rm \
 		--platform linux/arm64 \
 		-v "$(CURDIR):/workspace" \
 		-v polyphon-nm-linux-arm64:/workspace/node_modules \
 		-w /workspace \
-		-e APPIMAGE_EXTRACT_AND_RUN=1 \
 		node:22-bookworm \
-		sh -c "apt-get update -q && apt-get install -y -q squashfs-tools && npm ci && npm run make -- --arch arm64"
+		sh -c "apt-get update -q && apt-get install -y -q rpm && npm ci && npm run make -- --arch arm64"
 
 ##@ Test
 
@@ -144,8 +152,8 @@ test-docker-e2e: ## Run e2e tests in Docker (Playwright + Electron + Xvfb)
 
 ##@ Virtual Machines
 
-.PHONY: vm-linux-start
-vm-linux-start: ## Start the UTM Linux VM and wait for SSH (requires LINUX_VM_NAME)
+.PHONY: vm-ubuntu-start
+vm-ubuntu-start: ## Start the UTM Linux VM and wait for SSH (requires LINUX_VM_NAME)
 	@[ -n "$(LINUX_VM_NAME)" ] || { echo "ERROR: Set LINUX_VM_NAME to the UTM VM name."; exit 1; }
 	@echo "==> Starting UTM VM '$(LINUX_VM_NAME)'..."
 	@utmctl start "$(LINUX_VM_NAME)" 2>/dev/null || true
@@ -156,8 +164,8 @@ vm-linux-start: ## Start the UTM Linux VM and wait for SSH (requires LINUX_VM_NA
 		printf "."; sleep 3; \
 	done; echo ""; echo "ERROR: VM did not become reachable after 3 minutes."; exit 1
 
-.PHONY: vm-linux-stop
-vm-linux-stop: ## Suspend the UTM Linux VM (requires LINUX_VM_NAME)
+.PHONY: vm-ubuntu-stop
+vm-ubuntu-stop: ## Suspend the UTM Linux VM (requires LINUX_VM_NAME)
 	@[ -n "$(LINUX_VM_NAME)" ] || { echo "ERROR: Set LINUX_VM_NAME to the UTM VM name."; exit 1; }
 	@echo "==> Suspending UTM VM '$(LINUX_VM_NAME)'..."
 	@utmctl suspend "$(LINUX_VM_NAME)" 2>/dev/null || true
@@ -180,8 +188,8 @@ vm-windows-stop: ## Suspend the UTM Windows VM (requires WINDOWS_VM_NAME)
 	@echo "==> Suspending UTM VM '$(WINDOWS_VM_NAME)'..."
 	@utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
 
-.PHONY: vm-linux-provision
-vm-linux-provision: ## Provision Linux VM: install Node 24 + system deps for Electron and Playwright
+.PHONY: vm-ubuntu-provision
+vm-ubuntu-provision: ## Provision Linux VM: install Node 24 + system deps for Electron and Playwright
 	@echo "==> Checking SSH connectivity ($(_LINUX_VM))..."
 	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null || \
 		{ echo "ERROR: SSH failed. Verify LINUX_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
@@ -214,8 +222,8 @@ vm-windows-provision: ## Provision Windows VM: verify Node 24 + Git for Windows,
 	@ssh $(_WINDOWS_VM) "powershell -NoProfile -Command \"New-ItemProperty -Path 'HKLM:\\SOFTWARE\\OpenSSH' -Name DefaultShell -Value 'C:\\Program Files\\Git\\bin\\bash.exe' -PropertyType String -Force\""
 	@echo "==> Windows VM provisioned. Future SSH connections will use Git Bash."
 
-.PHONY: vm-linux-test
-vm-linux-test: ## Sync project to Linux VM and run lint + unit + integration + e2e
+.PHONY: vm-ubuntu-test
+vm-ubuntu-test: ## Sync project to Linux VM and run lint + unit + integration + e2e
 	@[ -z "$(LINUX_VM_NAME)" ] || { \
 		echo "==> Starting UTM VM '$(LINUX_VM_NAME)'..."; \
 		utmctl start "$(LINUX_VM_NAME)" 2>/dev/null || true; \
@@ -229,9 +237,9 @@ vm-linux-test: ## Sync project to Linux VM and run lint + unit + integration + e
 	@echo "==> Checking SSH connectivity ($(_LINUX_VM))..."
 	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null || \
 		{ echo "ERROR: SSH failed. Verify LINUX_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
-	@echo "==> Checking Node 24 (run 'make vm-linux-provision' if missing)..."
+	@echo "==> Checking Node 24 (run 'make vm-ubuntu-provision' if missing)..."
 	@ssh $(_LINUX_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
-		{ echo "ERROR: Node 24 not found on Linux VM. Run: make vm-linux-provision"; exit 1; }
+		{ echo "ERROR: Node 24 not found on Linux VM. Run: make vm-ubuntu-provision"; exit 1; }
 	@echo "==> Syncing project..."
 	@rsync $(_VM_RSYNC_OPTS) . $(_LINUX_VM):$(LINUX_VM_PATH)/
 	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm ci'
@@ -272,10 +280,10 @@ vm-windows-test: ## Sync project to Windows VM and run lint + unit + integration
 	@[ -z "$(WINDOWS_VM_NAME)" ] || utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
 
 .PHONY: vm-test
-vm-test: vm-linux-test vm-windows-test ## Run full test suite on both VMs (sequential)
+vm-test: vm-ubuntu-test vm-fedora-test vm-windows-test ## Run full test suite on all VMs (sequential)
 
-.PHONY: vm-linux-dist
-vm-linux-dist: ## Build Linux x64 + arm64 AppImages on the Linux VM; fetch to out/dist/linux/
+.PHONY: vm-ubuntu-dist
+vm-ubuntu-dist: ## Build Linux x64 + arm64 packages (.deb/.flatpak) on the Linux VM; fetch to out/dist/linux/
 	@[ -z "$(LINUX_VM_NAME)" ] || { \
 		echo "==> Starting UTM VM '$(LINUX_VM_NAME)'..."; \
 		utmctl start "$(LINUX_VM_NAME)" 2>/dev/null || true; \
@@ -289,18 +297,25 @@ vm-linux-dist: ## Build Linux x64 + arm64 AppImages on the Linux VM; fetch to ou
 	@echo "==> Checking SSH connectivity ($(_LINUX_VM))..."
 	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_LINUX_VM) true 2>/dev/null || \
 		{ echo "ERROR: SSH failed. Verify LINUX_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
-	@echo "==> Checking Node 24 (run 'make vm-linux-provision' if missing)..."
+	@echo "==> Checking Node 24 (run 'make vm-ubuntu-provision' if missing)..."
 	@ssh $(_LINUX_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
-		{ echo "ERROR: Node 24 not found on Linux VM. Run: make vm-linux-provision"; exit 1; }
+		{ echo "ERROR: Node 24 not found on Linux VM. Run: make vm-ubuntu-provision"; exit 1; }
 	@echo "==> Installing build dependencies..."
-	@ssh $(_LINUX_VM) 'sudo apt-get update -q && sudo apt-get install -y -q libgtk-3-0 libgbm1 libnss3 libasound2t64 libxshmfence1 rpm'
+	@ssh $(_LINUX_VM) 'sudo apt-get update -q && sudo apt-get install -y -q libgtk-3-0 libgbm1 libnss3 libasound2t64 libxshmfence1 flatpak flatpak-builder elfutils'
+	@echo "==> Setting up Flatpak runtimes..."
+	@ssh $(_LINUX_VM) 'flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo'
+	@ssh $(_LINUX_VM) 'flatpak install --user --noninteractive --or-update flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 org.electronjs.Electron2.BaseApp//24.08'
 	@echo "==> Syncing project..."
 	@rsync $(_VM_RSYNC_OPTS) . $(_LINUX_VM):$(LINUX_VM_PATH)/
-	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm install'
-	@echo "==> Building Linux x64 AppImage..."
-	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch x64'
-	@echo "==> Building Linux arm64 AppImage..."
-	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch arm64'
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm ci'
+	@echo "==> Building Linux x64 .deb..."
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch x64 --targets @electron-forge/maker-deb'
+	@echo "==> Building Linux arm64 .deb..."
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch arm64 --targets @electron-forge/maker-deb'
+	@echo "==> Building Linux x64 Flatpak..."
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch x64 --targets @electron-forge/maker-flatpak'
+	@echo "==> Building Linux arm64 Flatpak..."
+	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch arm64 --targets @electron-forge/maker-flatpak'
 	@echo "==> Fetching artifacts..."
 	@mkdir -p "$(CURDIR)/out/dist/linux"
 	@rsync -az $(_LINUX_VM):$(LINUX_VM_PATH)/out/make/ "$(CURDIR)/out/dist/linux/"
@@ -338,8 +353,110 @@ vm-windows-dist: ## Build Windows x64 + arm64 installers on the Windows VM; fetc
 	@echo "==> Artifacts in out/dist/windows/"
 	@[ -z "$(WINDOWS_VM_NAME)" ] || utmctl suspend "$(WINDOWS_VM_NAME)" 2>/dev/null || true
 
+.PHONY: vm-fedora-start
+vm-fedora-start: ## Start the UTM Fedora VM and wait for SSH (requires FEDORA_VM_NAME)
+	@[ -n "$(FEDORA_VM_NAME)" ] || { echo "ERROR: Set FEDORA_VM_NAME to the UTM VM name."; exit 1; }
+	@echo "==> Starting UTM VM '$(FEDORA_VM_NAME)'..."
+	@utmctl start "$(FEDORA_VM_NAME)" 2>/dev/null || true
+	@printf "==> Waiting for SSH ($(_FEDORA_VM))"; \
+	for i in $$(seq 1 60); do \
+		ssh -o ConnectTimeout=3 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null \
+			&& printf " ready.\n" && exit 0; \
+		printf "."; sleep 3; \
+	done; echo ""; echo "ERROR: VM did not become reachable after 3 minutes."; exit 1
+
+.PHONY: vm-fedora-stop
+vm-fedora-stop: ## Suspend the UTM Fedora VM (requires FEDORA_VM_NAME)
+	@[ -n "$(FEDORA_VM_NAME)" ] || { echo "ERROR: Set FEDORA_VM_NAME to the UTM VM name."; exit 1; }
+	@echo "==> Suspending UTM VM '$(FEDORA_VM_NAME)'..."
+	@utmctl suspend "$(FEDORA_VM_NAME)" 2>/dev/null || true
+
+.PHONY: vm-fedora-provision
+vm-fedora-provision: ## Provision Fedora VM: install Node 24 + system deps for Electron and Playwright
+	@echo "==> Checking SSH connectivity ($(_FEDORA_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify FEDORA_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Installing system packages..."
+	@ssh $(_FEDORA_VM) 'sudo dnf install -y \
+		curl rsync gtk3 mesa-libgbm nss alsa-lib libxshmfence xorg-x11-server-Xvfb rpm-build'
+	@echo "==> Checking Node.js 24..."
+	@ssh $(_FEDORA_VM) 'node --version 2>/dev/null | grep -q "^v24" || { \
+		curl -fsSL https://rpm.nodesource.com/setup_24.x | sudo bash - && \
+		sudo dnf install -y nodejs; }'
+	@echo "==> Updating npm to latest..."
+	@ssh $(_FEDORA_VM) 'sudo npm install -g npm@latest'
+	@echo "==> Fedora VM provisioned."
+
+.PHONY: vm-fedora-test
+vm-fedora-test: ## Sync project to Fedora VM and run lint + unit + integration + e2e
+	@[ -z "$(FEDORA_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(FEDORA_VM_NAME)'..."; \
+		utmctl start "$(FEDORA_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_FEDORA_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_FEDORA_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify FEDORA_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-fedora-provision' if missing)..."
+	@ssh $(_FEDORA_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
+		{ echo "ERROR: Node 24 not found on Fedora VM. Run: make vm-fedora-provision"; exit 1; }
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_FEDORA_VM):$(FEDORA_VM_PATH)/
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm ci'
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run lint'
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run test:unit'
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run test:integration'
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run build:e2e'
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && CI=1 xvfb-run --auto-servernum --server-args="-screen 0 1280x720x16" npx playwright test'
+	@[ -z "$(FEDORA_VM_NAME)" ] || utmctl suspend "$(FEDORA_VM_NAME)" 2>/dev/null || true
+
+.PHONY: vm-fedora-dist
+vm-fedora-dist: ## Build Linux x64 + arm64 RPM + Flatpak packages on the Fedora VM; fetch to out/dist/linux/
+	@[ -z "$(FEDORA_VM_NAME)" ] || { \
+		echo "==> Starting UTM VM '$(FEDORA_VM_NAME)'..."; \
+		utmctl start "$(FEDORA_VM_NAME)" 2>/dev/null || true; \
+		printf "==> Waiting for SSH ($(_FEDORA_VM))"; \
+		for i in $$(seq 1 60); do \
+			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null \
+				&& printf " ready.\n" && break; \
+			printf "."; sleep 3; \
+		done; \
+	}
+	@echo "==> Checking SSH connectivity ($(_FEDORA_VM))..."
+	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null || \
+		{ echo "ERROR: SSH failed. Verify FEDORA_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
+	@echo "==> Checking Node 24 (run 'make vm-fedora-provision' if missing)..."
+	@ssh $(_FEDORA_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
+		{ echo "ERROR: Node 24 not found on Fedora VM. Run: make vm-fedora-provision"; exit 1; }
+	@echo "==> Installing build dependencies..."
+	@ssh $(_FEDORA_VM) 'sudo dnf install -y gtk3 mesa-libgbm nss alsa-lib libxshmfence rpm-build flatpak flatpak-builder elfutils'
+	@echo "==> Setting up Flatpak runtimes..."
+	@ssh $(_FEDORA_VM) 'flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo'
+	@ssh $(_FEDORA_VM) 'flatpak install --user --noninteractive --or-update flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 org.electronjs.Electron2.BaseApp//24.08'
+	@echo "==> Syncing project..."
+	@rsync $(_VM_RSYNC_OPTS) . $(_FEDORA_VM):$(FEDORA_VM_PATH)/
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm ci'
+	@echo "==> Building Linux x64 RPM..."
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run make -- --arch x64 --targets @electron-forge/maker-rpm'
+	@echo "==> Building Linux arm64 RPM..."
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run make -- --arch arm64 --targets @electron-forge/maker-rpm'
+	@echo "==> Building Linux x64 Flatpak..."
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run make -- --arch x64 --targets @electron-forge/maker-flatpak'
+	@echo "==> Building Linux arm64 Flatpak..."
+	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run make -- --arch arm64 --targets @electron-forge/maker-flatpak'
+	@echo "==> Fetching artifacts..."
+	@mkdir -p "$(CURDIR)/out/dist/linux"
+	@rsync -az $(_FEDORA_VM):$(FEDORA_VM_PATH)/out/make/ "$(CURDIR)/out/dist/linux/"
+	@echo "==> Artifacts in out/dist/linux/"
+	@[ -z "$(FEDORA_VM_NAME)" ] || utmctl suspend "$(FEDORA_VM_NAME)" 2>/dev/null || true
+
 .PHONY: vm-dist
-vm-dist: vm-linux-dist vm-windows-dist ## Build all Linux + Windows installers on both VMs (sequential)
+vm-dist: vm-ubuntu-dist vm-fedora-dist vm-windows-dist ## Build all Linux + Windows installers on all VMs (sequential)
 
 ##@ Icons
 
