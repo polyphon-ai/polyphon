@@ -82,19 +82,18 @@ dist: ## Build installer for the current platform and arch
 	npm run make
 
 .PHONY: dist-macos
-dist-macos: ## Build macOS arm64 + x64 DMGs locally; output to out/make/
+dist-macos: ## Build macOS arm64 DMG locally; output to out/make/
 	npm run make -- --arch arm64
-	npm run make -- --arch x64
 
 .PHONY: dist-linux-arm64
-dist-linux-arm64: ## Build Linux arm64 packages (.deb/.rpm) via Docker (no Linux VM required)
+dist-linux-arm64: ## Build Linux arm64 packages (.deb/.flatpak) via Docker (no Linux VM required)
 	docker run --rm \
 		--platform linux/arm64 \
 		-v "$(CURDIR):/workspace" \
 		-v polyphon-nm-linux-arm64:/workspace/node_modules \
 		-w /workspace \
 		node:22-bookworm \
-		sh -c "apt-get update -q && apt-get install -y -q rpm && npm ci && npm run make -- --arch arm64"
+		sh -c "apt-get update -q && apt-get install -y -q flatpak flatpak-builder elfutils && npm ci && npm run make -- --arch arm64"
 
 ##@ Test
 
@@ -430,7 +429,7 @@ vm-windows-test-e2e: ## Sync project to Windows VM and run e2e tests only
 vm-test: vm-ubuntu-test vm-fedora-test vm-windows-test ## Run full test suite on all VMs (sequential)
 
 .PHONY: vm-ubuntu-dist
-vm-ubuntu-dist: ## Build Linux x64 + arm64 packages (.deb/.flatpak) on the Linux VM; fetch to out/dist/linux/
+vm-ubuntu-dist: ## Build Linux arm64 packages (.deb/.flatpak) on the Linux VM; fetch to out/dist/linux/
 	@[ -z "$(LINUX_VM_NAME)" ] || { \
 		echo "==> Starting UTM VM '$(LINUX_VM_NAME)'..."; \
 		utmctl start "$(LINUX_VM_NAME)" 2>/dev/null || true; \
@@ -455,12 +454,8 @@ vm-ubuntu-dist: ## Build Linux x64 + arm64 packages (.deb/.flatpak) on the Linux
 	@echo "==> Syncing project..."
 	@rsync $(_VM_RSYNC_OPTS) . $(_LINUX_VM):$(LINUX_VM_PATH)/
 	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm ci'
-	@echo "==> Building Linux x64 .deb..."
-	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch x64 --targets @electron-forge/maker-deb'
 	@echo "==> Building Linux arm64 .deb..."
 	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && npm run make -- --arch arm64 --targets @electron-forge/maker-deb'
-	@echo "==> Building Linux x64 Flatpak..."
-	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && DEBUG="@malept/flatpak-bundler" npm run make -- --arch x64 --targets @electron-forge/maker-flatpak'
 	@echo "==> Building Linux arm64 Flatpak..."
 	@ssh $(_LINUX_VM) 'cd $(LINUX_VM_PATH) && DEBUG="@malept/flatpak-bundler" npm run make -- --arch arm64 --targets @electron-forge/maker-flatpak'
 	@echo "==> Fetching artifacts..."
@@ -470,7 +465,7 @@ vm-ubuntu-dist: ## Build Linux x64 + arm64 packages (.deb/.flatpak) on the Linux
 	@[ -z "$(LINUX_VM_NAME)" ] || utmctl suspend "$(LINUX_VM_NAME)" 2>/dev/null || true
 
 .PHONY: vm-windows-dist
-vm-windows-dist: ## Build Windows x64 + arm64 installers on the Windows VM; fetch to out/dist/windows/
+vm-windows-dist: ## Build Windows arm64 installer on the Windows VM; fetch to out/dist/windows/
 	@[ -z "$(WINDOWS_VM_NAME)" ] || { \
 		echo "==> Starting UTM VM '$(WINDOWS_VM_NAME)'..."; \
 		utmctl start "$(WINDOWS_VM_NAME)" 2>/dev/null || true; \
@@ -490,8 +485,6 @@ vm-windows-dist: ## Build Windows x64 + arm64 installers on the Windows VM; fetc
 	@echo "==> Syncing project..."
 	@rsync $(_VM_RSYNC_OPTS) . $(_WINDOWS_VM):$(WINDOWS_VM_PATH)/
 	@ssh $(_WINDOWS_VM) 'taskkill //F //IM electron.exe 2>/dev/null; cd $(WINDOWS_VM_PATH) && rm -rf node_modules && npm install'
-	@echo "==> Building Windows x64 installer..."
-	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && BUILD_ARCH=x64 npm run make -- --arch x64'
 	@echo "==> Building Windows arm64 installer..."
 	@ssh $(_WINDOWS_VM) 'cd $(WINDOWS_VM_PATH) && BUILD_ARCH=arm64 npm run make -- --arch arm64'
 	@echo "==> Fetching artifacts..."
@@ -635,48 +628,8 @@ vm-fedora-test-e2e: ## Sync project to Fedora VM and run e2e tests only
 	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && CI=1 xvfb-run --auto-servernum --server-args="-screen 0 1280x720x16" npx playwright test'
 	@[ -z "$(FEDORA_VM_NAME)" ] || utmctl suspend "$(FEDORA_VM_NAME)" 2>/dev/null || true
 
-.PHONY: vm-fedora-dist
-vm-fedora-dist: ## Build Linux x64 + arm64 RPM + Flatpak packages on the Fedora VM; fetch to out/dist/linux/
-	@[ -z "$(FEDORA_VM_NAME)" ] || { \
-		echo "==> Starting UTM VM '$(FEDORA_VM_NAME)'..."; \
-		utmctl start "$(FEDORA_VM_NAME)" 2>/dev/null || true; \
-		printf "==> Waiting for SSH ($(_FEDORA_VM))"; \
-		for i in $$(seq 1 60); do \
-			ssh -o ConnectTimeout=3 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null \
-				&& printf " ready.\n" && break; \
-			printf "."; sleep 3; \
-		done; \
-	}
-	@echo "==> Checking SSH connectivity ($(_FEDORA_VM))..."
-	@ssh -o ConnectTimeout=10 -o BatchMode=yes $(_FEDORA_VM) true 2>/dev/null || \
-		{ echo "ERROR: SSH failed. Verify FEDORA_VM_USER/HOST and ensure SSH key auth is configured."; exit 1; }
-	@echo "==> Checking Node 24 (run 'make vm-fedora-provision' if missing)..."
-	@ssh $(_FEDORA_VM) 'node --version 2>/dev/null | grep -q "^v24"' || \
-		{ echo "ERROR: Node 24 not found on Fedora VM. Run: make vm-fedora-provision"; exit 1; }
-	@echo "==> Installing build dependencies..."
-	@ssh $(_FEDORA_VM) 'sudo dnf install -y gtk3 mesa-libgbm nss alsa-lib libxshmfence rpm-build flatpak flatpak-builder elfutils'
-	@echo "==> Setting up Flatpak runtimes..."
-	@ssh $(_FEDORA_VM) 'flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo'
-	@ssh $(_FEDORA_VM) 'flatpak install --user --noninteractive --or-update flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 org.electronjs.Electron2.BaseApp//24.08'
-	@echo "==> Syncing project..."
-	@rsync $(_VM_RSYNC_OPTS) . $(_FEDORA_VM):$(FEDORA_VM_PATH)/
-	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm ci'
-	@echo "==> Building Linux x64 RPM..."
-	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run make -- --arch x64 --targets @electron-forge/maker-rpm'
-	@echo "==> Building Linux arm64 RPM..."
-	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run make -- --arch arm64 --targets @electron-forge/maker-rpm'
-	@echo "==> Building Linux x64 Flatpak..."
-	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run make -- --arch x64 --targets @electron-forge/maker-flatpak'
-	@echo "==> Building Linux arm64 Flatpak..."
-	@ssh $(_FEDORA_VM) 'cd $(FEDORA_VM_PATH) && npm run make -- --arch arm64 --targets @electron-forge/maker-flatpak'
-	@echo "==> Fetching artifacts..."
-	@mkdir -p "$(CURDIR)/out/dist/linux"
-	@rsync -az $(_FEDORA_VM):$(FEDORA_VM_PATH)/out/make/ "$(CURDIR)/out/dist/linux/"
-	@echo "==> Artifacts in out/dist/linux/"
-	@[ -z "$(FEDORA_VM_NAME)" ] || utmctl suspend "$(FEDORA_VM_NAME)" 2>/dev/null || true
-
 .PHONY: vm-dist
-vm-dist: vm-ubuntu-dist vm-fedora-dist vm-windows-dist ## Build all Linux + Windows installers on all VMs (sequential)
+vm-dist: vm-ubuntu-dist vm-windows-dist ## Build all Linux + Windows installers on all VMs (sequential)
 
 ##@ Icons
 

@@ -133,7 +133,7 @@ jobs:
             playwright-report/
           retention-days: 7
 
-  # ── 3a. Build Linux x64 packages ────────────────────────────────────────────
+  # ── 3a. Build Linux x64 .deb ────────────────────────────────────────────────
   make-linux-x64:
     name: Make (Linux x64)
     needs: [test, test-e2e]
@@ -157,23 +157,20 @@ jobs:
             libgbm1 \
             libnss3 \
             libasound2t64 \
-            libxshmfence1 \
-            rpm
+            libxshmfence1
 
-      - name: Build Linux x64 packages
-        run: npm run make -- --arch x64
+      - name: Build Linux x64 .deb
+        run: npm run make -- --arch x64 --targets @electron-forge/maker-deb
 
       - name: Upload Linux x64 artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: installers-linux-x64
-          path: |
-            out/make/**/*.deb
-            out/make/**/*.rpm
+          path: out/make/**/*.deb
           if-no-files-found: error
           retention-days: 1
 
-  # ── 3b. Build Linux arm64 packages ───────────────────────────────────────────
+  # ── 3b. Build Linux arm64 .deb ───────────────────────────────────────────────
   make-linux-arm64:
     name: Make (Linux arm64)
     needs: [test, test-e2e]
@@ -197,19 +194,16 @@ jobs:
             libgbm1 \
             libnss3 \
             libasound2t64 \
-            libxshmfence1 \
-            rpm
+            libxshmfence1
 
-      - name: Build Linux arm64 packages
-        run: npm run make -- --arch arm64
+      - name: Build Linux arm64 .deb
+        run: npm run make -- --arch arm64 --targets @electron-forge/maker-deb
 
       - name: Upload Linux arm64 artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: installers-linux-arm64
-          path: |
-            out/make/**/*.deb
-            out/make/**/*.rpm
+          path: out/make/**/*.deb
           if-no-files-found: error
           retention-days: 1
 
@@ -507,13 +501,6 @@ jobs:
           find dist/linux -name "*arm64.deb" | while read -r f; do
             mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-arm64.deb"
           done
-          # Linux rpm: polyphon-{ver}-1.x86_64.rpm → Polyphon-{version}-x64.rpm, etc.
-          find dist/linux -name "*x86_64.rpm" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-x64.rpm"
-          done
-          find dist/linux -name "*aarch64.rpm" -o -name "*arm64.rpm" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-arm64.rpm"
-          done
           # Windows: Polyphon-{version}-{arch}-Setup.exe is already correctly named by forge
           find dist/windows -name "*.exe" | while read -r f; do
             arch=$(basename "$f" | grep -oE 'arm64|x64')
@@ -534,7 +521,6 @@ jobs:
             See the [documentation](https://polyphon.ai/docs/getting-started/) for installation instructions.
           files: |
             dist/linux/**/*.deb
-            dist/linux/**/*.rpm
             dist/linux/**/*.flatpak
             dist/macos/**/*.dmg
             dist/windows/**/*.exe
