@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { maskApiKey, resolveApiKey, resolveApiKeyStatus, parseEnvBlock, SHELL_ENV_MAX_LEN, ENV_VALUE_MAX_BYTES } from './env';
+import { maskApiKey, resolveApiKey, resolveApiKeyStatus, parseEnvBlock, parseNulEnvBlock, SHELL_ENV_MAX_LEN, ENV_VALUE_MAX_BYTES } from './env';
 
 describe('maskApiKey', () => {
   it('masks a normal key with first 3 and last 3 chars', () => {
@@ -145,6 +145,62 @@ describe('parseEnvBlock', () => {
     expect(result).toBe(false);
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('size cap'));
     warnSpy.mockRestore();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseNulEnvBlock
+// ---------------------------------------------------------------------------
+
+describe('parseNulEnvBlock', () => {
+  afterEach(() => {
+    delete process.env['KEY'];
+    delete process.env['KEY2'];
+  });
+
+  it('parses NUL-terminated entries from env -0 output', () => {
+    const block = 'KEY=value\0KEY2=value2\0';
+    expect(parseNulEnvBlock(block)).toBe(true);
+    expect(process.env['KEY']).toBe('value');
+    expect(process.env['KEY2']).toBe('value2');
+  });
+
+  it('handles values containing newlines (which would break delimiter approach)', () => {
+    const block = 'KEY=line1\nline2\0';
+    expect(parseNulEnvBlock(block)).toBe(true);
+    expect(process.env['KEY']).toBe('line1\nline2');
+  });
+
+  it('handles values containing the old delimiter string', () => {
+    const block = 'KEY=_POLYPHON_ENV_DELIM_\0';
+    expect(parseNulEnvBlock(block)).toBe(true);
+    expect(process.env['KEY']).toBe('_POLYPHON_ENV_DELIM_');
+  });
+
+  it('applies the same key filter as parseEnvBlock', () => {
+    const block = 'my_key=value\0';
+    expect(parseNulEnvBlock(block)).toBe(true);
+    expect(process.env['my_key']).toBeUndefined();
+  });
+
+  it('applies the same value length cap as parseEnvBlock', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const value = 'A'.repeat(ENV_VALUE_MAX_BYTES + 1);
+    expect(parseNulEnvBlock(`KEY=${value}\0`)).toBe(true);
+    expect(process.env['KEY']).toBeUndefined();
+    warnSpy.mockRestore();
+  });
+
+  it('returns false and warns when block exceeds size cap', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const block = 'A'.repeat(SHELL_ENV_MAX_LEN + 1);
+    expect(parseNulEnvBlock(block)).toBe(false);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('size cap'));
+    warnSpy.mockRestore();
+  });
+
+  it('empty block: no crash, returns true', () => {
+    expect(parseNulEnvBlock('')).toBe(true);
   });
 });
 

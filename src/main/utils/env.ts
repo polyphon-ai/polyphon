@@ -18,10 +18,33 @@ export const SHELL_ENV_MAX_LEN = 512 * 1024; // JS string .length units (UTF-16 
 export const ENV_VALUE_MAX_BYTES = 8 * 1024; // same units
 export const ENV_KEY_RE = /^[A-Z0-9_]+$/;
 
-// Parses a captured env block (the stdout segment between delimiters) and
+// Applies a list of pre-split "KEY=VALUE" entries to process.env, applying
+// the same key/value filters as parseEnvBlock.
+function applyEnvEntries(entries: string[]): void {
+  for (const entry of entries) {
+    const eq = entry.indexOf('=');
+    if (eq <= 0) continue;
+    const key = entry.slice(0, eq);
+    const value = entry.slice(eq + 1);
+    if (!ENV_KEY_RE.test(key)) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[loadShellEnv] skipping env var with non-standard name: ${key}`);
+      }
+      continue;
+    }
+    if (value.length > ENV_VALUE_MAX_BYTES) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[loadShellEnv] skipping env var with oversized value: ${key}`);
+      }
+      continue;
+    }
+    process.env[key] = value;
+  }
+}
+
+// Parses a newline-delimited env block (legacy delimiter-based capture) and
 // merges matching variables into process.env. Returns false if the block
-// exceeds the size cap (so the caller can try the next candidate shell),
-// true otherwise (including when individual entries were skipped).
+// exceeds the size cap, true otherwise.
 //
 // Filters applied:
 //   - Block size: > SHELL_ENV_MAX_LEN chars → return false
@@ -38,27 +61,25 @@ export function parseEnvBlock(block: string): boolean {
     }
     return false;
   }
+  applyEnvEntries(block.split('\n'));
+  return true;
+}
 
-  for (const line of block.split('\n')) {
-    const eq = line.indexOf('=');
-    if (eq <= 0) continue;
-    const key = line.slice(0, eq);
-    const value = line.slice(eq + 1);
-    if (!ENV_KEY_RE.test(key)) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(`[loadShellEnv] skipping env var with non-standard name: ${key}`);
-      }
-      continue;
+// Parses a NUL-terminated env block produced by `env -0` and merges matching
+// variables into process.env. NUL bytes cannot appear in POSIX env var values,
+// so splitting on \0 is unambiguous and immune to delimiter-collision attacks.
+// Returns false if the block exceeds the size cap, true otherwise.
+export function parseNulEnvBlock(block: string): boolean {
+  if (block.length > SHELL_ENV_MAX_LEN) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(
+        '[loadShellEnv] env block exceeds size cap; skipping shell env merge — ' +
+          'API keys from shell config will not be available from this shell',
+      );
     }
-    if (value.length > ENV_VALUE_MAX_BYTES) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(`[loadShellEnv] skipping env var with oversized value: ${key}`);
-      }
-      continue;
-    }
-    process.env[key] = value;
+    return false;
   }
-
+  applyEnvEntries(block.split('\0').filter(Boolean));
   return true;
 }
 
@@ -87,8 +108,9 @@ export function parseEnvBlock(block: string): boolean {
 export function loadShellEnv(): void {
   if (process.platform === 'win32') return;
 
-  const DELIM = '_POLYPHON_ENV_DELIM_';
-  const cmd = `echo -n "${DELIM}"; command env; echo -n "${DELIM}"; exit`;
+  // `env -0` outputs NUL-terminated entries: immune to delimiter-collision
+  // attacks where an env var value happens to contain the delimiter string.
+  const cmd = `command env -0; exit`;
   const args = ['-ilc', cmd];
   // Suppress shell plugin side-effects (e.g. oh-my-zsh auto-update, tmux).
   const spawnEnv = {
@@ -109,16 +131,16 @@ export function loadShellEnv(): void {
 
     const result = spawnSync(shell, args, {
       env: spawnEnv,
-      encoding: 'utf8',
+      // Use 'buffer' encoding so NUL bytes from `env -0` are preserved intact.
+      encoding: 'buffer',
       timeout: 5000,
     });
 
     if (result.status !== 0 || !result.stdout) continue;
 
-    const parts = result.stdout.split(DELIM);
-    if (parts.length < 2) continue;
-
-    if (!parseEnvBlock(parts[1]!)) continue;
+    // Decode as latin1 (binary-safe) so NUL bytes pass through as '\0'.
+    const block = (result.stdout as unknown as Buffer).toString('latin1');
+    if (!parseNulEnvBlock(block)) continue;
     return;
   }
 }
