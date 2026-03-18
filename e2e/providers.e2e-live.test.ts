@@ -12,6 +12,8 @@
  *   2. Multi-voice broadcast — CLI trio (Anthropic CLI + OpenAI CLI + Copilot CLI)
  *   3. Mixed API+CLI broadcast — multi-round (Anthropic API + Copilot CLI, 2 rounds)
  *   4. Mixed conductor routing — @mention directed (Anthropic API + Copilot CLI, 2 directed rounds)
+ *   5. Broadcast with "Prompt me" continuation — nudge appears, Allow triggers round 2
+ *   6. Broadcast with "Auto" continuation — round 2 fires automatically (maxRounds = 2)
  *
  * Keyword-anchor prompts ("include the word X") are used for human-observer clarity only.
  * The specific keyword is NOT asserted programmatically — LLM output is non-deterministic.
@@ -548,6 +550,110 @@ test.describe.serial('built-in providers', () => {
       const anthropicAfterRound2 = await countVoiceResponses(win, 'Anthropic API');
       expect(anthropicAfterRound2).toBe(anthropicBefore2);
 
+      await expect(win.locator('[role="alert"]')).not.toBeVisible();
+      await longPause();
+    });
+  });
+
+  // ── Scenario 5: Broadcast with "Prompt me" continuation ────────────────────
+
+  test.describe.serial('broadcast — prompt continuation', () => {
+    test('continuation nudge appears and second round fires after Allow', async () => {
+      const ok = await requireProviders(win, [
+        { providerId: 'anthropic', voiceType: 'api', label: 'Anthropic API' },
+        { providerId: 'openai', voiceType: 'api', label: 'OpenAI API' },
+      ]);
+      if (!ok) return;
+
+      await buildCompositionLive(
+        win,
+        pause,
+        longPause,
+        'Live Prompt Cont',
+        [
+          { providerId: 'anthropic', voiceType: 'api', displayName: 'Anthropic Prompt', model: LIVE_TEST_MODELS.anthropic },
+          { providerId: 'openai', voiceType: 'api', displayName: 'OpenAI Prompt', model: LIVE_TEST_MODELS.openai },
+        ],
+        { mode: 'broadcast', continuationPolicy: 'prompt' },
+      );
+      await startSession(win, pause, 'Live Prompt Cont', 'Prompt Cont Session');
+      await expandSidebarAndAssertVoiceTypes(win, pause, [
+        { displayName: 'Anthropic Prompt', voiceType: 'api' },
+        { displayName: 'OpenAI Prompt', voiceType: 'api' },
+      ]);
+
+      await win
+        .getByPlaceholder('Message the ensemble\u2026')
+        .fill('Reply in one sentence and include the word "first".');
+      await pause();
+      await win.keyboard.press('Enter');
+
+      // Round 1
+      await waitForVoiceResponse(win, 'Anthropic Prompt');
+      await waitForVoiceResponse(win, 'OpenAI Prompt');
+      await assertMessageBubbleType(win, 'Anthropic Prompt', 'api');
+      await assertMessageBubbleType(win, 'OpenAI Prompt', 'api');
+      await waitForRoundIdle(win);
+
+      // Continuation nudge must appear
+      await expect(win.getByText(/agents have more to say/i)).toBeVisible({ timeout: 10_000 });
+      await win.getByRole('button', { name: 'Allow' }).click();
+      await longPause();
+
+      // Round 2 fires
+      await expect(
+        win.locator('[role="article"][aria-label*="Anthropic Prompt"]').filter({ hasText: /\S/ }),
+      ).toHaveCount(2, { timeout: 90_000 });
+      await expect(
+        win.locator('[role="article"][aria-label*="OpenAI Prompt"]').filter({ hasText: /\S/ }),
+      ).toHaveCount(2, { timeout: 90_000 });
+      await waitForRoundIdle(win);
+      await expect(win.locator('[role="alert"]')).not.toBeVisible();
+      await longPause();
+    });
+  });
+
+  // ── Scenario 6: Broadcast with "Auto" continuation ─────────────────────────
+
+  test.describe.serial('broadcast — auto continuation', () => {
+    test('second round fires automatically without user interaction', async () => {
+      const ok = await requireProviders(win, [
+        { providerId: 'anthropic', voiceType: 'api', label: 'Anthropic API' },
+        { providerId: 'openai', voiceType: 'api', label: 'OpenAI API' },
+      ]);
+      if (!ok) return;
+
+      await buildCompositionLive(
+        win,
+        pause,
+        longPause,
+        'Live Auto Cont',
+        [
+          { providerId: 'anthropic', voiceType: 'api', displayName: 'Anthropic Auto', model: LIVE_TEST_MODELS.anthropic },
+          { providerId: 'openai', voiceType: 'api', displayName: 'OpenAI Auto', model: LIVE_TEST_MODELS.openai },
+        ],
+        { mode: 'broadcast', continuationPolicy: 'auto' },
+      );
+      await startSession(win, pause, 'Live Auto Cont', 'Auto Cont Session');
+      await expandSidebarAndAssertVoiceTypes(win, pause, [
+        { displayName: 'Anthropic Auto', voiceType: 'api' },
+        { displayName: 'OpenAI Auto', voiceType: 'api' },
+      ]);
+
+      await win
+        .getByPlaceholder('Message the ensemble\u2026')
+        .fill('Reply in one sentence and include the word "first".');
+      await pause();
+      await win.keyboard.press('Enter');
+
+      // Both voices should respond twice automatically (maxRounds default = 2: initial + 1 auto)
+      await expect(
+        win.locator('[role="article"][aria-label*="Anthropic Auto"]').filter({ hasText: /\S/ }),
+      ).toHaveCount(2, { timeout: 180_000 });
+      await expect(
+        win.locator('[role="article"][aria-label*="OpenAI Auto"]').filter({ hasText: /\S/ }),
+      ).toHaveCount(2, { timeout: 180_000 });
+      await waitForRoundIdle(win);
       await expect(win.locator('[role="alert"]')).not.toBeVisible();
       await longPause();
     });
