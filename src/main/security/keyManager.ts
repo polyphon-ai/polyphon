@@ -22,6 +22,7 @@ export interface KeyFilePassword {
   ciphertext: string; // 32-byte hex
   authTag: string;    // 16-byte hex
   linuxNoticeDismissed: boolean;
+  kdfN?: number;      // scrypt N factor; absent on legacy files means 16384
 }
 
 export type KeyFile = KeyFileSafeStorage | KeyFilePassword;
@@ -42,13 +43,15 @@ export function unwrapWithSafeStorage(b64: string, safeStorage: { decryptString(
   return Buffer.from(decrypted, 'hex');
 }
 
+const SCRYPT_N = 65536; // OWASP-recommended minimum for stored-secret KDFs
+
 export function wrapWithPassword(
   key: Buffer,
   password: string,
-): { salt: string; iv: string; ciphertext: string; authTag: string } {
+): { salt: string; iv: string; ciphertext: string; authTag: string; kdfN: number } {
   const salt = randomBytes(32);
   const iv = randomBytes(12);
-  const wrappingKey = scryptSync(password, salt, 32, { N: 16384, r: 8, p: 1 }) as Buffer;
+  const wrappingKey = scryptSync(password, salt, 32, { N: SCRYPT_N, r: 8, p: 1, maxmem: 128 * SCRYPT_N * 8 * 2 }) as Buffer;
   const cipher = createCipheriv('aes-256-gcm', wrappingKey, iv);
   const ciphertext = Buffer.concat([cipher.update(key), cipher.final()]);
   const authTag = cipher.getAuthTag();
@@ -57,6 +60,7 @@ export function wrapWithPassword(
     iv: iv.toString('hex'),
     ciphertext: ciphertext.toString('hex'),
     authTag: authTag.toString('hex'),
+    kdfN: SCRYPT_N,
   };
 }
 
@@ -65,7 +69,10 @@ export function unwrapWithPassword(data: KeyFilePassword, password: string): Buf
   const iv = Buffer.from(data.iv, 'hex');
   const ciphertext = Buffer.from(data.ciphertext, 'hex');
   const authTag = Buffer.from(data.authTag, 'hex');
-  const wrappingKey = scryptSync(password, salt, 32, { N: 16384, r: 8, p: 1 }) as Buffer;
+  // kdfN is absent on legacy key files written before the N=65536 upgrade;
+  // fall back to 16384 so existing users' passwords continue to work.
+  const N = data.kdfN ?? 16384;
+  const wrappingKey = scryptSync(password, salt, 32, { N, r: 8, p: 1, maxmem: 128 * N * 8 * 2 }) as Buffer;
   const decipher = createDecipheriv('aes-256-gcm', wrappingKey, iv);
   decipher.setAuthTag(authTag);
   return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
@@ -121,7 +128,9 @@ export async function loadOrCreateKey(
   createUnlockWindow?: (keyFile: KeyFilePassword) => Promise<Buffer>,
 ): Promise<LoadKeyResult> {
   if (e2e) {
-    return { key: Buffer.alloc(32), keyWasAbsent: false };
+    // Use a random ephemeral key so that accidentally enabling POLYPHON_E2E on a
+    // real data directory does not produce a known-key (all-zeros) data set.
+    return { key: randomBytes(32), keyWasAbsent: false };
   }
 
   const filePath = path.join(userDataPath, KEY_FILE_NAME);

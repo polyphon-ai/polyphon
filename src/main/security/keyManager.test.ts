@@ -120,10 +120,10 @@ describe('loadOrCreateKey', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('e2e mode returns fixed zero key without touching filesystem', async () => {
+  it('e2e mode returns ephemeral 32-byte key without touching filesystem', async () => {
     const ss = makeSafeStorage();
     const result = await loadOrCreateKey(tmpDir, ss, true);
-    expect(result.key.toString('hex')).toBe(Buffer.alloc(32).toString('hex'));
+    expect(result.key.length).toBe(32);
     expect(result.keyWasAbsent).toBe(false);
     expect(fs.existsSync(path.join(tmpDir, 'polyphon.key.json'))).toBe(false);
   });
