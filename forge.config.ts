@@ -4,7 +4,6 @@ import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerDMG } from '@electron-forge/maker-dmg';
 import { MakerDeb } from '@electron-forge/maker-deb';
-import { MakerRpm } from '@electron-forge/maker-rpm';
 import { MakerFlatpak } from '@electron-forge/maker-flatpak';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
@@ -19,7 +18,7 @@ const config: ForgeConfig = {
     // checks for chrome-sandbox to decide whether to compile zypak from source
     // (via bwrap), which fails in VM/CI environments. Without chrome-sandbox,
     // requiresSandboxWrapper() returns false and no module compilation occurs.
-    // On deb/rpm, Electron falls back to the kernel namespace sandbox (fine on
+    // On deb, Electron falls back to the kernel namespace sandbox (fine on
     // any kernel >= 3.8 with user namespaces enabled, i.e. all modern distros).
     afterCopy: [
       (_buildPath, _electronVersion, platform, _arch, callback) => {
@@ -41,13 +40,6 @@ const config: ForgeConfig = {
     new MakerDeb({
       options: {
         maintainer: 'Polyphon AI',
-        homepage: 'https://polyphon.ai',
-        icon: 'assets/icons/icon.png',
-      },
-    }, ['linux']),
-    new MakerRpm({
-      options: {
-        license: 'Proprietary',
         homepage: 'https://polyphon.ai',
         icon: 'assets/icons/icon.png',
       },
