@@ -48,6 +48,12 @@ const config: ForgeConfig = {
         description: 'One chat. Many voices.',
         icon: 'assets/icons/icon.png',
         files: [],
+        // Explicitly empty: prevents the installer from auto-injecting a zypak
+        // build-from-source module (triggered when chrome-sandbox is present in
+        // the packaged app). org.electronjs.Electron2.BaseApp already ships
+        // zypak pre-built, so compiling it again from git is both unnecessary
+        // and broken in headless VM environments.
+        modules: [],
         // Disable bwrap sandbox during build — required in VM/CI environments
         // where user namespaces are unavailable. Not in MakerFlatpakOptionsConfig
         // types but passed through to @malept/flatpak-bundler via the flat merge
