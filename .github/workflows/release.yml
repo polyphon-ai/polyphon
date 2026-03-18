@@ -486,36 +486,38 @@ jobs:
 
       - name: Rename artifacts to canonical filenames
         run: |
-          # macOS: Polyphon-{version}-{arch}.dmg → Polyphon-{arch}.dmg
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          # macOS: Polyphon-*.dmg → Polyphon-{version}-{arch}.dmg
           find dist/macos -name "*.dmg" | while read -r f; do
-            arch=$(basename "$f" | grep -oE 'arm64|x64')
-            mv "$f" "$(dirname "$f")/Polyphon-${arch}.dmg"
+            arch=$(echo "$f" | grep -oE 'arm64|x64')
+            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-${arch}.dmg"
           done
-          # Linux Flatpak: ai.polyphon.Polyphon_stable_{arch}.flatpak → Polyphon-{arch}.flatpak
+          # Linux Flatpak: ai.polyphon.Polyphon_stable_{arch}.flatpak → Polyphon-{version}-{arch}.flatpak
           find dist/linux -name "*x86_64.flatpak" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-x64.flatpak"
+            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-x64.flatpak"
           done
           find dist/linux -name "*aarch64.flatpak" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-arm64.flatpak"
+            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-arm64.flatpak"
           done
-          # Linux deb: polyphon_{ver}_amd64.deb → Polyphon-x64.deb, etc.
+          # Linux deb: polyphon_{ver}_amd64.deb → Polyphon-{version}-x64.deb, etc.
           find dist/linux -name "*amd64.deb" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-x64.deb"
+            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-x64.deb"
           done
           find dist/linux -name "*arm64.deb" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-arm64.deb"
+            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-arm64.deb"
           done
-          # Linux rpm: polyphon-{ver}-1.x86_64.rpm → Polyphon-x64.rpm, etc.
+          # Linux rpm: polyphon-{ver}-1.x86_64.rpm → Polyphon-{version}-x64.rpm, etc.
           find dist/linux -name "*x86_64.rpm" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-x64.rpm"
+            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-x64.rpm"
           done
           find dist/linux -name "*aarch64.rpm" -o -name "*arm64.rpm" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-arm64.rpm"
+            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-arm64.rpm"
           done
-          # Windows: Polyphon-{version}-{arch}-Setup.exe → Polyphon-{arch}-Setup.exe
+          # Windows: Polyphon-{version}-{arch}-Setup.exe is already correctly named by forge
           find dist/windows -name "*.exe" | while read -r f; do
             arch=$(basename "$f" | grep -oE 'arm64|x64')
-            mv "$f" "$(dirname "$f")/Polyphon-${arch}-Setup.exe"
+            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-${arch}-Setup.exe"
           done
 
       - name: Create GitHub Release
