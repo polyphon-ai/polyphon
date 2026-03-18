@@ -8,6 +8,8 @@ import {
   requireInteger,
   requireCliCommand,
   requireUrl,
+  requireExternalUrl,
+  requireEnvVarName,
   requireArray,
   requireObject,
   requireMessageShape,
@@ -17,6 +19,8 @@ import {
   requireAvatarValue,
   UUID_RE,
   CLI_COMMAND_RE,
+  CLI_ARG_RE,
+  ENV_VAR_NAME_RE,
   MAX_AVATAR,
 } from './validate';
 
@@ -335,6 +339,198 @@ describe('requireUrl', () => {
 });
 
 // ---------------------------------------------------------------------------
+// requireExternalUrl
+// ---------------------------------------------------------------------------
+
+describe('requireExternalUrl', () => {
+  it('accepts a public https URL', () => {
+    expect(requireExternalUrl('https://example.com', 'baseUrl')).toBe('https://example.com');
+  });
+
+  it('accepts localhost (Ollama/LM Studio use case)', () => {
+    expect(requireExternalUrl('http://localhost:11434', 'baseUrl')).toBe('http://localhost:11434');
+  });
+
+  it('accepts 127.0.0.1 (loopback IP)', () => {
+    expect(requireExternalUrl('http://127.0.0.1:11434', 'baseUrl')).toBe('http://127.0.0.1:11434');
+  });
+
+  it('accepts ::1 (IPv6 loopback)', () => {
+    expect(requireExternalUrl('http://[::1]:11434', 'baseUrl')).toBe('http://[::1]:11434');
+  });
+
+  it('throws for RFC 1918 10.x.x.x', () => {
+    expect(() => requireExternalUrl('http://10.0.0.1/api', 'baseUrl')).toThrow(
+      'must not target a private or reserved network address',
+    );
+  });
+
+  it('throws for RFC 1918 172.16.x.x', () => {
+    expect(() => requireExternalUrl('http://172.16.0.1/api', 'baseUrl')).toThrow(
+      'must not target a private or reserved network address',
+    );
+  });
+
+  it('throws for RFC 1918 172.31.x.x', () => {
+    expect(() => requireExternalUrl('http://172.31.255.255/api', 'baseUrl')).toThrow(
+      'must not target a private or reserved network address',
+    );
+  });
+
+  it('accepts 172.15.x.x (not in RFC 1918 range)', () => {
+    expect(requireExternalUrl('http://172.15.0.1/api', 'baseUrl')).toBe('http://172.15.0.1/api');
+  });
+
+  it('accepts 172.32.x.x (not in RFC 1918 range)', () => {
+    expect(requireExternalUrl('http://172.32.0.1/api', 'baseUrl')).toBe('http://172.32.0.1/api');
+  });
+
+  it('throws for RFC 1918 192.168.x.x', () => {
+    expect(() => requireExternalUrl('http://192.168.1.1/api', 'baseUrl')).toThrow(
+      'must not target a private or reserved network address',
+    );
+  });
+
+  it('throws for AWS IMDS 169.254.169.254', () => {
+    expect(() => requireExternalUrl('http://169.254.169.254/latest/meta-data/', 'baseUrl')).toThrow(
+      'must not target a private or reserved network address',
+    );
+  });
+
+  it('throws for link-local 169.254.x.x', () => {
+    expect(() => requireExternalUrl('http://169.254.0.1/', 'baseUrl')).toThrow(
+      'must not target a private or reserved network address',
+    );
+  });
+
+  it('throws for IPv6 ULA fc00::/7 (fc prefix)', () => {
+    expect(() => requireExternalUrl('http://[fc00::1]/', 'baseUrl')).toThrow(
+      'must not target a private or reserved network address',
+    );
+  });
+
+  it('throws for IPv6 ULA fc00::/7 (fd prefix)', () => {
+    expect(() => requireExternalUrl('http://[fd12:3456::1]/', 'baseUrl')).toThrow(
+      'must not target a private or reserved network address',
+    );
+  });
+
+  it('throws for IPv6 link-local fe80::/10', () => {
+    expect(() => requireExternalUrl('http://[fe80::1]/', 'baseUrl')).toThrow(
+      'must not target a private or reserved network address',
+    );
+  });
+
+  it('throws for .local mDNS hostname', () => {
+    expect(() => requireExternalUrl('http://mydevice.local/api', 'baseUrl')).toThrow(
+      'must not target a private or reserved network address',
+    );
+  });
+
+  it('throws for ftp:// (protocol check inherited from requireUrl)', () => {
+    expect(() => requireExternalUrl('ftp://example.com', 'baseUrl')).toThrow(
+      'Invalid baseUrl: must be a valid http or https URL',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// requireEnvVarName
+// ---------------------------------------------------------------------------
+
+describe('requireEnvVarName', () => {
+  it('accepts a simple uppercase name', () => {
+    expect(requireEnvVarName('OPENAI_API_KEY', 'apiKeyEnvVar')).toBe('OPENAI_API_KEY');
+  });
+
+  it('accepts a name starting with underscore', () => {
+    expect(requireEnvVarName('_MY_VAR', 'apiKeyEnvVar')).toBe('_MY_VAR');
+  });
+
+  it('accepts a mixed-case name with digits', () => {
+    expect(requireEnvVarName('MY_KEY_123', 'apiKeyEnvVar')).toBe('MY_KEY_123');
+  });
+
+  it('throws for empty string', () => {
+    expect(() => requireEnvVarName('', 'apiKeyEnvVar')).toThrow('apiKeyEnvVar is required');
+  });
+
+  it('throws for name starting with a digit', () => {
+    expect(() => requireEnvVarName('1BAD_VAR', 'apiKeyEnvVar')).toThrow('must be a valid environment variable name');
+  });
+
+  it('throws for name with spaces', () => {
+    expect(() => requireEnvVarName('MY VAR', 'apiKeyEnvVar')).toThrow('must be a valid environment variable name');
+  });
+
+  it('throws for name with hyphen', () => {
+    expect(() => requireEnvVarName('MY-VAR', 'apiKeyEnvVar')).toThrow('must be a valid environment variable name');
+  });
+
+  it('throws for non-string', () => {
+    expect(() => requireEnvVarName(42, 'apiKeyEnvVar')).toThrow('must be a string');
+  });
+
+  it('ENV_VAR_NAME_RE export accepts valid names', () => {
+    expect(ENV_VAR_NAME_RE.test('OPENAI_API_KEY')).toBe(true);
+    expect(ENV_VAR_NAME_RE.test('_PRIVATE')).toBe(true);
+    expect(ENV_VAR_NAME_RE.test('1INVALID')).toBe(false);
+    expect(ENV_VAR_NAME_RE.test('HAS-HYPHEN')).toBe(false);
+    expect(ENV_VAR_NAME_RE.test('')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CLI_ARG_RE
+// ---------------------------------------------------------------------------
+
+describe('CLI_ARG_RE', () => {
+  it('accepts simple flag with value', () => {
+    expect(CLI_ARG_RE.test('--model=claude-opus-4-6')).toBe(true);
+  });
+
+  it('accepts alphanumeric token', () => {
+    expect(CLI_ARG_RE.test('gpt-4o')).toBe(true);
+  });
+
+  it('accepts path-like arg', () => {
+    expect(CLI_ARG_RE.test('/usr/local/bin/claude')).toBe(true);
+  });
+
+  it('accepts URL-like arg', () => {
+    expect(CLI_ARG_RE.test('https://api.example.com')).toBe(true);
+  });
+
+  it('rejects space (shell word boundary)', () => {
+    expect(CLI_ARG_RE.test('--flag value')).toBe(false);
+  });
+
+  it('rejects semicolon (command injection)', () => {
+    expect(CLI_ARG_RE.test('foo;rm -rf /')).toBe(false);
+  });
+
+  it('rejects backtick (command substitution)', () => {
+    expect(CLI_ARG_RE.test('`id`')).toBe(false);
+  });
+
+  it('rejects dollar sign (variable expansion)', () => {
+    expect(CLI_ARG_RE.test('$HOME')).toBe(false);
+  });
+
+  it('rejects ampersand (background/chain)', () => {
+    expect(CLI_ARG_RE.test('foo&bar')).toBe(false);
+  });
+
+  it('rejects pipe (redirection)', () => {
+    expect(CLI_ARG_RE.test('foo|bar')).toBe(false);
+  });
+
+  it('rejects empty string', () => {
+    expect(CLI_ARG_RE.test('')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // requireArray / requireObject
 // ---------------------------------------------------------------------------
 
@@ -500,6 +696,30 @@ describe('requireCompositionData', () => {
   it('throws for empty name', () => {
     expect(() => requireCompositionData(makeData({ name: '' }))).toThrow('name is required');
   });
+
+  it('accepts voice with valid cliArgs', () => {
+    expect(() =>
+      requireCompositionData(makeData({ voices: [makeVoice({ cliArgs: ['--model=gpt-4o', '--timeout=30'] })] })),
+    ).not.toThrow();
+  });
+
+  it('throws for voice cliArgs containing shell metacharacter', () => {
+    expect(() =>
+      requireCompositionData(makeData({ voices: [makeVoice({ cliArgs: ['--flag=ok', 'bad;arg'] })] })),
+    ).toThrow('CLI arguments must contain only');
+  });
+
+  it('throws for voice cliArgs containing space', () => {
+    expect(() =>
+      requireCompositionData(makeData({ voices: [makeVoice({ cliArgs: ['--flag ok'] })] })),
+    ).toThrow('CLI arguments must contain only');
+  });
+
+  it('throws for voice cliArgs containing empty string element', () => {
+    expect(() =>
+      requireCompositionData(makeData({ voices: [makeVoice({ cliArgs: [''] })] })),
+    ).toThrow();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -659,6 +879,16 @@ describe('requireAvatarValue', () => {
     expect(() => requireAvatarValue('data:application/json;base64,abc', 'conductorAvatar')).toThrow(
       'conductorAvatar must be a valid image data URI or empty string',
     );
+  });
+
+  it('throws for SVG data URI (XSS risk)', () => {
+    expect(() => requireAvatarValue('data:image/svg+xml;base64,abc', 'conductorAvatar')).toThrow(
+      'conductorAvatar must be a valid image data URI or empty string',
+    );
+  });
+
+  it('accepts avif data URI', () => {
+    expect(requireAvatarValue('data:image/avif;base64,abc', 'conductorAvatar')).toBe('data:image/avif;base64,abc');
   });
 });
 

@@ -1,12 +1,21 @@
+import { isIPv4, isIPv6 } from 'net';
 import type { Message, CompositionVoice, Composition, UserProfile } from '../../shared/types';
 import { CONTINUATION_MAX_ROUNDS_LIMIT } from '../../shared/constants';
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const CLI_COMMAND_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
+// CLI argument allowlist: permits flags (--flag, -f), key=value pairs, paths,
+// version strings, model names, etc. Excludes whitespace and shell metacharacters
+// (;|&`$(){}><!\n) so argument injection via unexpected flag values is prevented.
+// spawn() is always called without shell:true so shell injection is not possible,
+// but this pattern still blocks embedding unintended flag boundaries.
+export const CLI_ARG_RE = /^[a-zA-Z0-9._/:@=,^%~+\-]+$/;
 // Two valid states: empty string (avatar removed) or data:image/...;base64,... produced by
 // avatar handlers. Relative paths are not accepted — no handler generates them and widening
 // the contract would add complexity for no current benefit.
-const IMAGE_DATA_URI_RE = /^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]*$/;
+// SVG is explicitly excluded: SVG files can embed JavaScript (e.g. <svg onload="...">),
+// so we allow only raster formats that Electron rasterizes without script execution.
+const IMAGE_DATA_URI_RE = /^data:image\/(png|jpeg|gif|webp|avif);base64,[A-Za-z0-9+/=]*$/;
 
 export const MAX_NAME = 200;
 export const MAX_SHORT_NAME = 100;
@@ -19,6 +28,10 @@ export const MAX_CONDUCTOR_CONTEXT = 10000;
 export const MAX_AVATAR = 500000;
 export const MAX_URL = 2000;
 export const MAX_MESSAGE_CONTENT = 100000;
+export const MAX_ENV_VAR_NAME = 200;
+
+// Matches POSIX-compliant environment variable names.
+export const ENV_VAR_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 export function requireId(value: unknown, name: string): string {
   if (typeof value === 'string' && UUID_RE.test(value)) return value;
@@ -101,6 +114,59 @@ export function requireUrl(
   return value;
 }
 
+// Returns true for RFC 1918, link-local (169.254.0.0/16, fe80::/10), and .local
+// mDNS hostnames. Loopback (127.x / ::1 / localhost) is intentionally NOT blocked
+// because custom OpenAI-compatible providers such as Ollama and LM Studio run on
+// localhost and are an explicitly supported use case.
+function isPrivateNetworkAddress(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+
+  if (isIPv4(h)) {
+    const [a, b] = h.split('.').map(Number) as [number, number];
+    if (a === 10) return true;                          // RFC 1918 10.0.0.0/8
+    if (a === 172 && b >= 16 && b <= 31) return true;  // RFC 1918 172.16.0.0/12
+    if (a === 192 && b === 168) return true;            // RFC 1918 192.168.0.0/16
+    if (a === 169 && b === 254) return true;            // link-local / AWS IMDS
+    return false;
+  }
+
+  // URL.hostname wraps IPv6 in brackets: "[::1]" — strip them before parsing.
+  const ip6 = h.startsWith('[') && h.endsWith(']') ? h.slice(1, -1) : h;
+  if (isIPv6(ip6)) {
+    if (/^f[cd]/i.test(ip6)) return true;       // ULA fc00::/7
+    if (/^fe[89ab]/i.test(ip6)) return true;    // link-local fe80::/10
+    return false;
+  }
+
+  // .local hostnames are mDNS / LAN targets, not the local machine.
+  if (h === 'local' || h.endsWith('.local')) return true;
+
+  return false;
+}
+
+// Like requireUrl, but additionally rejects URLs that target private or
+// reserved network addresses (RFC 1918, link-local, .local mDNS). Use this
+// for any URL that will be used to make outbound HTTP requests on behalf of
+// a potentially-untrusted input (e.g. custom provider baseUrl).
+export function requireExternalUrl(value: unknown, name: string): string {
+  const url = requireUrl(value, name, ['http:', 'https:']);
+  const { hostname } = new URL(url);
+  if (isPrivateNetworkAddress(hostname)) {
+    throw new Error(`Invalid ${name}: must not target a private or reserved network address`);
+  }
+  return url;
+}
+
+export function requireEnvVarName(value: unknown, name: string): string {
+  const str = requireNonEmptyString(value, name, MAX_ENV_VAR_NAME);
+  if (!ENV_VAR_NAME_RE.test(str)) {
+    throw new Error(
+      `Invalid ${name}: must be a valid environment variable name (letters, digits, underscores; must start with a letter or underscore)`,
+    );
+  }
+  return str;
+}
+
 export function requireArray(value: unknown, name: string): unknown[] {
   if (Array.isArray(value)) return value;
   throw new Error(`Invalid ${name}: must be an array`);
@@ -138,9 +204,14 @@ export function requireCompositionVoiceShape(value: unknown, index: number): Com
   if (obj['cliCommand'] != null) requireCliCommand(obj['cliCommand'], `voices[${index}].cliCommand`);
   if (obj['cliArgs'] != null) {
     const args = requireArray(obj['cliArgs'], `voices[${index}].cliArgs`);
-    args.forEach((arg, i) =>
-      requireNonEmptyString(arg, `voices[${index}].cliArgs[${i}]`, MAX_CLI_COMMAND),
-    );
+    args.forEach((arg, i) => {
+      const str = requireNonEmptyString(arg, `voices[${index}].cliArgs[${i}]`, MAX_CLI_COMMAND);
+      if (!CLI_ARG_RE.test(str)) {
+        throw new Error(
+          `Invalid voices[${index}].cliArgs[${i}]: CLI arguments must contain only alphanumeric characters, dots, hyphens, underscores, slashes, colons, equals signs, and similar safe characters`,
+        );
+      }
+    });
   }
   if (obj['customProviderId'] != null) requireId(obj['customProviderId'], `voices[${index}].customProviderId`);
   if (obj['systemPromptTemplateId'] != null) requireId(obj['systemPromptTemplateId'], `voices[${index}].systemPromptTemplateId`);
