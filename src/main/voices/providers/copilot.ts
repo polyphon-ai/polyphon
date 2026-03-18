@@ -36,16 +36,15 @@ class CopilotVoice extends CLIVoice {
     const systemPrompt = this.buildSystemPrompt();
     const prompt = buildPrompt(context, systemPrompt);
 
-    // copilot uses -p/--prompt for non-interactive mode; --allow-all-tools
-    // prevents tool-confirmation prompts from blocking the process.
-    const proc = spawn(
-      this.cliCommand,
-      [...this.cliArgs, '-p', prompt, '--allow-all-tools'],
-      { stdio: ['ignore', 'pipe', 'pipe'] },
-    );
+    const proc = spawn(this.cliCommand, [...this.cliArgs], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
     this.setActiveProcess(proc);
 
     try {
+      proc.stdin.write(prompt);
+      proc.stdin.end();
+
       let buffer = '';
       for await (const chunk of proc.stdout) {
         buffer += (chunk as Buffer).toString('utf8');

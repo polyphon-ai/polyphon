@@ -40,10 +40,13 @@ function makeMsg(overrides: Partial<Message> = {}): Message {
 
 function makeMockProcess() {
   const stdout = new EventEmitter() as EventEmitter & { [Symbol.asyncIterator](): AsyncIterator<Buffer> };
+  const stdin = { write: vi.fn(), end: vi.fn() };
   const proc = new EventEmitter() as EventEmitter & {
+    stdin: typeof stdin;
     stdout: typeof stdout;
     kill: ReturnType<typeof vi.fn>;
   };
+  proc.stdin = stdin;
   proc.stdout = stdout;
   proc.kill = vi.fn();
 
@@ -139,7 +142,7 @@ describe('CopilotVoice.isAvailable()', () => {
 });
 
 describe('CopilotVoice.send()', () => {
-  it('spawns copilot with -p flag and prompt text', async () => {
+  it('writes prompt to stdin', async () => {
     const { proc, emitEnd } = makeMockProcess();
     mockSpawn.mockReturnValue(proc);
 
@@ -154,12 +157,11 @@ describe('CopilotVoice.send()', () => {
     await sendPromise;
 
     expect(mockSpawn).toHaveBeenCalledOnce();
-    const [cmd, args] = mockSpawn.mock.calls[0] as [string, string[]];
+    const [cmd] = mockSpawn.mock.calls[0] as [string, string[]];
     expect(cmd).toBe('copilot');
-    expect(args).toContain('-p');
-    expect(args).toContain('--allow-all-tools');
-    const promptIndex = args.indexOf('-p');
-    expect(args[promptIndex + 1]).toContain('User: Hello');
+    expect(proc.stdin.write).toHaveBeenCalledOnce();
+    const written = proc.stdin.write.mock.calls[0]![0] as string;
+    expect(written).toContain('User: Hello');
   });
 
   it('yields complete lines from stdout', async () => {
@@ -200,7 +202,7 @@ describe('CopilotVoice.send()', () => {
     expect(tokens).toContain('no newline at end');
   });
 
-  it('includes system prompt in the -p argument', async () => {
+  it('includes system prompt in stdin', async () => {
     const { proc, emitEnd } = makeMockProcess();
     mockSpawn.mockReturnValue(proc);
 
@@ -214,9 +216,8 @@ describe('CopilotVoice.send()', () => {
     emitEnd();
     await sendPromise;
 
-    const args = mockSpawn.mock.calls[0]![1] as string[];
-    const promptIndex = args.indexOf('-p');
-    expect(args[promptIndex + 1]).toContain('Be concise.');
+    const written = proc.stdin.write.mock.calls[0]![0] as string;
+    expect(written).toContain('Be concise.');
   });
 
   it('abort() kills the active process', async () => {
