@@ -5,9 +5,10 @@ import {
   requireNonEmptyString,
   requireEnum,
   requireObject,
-  requireUrl,
+  requireExternalUrl,
   coerceBoolean,
   requireCliCommand,
+  requireEnvVarName,
   requireUserProfileShape,
   MAX_NAME,
   MAX_PROVIDER,
@@ -153,7 +154,8 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelsResult> {
 
 async function fetchGeminiModels(apiKey: string): Promise<ModelsResult> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+    'https://generativelanguage.googleapis.com/v1beta/models',
+    { headers: { 'x-goog-api-key': apiKey } },
   );
   if (!res.ok) return { models: [], error: `Gemini API returned ${res.status}` };
   const data = await res.json() as {
@@ -237,10 +239,10 @@ export async function probeModel(provider: string, model: string): Promise<Probe
       });
     } else if (provider === 'gemini') {
       res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
         {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: 'What is 2+2?' }] }],
             generationConfig: { maxOutputTokens: 16 },
@@ -252,8 +254,12 @@ export async function probeModel(provider: string, model: string): Promise<Probe
     }
 
     if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      return { ok: false, error: `HTTP ${res.status}: ${body.slice(0, 200)}` };
+      // Log the full body to main-process only; do not forward provider error
+      // details to the renderer (they may contain account-identifying strings).
+      res.text().catch(() => '').then((body) => {
+        if (body) console.error(`[probeModel] HTTP ${res.status} from ${provider}:`, body.slice(0, 500));
+      });
+      return { ok: false, error: `HTTP ${res.status}` };
     }
     return { ok: true };
   } catch (err) {
@@ -288,7 +294,8 @@ export async function fetchModelsForCustomProvider(
       const key = process.env[cp.apiKeyEnvVar]?.trim();
       if (key) headers['Authorization'] = `Bearer ${key}`;
     }
-    const res = await fetch(`${cp.baseUrl}/models`, { headers });
+    // redirect:'manual' prevents fetch from following redirects to internal addresses.
+    const res = await fetch(`${cp.baseUrl}/models`, { headers, redirect: 'manual' });
     if (!res.ok) return { models: [], error: `Endpoint returned ${res.status}` };
     const data = await res.json() as { data: { id: string }[] };
     if (!data?.data) return { models: [], error: 'Unexpected response format from endpoint' };
@@ -319,11 +326,12 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
     IPC.SETTINGS_SAVE_PROVIDER_CONFIG,
     async (_event, config: unknown) => {
       const obj = requireObject(config, 'config');
-      requireNonEmptyString(obj['provider'], 'provider', MAX_PROVIDER);
+      requireEnum(obj['provider'], 'provider', SETTINGS_PROVIDERS);
       requireEnum(obj['voiceType'], 'voiceType', ['api', 'cli'] as const);
       coerceBoolean(obj['enabled'], 'enabled');
       if (obj['defaultModel'] != null) requireString(obj['defaultModel'], 'defaultModel', MAX_MODEL);
       if (obj['cliCommand'] != null) requireCliCommand(obj['cliCommand'], 'cliCommand');
+      if (obj['cliArgs'] != null) requireString(obj['cliArgs'], 'cliArgs', MAX_NAME);
       return saveProviderConfig(db, config as Omit<ProviderConfig, 'id' | 'createdAt' | 'updatedAt'>);
     },
   );
@@ -399,7 +407,10 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
       const obj = requireObject(data, 'data');
       requireNonEmptyString(obj['name'], 'name', MAX_NAME);
       if (!String(obj['slug'] ?? '').trim()) throw new Error('Provider slug is required');
-      requireUrl(obj['baseUrl'], 'baseUrl', ['http:', 'https:']);
+      requireExternalUrl(obj['baseUrl'], 'baseUrl');
+      if (obj['apiKeyEnvVar'] != null && obj['apiKeyEnvVar'] !== '') {
+        requireEnvVarName(obj['apiKeyEnvVar'], 'apiKeyEnvVar');
+      }
       const cpData = data as Omit<CustomProvider, 'id' | 'deleted' | 'createdAt' | 'updatedAt'>;
       try {
         const cp = createCustomProvider(db, cpData);
@@ -424,7 +435,10 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
       requireId(id, 'id');
       const obj = requireObject(data, 'data');
       if (obj['name'] !== undefined) requireNonEmptyString(obj['name'], 'name', MAX_NAME);
-      if (obj['baseUrl'] !== undefined) requireUrl(obj['baseUrl'], 'baseUrl', ['http:', 'https:']);
+      if (obj['baseUrl'] !== undefined) requireExternalUrl(obj['baseUrl'], 'baseUrl');
+      if (obj['apiKeyEnvVar'] != null && obj['apiKeyEnvVar'] !== '') {
+        requireEnvVarName(obj['apiKeyEnvVar'], 'apiKeyEnvVar');
+      }
       const cp = updateCustomProvider(
         db,
         id as string,
@@ -453,13 +467,15 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
 
   ipcMain.handle(
     IPC.SETTINGS_TONE_CREATE,
-    (_event, data: Pick<ToneDefinition, 'name' | 'description'>) => {
-      const name = data.name?.trim() ?? '';
+    (_event, data: unknown) => {
+      const obj = requireObject(data, 'data');
+      const name = typeof obj['name'] === 'string' ? obj['name'].trim() : '';
       if (!name) throw new Error('Tone name is required');
       if (name.length > 50) throw new Error('Tone name must be 50 characters or fewer');
-      if (!data.description?.trim()) throw new Error('Tone description is required');
+      const description = typeof obj['description'] === 'string' ? obj['description'].trim() : '';
+      if (!description) throw new Error('Tone description is required');
       try {
-        const tone = createTone(db, { name, description: data.description.trim() });
+        const tone = createTone(db, { name, description });
         voiceManager.loadTones(db);
         return tone;
       } catch (err) {
@@ -473,19 +489,23 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
 
   ipcMain.handle(
     IPC.SETTINGS_TONE_UPDATE,
-    async (_event, id: unknown, data: Partial<Pick<ToneDefinition, 'name' | 'description'>>) => {
+    async (_event, id: unknown, data: unknown) => {
       requireNonEmptyString(id, 'id', MAX_SHORT_NAME);
-      if (data.name !== undefined) {
-        const name = data.name.trim();
+      const obj = requireObject(data, 'data');
+      const patch: Partial<Pick<ToneDefinition, 'name' | 'description'>> = {};
+      if (obj['name'] !== undefined) {
+        const name = typeof obj['name'] === 'string' ? obj['name'].trim() : '';
         if (!name) throw new Error('Tone name is required');
         if (name.length > 50) throw new Error('Tone name must be 50 characters or fewer');
-        data = { ...data, name };
+        patch.name = name;
       }
-      if (data.description !== undefined && !data.description.trim()) {
-        throw new Error('Tone description is required');
+      if (obj['description'] !== undefined) {
+        const description = typeof obj['description'] === 'string' ? obj['description'].trim() : '';
+        if (!description) throw new Error('Tone description is required');
+        patch.description = description;
       }
       try {
-        const tone = updateTone(db, id as string, data);
+        const tone = updateTone(db, id as string, patch);
         voiceManager.loadTones(db);
         return tone;
       } catch (err) {
@@ -507,12 +527,14 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
 
   ipcMain.handle(
     IPC.SETTINGS_SYSTEM_PROMPT_TEMPLATE_CREATE,
-    (_event, data: Pick<SystemPromptTemplate, 'name' | 'content'>) => {
-      const name = data.name?.trim() ?? '';
+    (_event, data: unknown) => {
+      const obj = requireObject(data, 'data');
+      const name = typeof obj['name'] === 'string' ? obj['name'].trim() : '';
       if (!name) throw new Error('Template name is required');
       if (name.length > 100) throw new Error('Template name must be 100 characters or fewer');
-      if (!data.content?.trim()) throw new Error('Template content is required');
-      const template = createSystemPromptTemplate(db, { name, content: data.content.trim() });
+      const content = typeof obj['content'] === 'string' ? obj['content'].trim() : '';
+      if (!content) throw new Error('Template content is required');
+      const template = createSystemPromptTemplate(db, { name, content });
       voiceManager.loadSystemPromptTemplates(db);
       return template;
     },
@@ -520,18 +542,22 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
 
   ipcMain.handle(
     IPC.SETTINGS_SYSTEM_PROMPT_TEMPLATE_UPDATE,
-    async (_event, id: unknown, data: Partial<Pick<SystemPromptTemplate, 'name' | 'content'>>) => {
+    async (_event, id: unknown, data: unknown) => {
       requireId(id, 'id');
-      if (data.name !== undefined) {
-        const name = data.name.trim();
+      const obj = requireObject(data, 'data');
+      const patch: Partial<Pick<SystemPromptTemplate, 'name' | 'content'>> = {};
+      if (obj['name'] !== undefined) {
+        const name = typeof obj['name'] === 'string' ? obj['name'].trim() : '';
         if (!name) throw new Error('Template name is required');
         if (name.length > 100) throw new Error('Template name must be 100 characters or fewer');
-        data = { ...data, name };
+        patch.name = name;
       }
-      if (data.content !== undefined && !data.content.trim()) {
-        throw new Error('Template content is required');
+      if (obj['content'] !== undefined) {
+        const content = typeof obj['content'] === 'string' ? obj['content'].trim() : '';
+        if (!content) throw new Error('Template content is required');
+        patch.content = content;
       }
-      const template = updateSystemPromptTemplate(db, id as string, data);
+      const template = updateSystemPromptTemplate(db, id as string, patch);
       voiceManager.loadSystemPromptTemplates(db);
       return template;
     },

@@ -195,7 +195,7 @@ describe('fetchModelsForProvider — gemini', () => {
     expect(result.models).toContain('gemini-2.5-pro');
   });
 
-  it('calls the Gemini endpoint with the API key as a query param', async () => {
+  it('calls the Gemini endpoint with the API key as a header', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ models: [] }),
@@ -205,8 +205,9 @@ describe('fetchModelsForProvider — gemini', () => {
     await fetchModelsForProvider('gemini');
 
     const calledUrl = fetchMock.mock.calls[0]![0] as string;
+    const calledInit = fetchMock.mock.calls[0]![1] as RequestInit;
     expect(calledUrl).toContain('https://generativelanguage.googleapis.com/v1beta/models');
-    expect(calledUrl).toContain('key=test-gemini-key');
+    expect((calledInit.headers as Record<string, string>)['x-goog-api-key']).toBe('test-gemini-key');
   });
 
   it('returns an error when the API responds with a non-ok status', async () => {

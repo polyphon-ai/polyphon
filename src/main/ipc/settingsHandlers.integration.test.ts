@@ -334,17 +334,17 @@ describe('settings IPC handler validation', () => {
       ).rejects.toThrow('Invalid voiceType: must be one of: api, cli');
     });
 
-    it('throws for empty provider', async () => {
+    it('throws for unknown provider', async () => {
       await expect(
         settingsIpcHandlers.get(IPC.SETTINGS_SAVE_PROVIDER_CONFIG)!({}, {
-          provider: '',
+          provider: 'unknown-provider',
           voiceType: 'api',
           enabled: true,
           defaultModel: null,
           cliCommand: null,
           cliArgs: null,
         }),
-      ).rejects.toThrow('provider is required');
+      ).rejects.toThrow('Invalid provider: must be one of:');
     });
   });
 
