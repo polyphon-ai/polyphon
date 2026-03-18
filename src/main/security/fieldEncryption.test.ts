@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   initFieldEncryption,
   _resetForTests,
@@ -42,13 +42,16 @@ describe('fieldEncryption', () => {
   });
 
   it('returns DECRYPTION_FAILED_SENTINEL when ENC:v1: prefix present but wrong key', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const encrypted = encryptField('secret');
     _resetForTests();
     initFieldEncryption(Buffer.alloc(32, 0xff)); // different key
     expect(decryptField(encrypted)).toBe(DECRYPTION_FAILED_SENTINEL);
+    spy.mockRestore();
   });
 
   it('returns DECRYPTION_FAILED_SENTINEL for tampered authTag', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const encrypted = encryptField('secret');
     // Flip last byte (authTag area)
     const b64 = encrypted.slice('ENC:v1:'.length);
@@ -56,6 +59,7 @@ describe('fieldEncryption', () => {
     buf[buf.length - 1] = (buf[buf.length - 1] as number) ^ 0xff;
     const tampered = `ENC:v1:${buf.toString('base64')}`;
     expect(decryptField(tampered)).toBe(DECRYPTION_FAILED_SENTINEL);
+    spy.mockRestore();
   });
 
   it('throws if encryptField called before init', () => {
