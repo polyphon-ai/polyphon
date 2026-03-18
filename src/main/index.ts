@@ -36,7 +36,20 @@ function createWindow(): BrowserWindow {
     show: !process.env.POLYPHON_E2E || !!process.env.POLYPHON_SHOW_WINDOW,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true,
     },
+  });
+
+  // HIGH-001: Deny all popup/window-open requests from renderer content.
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+
+  // HIGH-001: Block any navigation away from the app origin. External links must
+  // go through the shell:openExternal allowlist path in IPC handlers.
+  win.webContents.on('will-navigate', (event) => {
+    event.preventDefault();
   });
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {

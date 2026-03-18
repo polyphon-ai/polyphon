@@ -15,6 +15,10 @@ export function createUnlockWindow(keyFile: KeyFilePassword): { window: BrowserW
     frame: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true,
     },
   });
 
