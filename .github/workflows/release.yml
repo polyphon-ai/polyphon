@@ -485,26 +485,32 @@ jobs:
           # macOS: Polyphon-*.dmg → Polyphon-{version}-{arch}.dmg
           find dist/macos -name "*.dmg" | while read -r f; do
             arch=$(echo "$f" | grep -oE 'arm64|x64')
-            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-${arch}.dmg"
+            target="$(dirname "$f")/Polyphon-${VERSION}-${arch}.dmg"
+            [ "$f" != "$target" ] && mv "$f" "$target"
           done
           # Linux Flatpak: ai.polyphon.Polyphon_stable_{arch}.flatpak → Polyphon-{version}-{arch}.flatpak
           find dist/linux -name "*x86_64.flatpak" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-x64.flatpak"
+            target="$(dirname "$f")/Polyphon-${VERSION}-x64.flatpak"
+            [ "$f" != "$target" ] && mv "$f" "$target"
           done
           find dist/linux -name "*aarch64.flatpak" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-arm64.flatpak"
+            target="$(dirname "$f")/Polyphon-${VERSION}-arm64.flatpak"
+            [ "$f" != "$target" ] && mv "$f" "$target"
           done
           # Linux deb: polyphon_{ver}_amd64.deb → Polyphon-{version}-x64.deb, etc.
           find dist/linux -name "*amd64.deb" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-x64.deb"
+            target="$(dirname "$f")/Polyphon-${VERSION}-x64.deb"
+            [ "$f" != "$target" ] && mv "$f" "$target"
           done
           find dist/linux -name "*arm64.deb" | while read -r f; do
-            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-arm64.deb"
+            target="$(dirname "$f")/Polyphon-${VERSION}-arm64.deb"
+            [ "$f" != "$target" ] && mv "$f" "$target"
           done
           # Windows: Polyphon-{version}-{arch}-Setup.exe is already correctly named by forge
           find dist/windows -name "*.exe" | while read -r f; do
             arch=$(basename "$f" | grep -oE 'arm64|x64')
-            mv "$f" "$(dirname "$f")/Polyphon-${VERSION}-${arch}-Setup.exe"
+            target="$(dirname "$f")/Polyphon-${VERSION}-${arch}-Setup.exe"
+            [ "$f" != "$target" ] && mv "$f" "$target"
           done
 
       - name: Create GitHub Release
