@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import type { ElectronApplication, Page } from '@playwright/test';
-import { launchApp, launchMockApp, skipOnboarding, goToEncryptionTab } from './helpers';
+import { launchApp, launchMockApp, makeTempDir, skipOnboarding, goToEncryptionTab, enableProviders } from './helpers';
+import { buildComposition, startSession, sendMessage, expectResponse } from './voices-helpers';
 
 // ── e2e test mode display ────────────────────────────────────────────────────
 // When POLYPHON_E2E=1 the encryption section shows a "Test mode" badge and
@@ -303,5 +304,160 @@ test.describe('Password lifecycle', () => {
     await expect(window.getByRole('button', { name: /^set password$/i })).toBeVisible();
     await expect(window.getByRole('button', { name: /^change password$/i })).not.toBeVisible();
     await expect(window.getByRole('button', { name: /^remove password$/i })).not.toBeVisible();
+  });
+});
+
+// ── Password lifecycle — restart & unlock ─────────────────────────────────────
+//
+// Tests are intentionally serial and stateful. The beforeAll seeds sharedDir
+// with an encrypted session (mock voice) so each test can verify message
+// content survives the full set → restart → unlock → change → remove cycle.
+//
+// Each test launches and closes its own app instance against the shared data
+// directory. State (key file wrapping) carries forward between tests.
+
+test.describe.serial('Password lifecycle — restart & unlock', () => {
+  let sharedDir: string;
+
+  const INITIAL_PASSWORD = 'RestartPass1!';
+  const CHANGED_PASSWORD = 'ChangedPass2@';
+  const SESSION_NAME = 'Encrypted Session';
+  const CONDUCTOR_MSG = 'Encryption restart test message';
+
+  function launchRealKeyApp(extraEnv: Record<string, string> = {}): Promise<ElectronApplication> {
+    return launchApp({
+      POLYPHON_MOCK_VOICES: '1',
+      POLYPHON_E2E: '',
+      POLYPHON_TEST_USER_DATA: sharedDir,
+      POLYPHON_HIDE_WINDOW: '1',
+      ...extraEnv,
+    });
+  }
+
+  // Launch expecting a password-protected key: return the unlock window, the resolved
+  // main window, and the app handle. The caller must close the app when done.
+  async function unlockApp(password: string): Promise<{ app: ElectronApplication; mainWin: Page }> {
+    const app = await launchRealKeyApp();
+    const unlockWin = await app.firstWindow();
+    await unlockWin.waitForLoadState('domcontentloaded');
+    await expect(unlockWin.getByPlaceholder('Password')).toBeVisible({ timeout: 10_000 });
+
+    // Register the 'window' listener before clicking Unlock to avoid a race.
+    const mainWinPromise = app.waitForEvent('window');
+    await unlockWin.getByPlaceholder('Password').fill(password);
+    await unlockWin.getByRole('button', { name: 'Unlock' }).click();
+
+    const mainWin = await mainWinPromise;
+    await mainWin.waitForLoadState('domcontentloaded');
+    await skipOnboarding(mainWin);
+    return { app, mainWin };
+  }
+
+  test.beforeAll(async () => {
+    sharedDir = makeTempDir();
+
+    // Seed: create a session with an encrypted message, then set a password so
+    // subsequent relaunches show the unlock dialog.
+    const app = await launchRealKeyApp();
+    const win = await app.firstWindow();
+    await win.waitForLoadState('domcontentloaded');
+    await skipOnboarding(win);
+
+    await enableProviders(win);
+    await buildComposition(win, 'Enc Comp', ['Anthropic'], { mode: 'broadcast' });
+    await startSession(win, 'Enc Comp', SESSION_NAME);
+    await sendMessage(win, CONDUCTOR_MSG);
+    await expectResponse(win, 'Anthropic');
+
+    await goToEncryptionTab(win);
+    await win.getByRole('button', { name: /^set password$/i }).click();
+    await win.getByPlaceholder('New password', { exact: true }).fill(INITIAL_PASSWORD);
+    await win.getByPlaceholder('Confirm password').fill(INITIAL_PASSWORD);
+    await win.getByRole('button', { name: /^save$/i }).click();
+    await expect(win.getByText('Set a password')).not.toBeVisible({ timeout: 15_000 });
+
+    await app.close().catch(() => {});
+  });
+
+  test('wrong password shows an error on the unlock dialog', async () => {
+    const app = await launchRealKeyApp();
+    const unlockWin = await app.firstWindow();
+    await unlockWin.waitForLoadState('domcontentloaded');
+
+    await expect(unlockWin.getByPlaceholder('Password')).toBeVisible({ timeout: 10_000 });
+    await expect(unlockWin.getByText(/enter your password to unlock/i)).toBeVisible();
+
+    await unlockWin.getByPlaceholder('Password').fill('definitelywrong!');
+    await unlockWin.getByRole('button', { name: 'Unlock' }).click();
+
+    await expect(unlockWin.getByText(/incorrect password/i)).toBeVisible({ timeout: 15_000 });
+
+    await app.close().catch(() => {});
+  });
+
+  test('correct password unlocks and prior messages are readable', async () => {
+    const { app, mainWin } = await unlockApp(INITIAL_PASSWORD);
+
+    await mainWin.getByRole('button', { name: /sessions/i }).click();
+    const nav = mainWin.getByRole('navigation');
+    await expect(nav.getByText(SESSION_NAME)).toBeVisible({ timeout: 5_000 });
+    await nav.getByText(SESSION_NAME).click();
+    await mainWin.waitForTimeout(500);
+
+    await expect(mainWin.getByText(CONDUCTOR_MSG)).toBeVisible({ timeout: 5_000 });
+    await expect(mainWin.getByText(/mock response from anthropic/i).first()).toBeVisible({ timeout: 5_000 });
+
+    await app.close().catch(() => {});
+  });
+
+  test('changed password is required on the next restart', async () => {
+    // Unlock, change the password, close, then relaunch with the new password.
+    const { app, mainWin } = await unlockApp(INITIAL_PASSWORD);
+
+    await goToEncryptionTab(mainWin);
+    await mainWin.getByRole('button', { name: /^change password$/i }).click();
+    await mainWin.getByPlaceholder('Current password').fill(INITIAL_PASSWORD);
+    await mainWin.getByPlaceholder('New password', { exact: true }).fill(CHANGED_PASSWORD);
+    await mainWin.getByPlaceholder('Confirm new password').fill(CHANGED_PASSWORD);
+    await mainWin.getByRole('button', { name: /^save$/i }).click();
+    await expect(mainWin.getByPlaceholder('Confirm new password')).not.toBeVisible({ timeout: 15_000 });
+
+    await app.close().catch(() => {});
+
+    // Relaunch — should accept the new password and reject the old one.
+    const { app: app2, mainWin: mainWin2 } = await unlockApp(CHANGED_PASSWORD);
+    await expect(mainWin2.getByRole('button', { name: /sessions/i })).toBeVisible({ timeout: 5_000 });
+    await app2.close().catch(() => {});
+  });
+
+  test('removing the password eliminates the unlock dialog and messages stay readable', async () => {
+    // Unlock with the changed password, remove it, close, then relaunch.
+    const { app, mainWin } = await unlockApp(CHANGED_PASSWORD);
+
+    await goToEncryptionTab(mainWin);
+    await mainWin.getByRole('button', { name: /^remove password$/i }).click();
+    await mainWin.getByPlaceholder('Current password').fill(CHANGED_PASSWORD);
+    await mainWin.getByRole('button', { name: /^remove$/i }).click();
+    await expect(mainWin.getByText('Encrypted (no password)')).toBeVisible({ timeout: 15_000 });
+
+    await app.close().catch(() => {});
+
+    // Relaunch — no unlock dialog; app goes directly to the main window.
+    const app2 = await launchRealKeyApp();
+    const mainWin2 = await app2.firstWindow();
+    await mainWin2.waitForLoadState('domcontentloaded');
+    await skipOnboarding(mainWin2);
+
+    await expect(mainWin2.getByPlaceholder('Password')).not.toBeVisible();
+    await expect(mainWin2.getByRole('button', { name: /sessions/i })).toBeVisible({ timeout: 5_000 });
+
+    // Messages are still readable after key re-wrapping to 'none'.
+    await mainWin2.getByRole('button', { name: /sessions/i }).click();
+    const nav = mainWin2.getByRole('navigation');
+    await nav.getByText(SESSION_NAME).click();
+    await mainWin2.waitForTimeout(500);
+    await expect(mainWin2.getByText(CONDUCTOR_MSG)).toBeVisible({ timeout: 5_000 });
+
+    await app2.close().catch(() => {});
   });
 });

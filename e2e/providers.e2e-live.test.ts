@@ -205,8 +205,11 @@ async function expandSidebarAndAssertVoiceTypes(
   pause: () => Promise<void>,
   voices: Array<{ displayName: string; voiceType: 'api' | 'cli' }>,
 ): Promise<void> {
-  await win.getByRole('button', { name: /expand sidebar/i }).click();
-  await pause();
+  const expandBtn = win.getByRole('button', { name: /expand sidebar/i });
+  if (await expandBtn.isVisible()) {
+    await expandBtn.click();
+    await pause();
+  }
 
   for (const { displayName, voiceType } of voices) {
     const panel = win.locator(`[aria-label*="Voice: ${displayName}"]`);
@@ -283,6 +286,10 @@ async function startSession(
 
 // ── Test suite ─────────────────────────────────────────────────────────────────
 
+// Shared across the live-conversations and restart-persistence describes so the
+// restart test can reuse the same data directory (mirrors the openai-compatible pattern).
+let sharedDir: string;
+
 test.describe.serial('built-in providers', () => {
   let app: ElectronApplication;
   let win: Page;
@@ -290,7 +297,8 @@ test.describe.serial('built-in providers', () => {
   let longPause: () => Promise<void>;
 
   test.beforeAll(async () => {
-    app = await launchApp({ POLYPHON_TEST_USER_DATA: makeTempDir(), POLYPHON_SHOW_WINDOW: '1' });
+    sharedDir = makeTempDir();
+    app = await launchApp({ POLYPHON_TEST_USER_DATA: sharedDir, POLYPHON_SHOW_WINDOW: '1' });
     win = await app.firstWindow();
     await win.waitForLoadState('domcontentloaded');
     await skipOnboarding(win);
@@ -703,5 +711,57 @@ test.describe.serial('built-in providers', () => {
     test('maxRounds=3: exactly 3 response sets, 2 auto continuations fire', async () => {
       await runAutoRoundsTest(3, 'Live Auto 3R', 'Auto 3R Session', 'Anthropic Auto 3R', 'OpenAI Auto 3R');
     });
+  });
+});
+
+// ── Restart persistence ───────────────────────────────────────────────────────
+//
+// Deliberately depends on sharedDir populated by the live-conversations describe
+// above. If all provider tests were skipped, this test skips too.
+
+test.describe('restart persistence', () => {
+  test('session messages are readable after app restart', async () => {
+    const app = await launchApp({ POLYPHON_TEST_USER_DATA: sharedDir, POLYPHON_SHOW_WINDOW: '1' });
+    const win = await app.firstWindow();
+    await win.waitForLoadState('domcontentloaded');
+    await skipOnboarding(win);
+
+    const { pause, longPause } = makePause(win);
+    await pause();
+
+    await win.getByRole('button', { name: /sessions/i }).click();
+    await pause();
+
+    const nav = win.getByRole('navigation');
+
+    // These sessions are created by prior tests — any may have been skipped depending
+    // on which providers are available in the developer's environment.
+    const candidateSessions = [
+      { name: 'API Trio Session', message: 'Reply in one sentence and include the word "ensemble".' },
+      { name: 'CLI Trio Session', message: 'Reply in one sentence and include the word "subprocess".' },
+      { name: 'Mix Duo Session', message: 'Reply in one sentence and include the word "first".' },
+    ];
+
+    let found: { name: string; message: string } | null = null;
+    for (const candidate of candidateSessions) {
+      if (await nav.getByText(candidate.name).isVisible()) {
+        found = candidate;
+        break;
+      }
+    }
+
+    if (!found) {
+      test.skip(true, 'No live sessions were created — all provider tests were skipped');
+      await app.close().catch(() => {});
+      return;
+    }
+
+    await nav.getByText(found.name).click();
+    await pause();
+
+    await expect(win.getByText(found.message)).toBeVisible({ timeout: 5_000 });
+    await longPause();
+
+    await app.close().catch(() => {});
   });
 });
