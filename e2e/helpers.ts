@@ -124,15 +124,25 @@ export async function goToHome(window: Page): Promise<void> {
 /**
  * Dismiss the first-run onboarding modal by clicking "Skip for now".
  * Safe to call even if the modal does not appear (e.g. profile already set).
+ *
+ * Waits for the app to reach a stable post-load state before checking for the
+ * modal, to avoid a race where the profile IPC response arrives after the
+ * initial 5-second window and triggers the onboarding modal unexpectedly.
  */
 export async function skipOnboarding(window: Page): Promise<void> {
   const skipBtn = window.getByRole('button', { name: /skip for now/i });
-  try {
-    await skipBtn.waitFor({ state: 'visible', timeout: 5_000 });
+  const homeContent = window.getByRole('button', { name: /sessions/i });
+
+  // Wait for either the onboarding modal or the home content to appear —
+  // whichever comes first signals the profile has finished loading.
+  await Promise.race([
+    skipBtn.waitFor({ state: 'visible', timeout: 15_000 }),
+    homeContent.waitFor({ state: 'visible', timeout: 15_000 }),
+  ]).catch(() => {});
+
+  if (await skipBtn.isVisible()) {
     await skipBtn.click();
-    await skipBtn.waitFor({ state: 'hidden', timeout: 3_000 });
-  } catch {
-    // Modal did not appear — already completed or profile has a name set
+    await skipBtn.waitFor({ state: 'hidden', timeout: 5_000 });
   }
 }
 
