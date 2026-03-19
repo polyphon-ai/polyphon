@@ -195,6 +195,7 @@ export default function CompositionBuilder({
                   key={opt.value}
                   onClick={() => setContinuationPolicy(opt.value)}
                   aria-pressed={continuationPolicy === opt.value}
+                  aria-label={opt.title}
                   className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 transition-all text-left ${
                     continuationPolicy === opt.value
                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'

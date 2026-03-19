@@ -79,29 +79,12 @@ function CopilotLogo({ size, color, title }: { size: number; color?: string; tit
   );
 }
 
-function OpenAICompatLogo({ size, color, title }: { size: number; color?: string; title?: string }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={color ?? '#6366f1'}
-      role={title ? 'img' : undefined}
-      aria-label={title}
-      aria-hidden={title ? undefined : 'true'}
-    >
-      {title && <title>{title}</title>}
-      <path d="M20 3H4a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zm-1 4H5V5h14v2zm1 4H4a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1zm-1 4H5v-2h14v2zm1 4H4a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1zm-1 4H5v-2h14v2z" />
-    </svg>
-  );
-}
 
 const LOGOS: Record<string, React.FC<{ size: number; color?: string; title?: string }>> = {
   anthropic: AnthropicLogo,
   openai: OpenAILogo,
   gemini: GeminiLogo,
   copilot: CopilotLogo,
-  'openai-compat': OpenAICompatLogo,
 };
 
 export default function ProviderLogo({ provider, size = 20, color, fallbackInitial, title }: ProviderLogoProps): React.JSX.Element {

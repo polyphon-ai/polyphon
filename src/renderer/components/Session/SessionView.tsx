@@ -50,7 +50,7 @@ export default function SessionView({
   } = useSessionStore();
 
   const [ensemble, setEnsemble] = useState<VoiceDescriptor[]>([]);
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [voiceErrors, setVoiceErrors] = useState<Record<string, string>>({});
   const [noTargetHint, setNoTargetHint] = useState<string[] | null>(null);
   const [continuationNudge, setContinuationNudge] = useState<{

@@ -146,7 +146,7 @@ export default function MessageBubble({
         className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1"
         style={{ backgroundColor: `${borderColor}25` }}
       >
-        <ProviderLogo provider={voiceProvider ?? ''} size={18} color={borderColor} />
+        <ProviderLogo provider={voiceProvider ?? ''} size={18} color={borderColor} fallbackInitial={displayName.charAt(0).toUpperCase()} />
       </div>
 
       <div className="flex-1 max-w-2xl min-w-0">
