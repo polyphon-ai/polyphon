@@ -1,20 +1,6 @@
 items:
   # ── Active / upcoming ──────────────────────────────────────
 
-  - title: "Encryption at Rest"
-    description: "Your sessions, compositions, and settings are encrypted on disk. Your data is protected even if your device is compromised."
-    pricing: free
-    status: working-on
-    discussion:
-    feature_request:
-
-  - title: "YOLO Mode for CLI Voices"
-    description: "Per-voice checkboxes to enable non-interactive / auto-approve mode for CLI providers like Claude Code and Codex. Let them run without confirmation prompts when you trust the session."
-    pricing: free
-    status: working-on
-    discussion:
-    feature_request:
-
   - title: "Sync"
     description: "End-to-end encrypted sync of your sessions, compositions, and settings across all your devices. Your data stays private — we can't read it."
     pricing: paid
@@ -44,6 +30,18 @@ items:
     feature_request:
 
   # ── Released ───────────────────────────────────────────────
+
+  - title: "YOLO Mode for CLI Voices"
+    description: "Per-voice checkboxes to enable non-interactive / auto-approve mode for CLI providers like Claude Code and Codex. Let them run without confirmation prompts when you trust the session."
+    pricing: free
+    status: released
+    release_date: 2026-03-19
+
+  - title: "Encryption at Rest"
+    description: "Your sessions, compositions, and settings are encrypted on disk. Your data is protected even if your device is compromised."
+    pricing: free
+    status: released
+    release_date: 2026-03-19
 
   - title: "Tones & System Prompt Templates"
     description: "Custom tone presets and reusable system prompt templates for fine-grained control over each voice's personality and behavior."
