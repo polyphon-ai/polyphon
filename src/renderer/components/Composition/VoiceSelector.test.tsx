@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import VoiceSelector from './VoiceSelector';
 import { useSettingsStore } from '../../store/settingsStore';
-import type { ProviderConfig, CustomProviderWithStatus, ProviderStatus, UserProfile } from '../../../shared/types';
+import type { ProviderConfig, CustomProviderWithStatus, ProviderStatus, UserProfile, CompositionVoice } from '../../../shared/types';
 import type { ProviderConfigsByType } from '../../store/settingsStore';
 
 afterEach(cleanup);
@@ -408,6 +408,99 @@ describe('VoiceSelector', () => {
       )!;
       fireEvent.change(modelSelect, { target: { value: 'gpt-4o-mini' } });
       expect(modelSelect.value).toBe('gpt-4o-mini');
+    });
+  });
+
+  describe('duplicate name validation', () => {
+    function makeVoice(id: string, displayName: string): CompositionVoice {
+      return {
+        id,
+        compositionId: 'comp-1',
+        provider: 'anthropic',
+        displayName,
+        color: '#ec4899',
+        avatarIcon: 'anthropic',
+        order: 0,
+      };
+    }
+
+    beforeEach(() => {
+      useSettingsStore.setState({
+        providerConfigs: makeProviderConfigs([{ provider: 'openai', voiceType: 'api' }]),
+        providerStatuses: { openai: makeProviderStatus('openai', 'specific') },
+        cliTestStates: {},
+        customProviders: [],
+        tones: [],
+        systemPromptTemplates: [],
+        modelFetchStates: {},
+      });
+    });
+
+    it('shows error and does not call onSelect when adding a voice with a duplicate name', () => {
+      const onSelect = vi.fn();
+      render(<VoiceSelector onSelect={onSelect} voices={[makeVoice('v1', 'OpenAI')]} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Select openai provider/i }));
+      // Default display name for openai is "OpenAI" — same as existing voice
+      fireEvent.click(screen.getByRole('button', { name: /Add Voice/i }));
+
+      expect(onSelect).not.toHaveBeenCalled();
+      expect(screen.getByText(/A voice named "OpenAI" already exists/i)).toBeTruthy();
+    });
+
+    it('shows error for case-insensitive duplicate names', () => {
+      const onSelect = vi.fn();
+      render(<VoiceSelector onSelect={onSelect} voices={[makeVoice('v1', 'openai')]} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Select openai provider/i }));
+      // Default name is "OpenAI", existing is "openai" — case-insensitive match
+      fireEvent.click(screen.getByRole('button', { name: /Add Voice/i }));
+
+      expect(onSelect).not.toHaveBeenCalled();
+      expect(screen.getByText(/already exists/i)).toBeTruthy();
+    });
+
+    it('clears the error when the display name input is changed', () => {
+      const onSelect = vi.fn();
+      render(<VoiceSelector onSelect={onSelect} voices={[makeVoice('v1', 'OpenAI')]} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Select openai provider/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Add Voice/i }));
+      expect(screen.getByText(/already exists/i)).toBeTruthy();
+
+      const nameInput = screen.getByPlaceholderText('Display name') as HTMLInputElement;
+      fireEvent.change(nameInput, { target: { value: 'GPT-4o' } });
+      expect(screen.queryByText(/already exists/i)).toBeNull();
+    });
+
+    it('succeeds when the voice name is unique', () => {
+      const onSelect = vi.fn();
+      render(<VoiceSelector onSelect={onSelect} voices={[makeVoice('v1', 'Alice')]} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Select openai provider/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Add Voice/i }));
+
+      // "OpenAI" is not "Alice", so no error and onSelect is called
+      expect(onSelect).toHaveBeenCalledOnce();
+      expect(screen.queryByText(/already exists/i)).toBeNull();
+    });
+
+    it('shows error for duplicate custom provider name', () => {
+      const cp = makeCustomProvider({ id: 'cp-1', name: 'Ollama', slug: 'ollama' });
+      useSettingsStore.setState({
+        providerConfigs: {},
+        customProviders: [cp],
+        tones: [],
+        systemPromptTemplates: [],
+      });
+      const onSelect = vi.fn();
+      render(<VoiceSelector onSelect={onSelect} voices={[makeVoice('v1', 'Ollama')]} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Select Ollama provider/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Add Voice/i }));
+
+      expect(onSelect).not.toHaveBeenCalled();
+      expect(screen.getByText(/A voice named "Ollama" already exists/i)).toBeTruthy();
     });
   });
 

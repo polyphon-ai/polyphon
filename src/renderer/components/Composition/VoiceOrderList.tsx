@@ -37,6 +37,7 @@ function SortableVoiceRow({
   onRemove,
   onSave,
   excludedColors,
+  existingNames,
 }: {
   voice: CompositionVoice;
   index: number;
@@ -45,6 +46,7 @@ function SortableVoiceRow({
   onRemove: () => void;
   onSave: (updated: CompositionVoice) => void;
   excludedColors: Set<string>;
+  existingNames: Set<string>;
 }) {
   const { tones, systemPromptTemplates, modelFetchStates, customProviderModelFetchStates, providerConfigs } = useSettingsStore();
 
@@ -65,6 +67,7 @@ function SortableVoiceRow({
   };
 
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [nameError, setNameError] = useState('');
   const [displayName, setDisplayName] = useState(voice.displayName);
   const [color, setColor] = useState(voice.color);
   const [model, setModel] = useState(voice.model ?? '');
@@ -114,6 +117,11 @@ function SortableVoiceRow({
   })();
 
   function handleSave() {
+    const resolvedName = displayName.trim() || voice.displayName;
+    if (existingNames.has(resolvedName.toLowerCase())) {
+      setNameError(`A voice named "${resolvedName}" already exists in this composition.`);
+      return;
+    }
     const switchingToCli = voiceType === 'cli';
     onSave({
       ...voice,
@@ -226,9 +234,12 @@ function SortableVoiceRow({
             <input
               type="text"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={(e) => { setDisplayName(e.target.value); setNameError(''); }}
+              className={`w-full bg-white dark:bg-gray-800 border rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${nameError ? 'border-red-400 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'}`}
             />
+            {nameError && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{nameError}</p>
+            )}
           </div>
 
           {/* Color */}
@@ -453,11 +464,13 @@ export default function VoiceOrderList({
       >
         <ul aria-label="Voice order list">
           {voices.map((voice, index) => {
+            const otherVoices = voices.filter((v) => v.id !== voice.id);
             // Exclude all other voices' colors + conductor color (but not this voice's own color)
             const excludedColors = new Set<string>([
               ...(userProfile.conductorColor ? [userProfile.conductorColor] : []),
-              ...voices.filter((v) => v.id !== voice.id).map((v) => v.color),
+              ...otherVoices.map((v) => v.color),
             ]);
+            const existingNames = new Set(otherVoices.map((v) => v.displayName.toLowerCase()));
             return (
               <li key={voice.id}>
                 <SortableVoiceRow
@@ -468,6 +481,7 @@ export default function VoiceOrderList({
                   onRemove={() => onRemove(voice.id)}
                   onSave={onUpdate}
                   excludedColors={excludedColors}
+                  existingNames={existingNames}
                 />
               </li>
             );
