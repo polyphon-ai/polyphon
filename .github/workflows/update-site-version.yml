@@ -1,0 +1,66 @@
+name: Update Site Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "App version (semver, e.g. 0.2.0 or 0.2.0-alpha.5)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  update-and-deploy:
+    name: Update downloadVersion and Deploy Site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update downloadVersion in hugo.yaml
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          # Strip leading 'v' if present
+          VERSION="${VERSION#v}"
+          sed -i "s/downloadVersion: .*/downloadVersion: \"${VERSION}\"/" site/hugo.yaml
+
+      - name: Create release blog post
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          VERSION="${VERSION#v}"
+          DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          SLUG="polyphon-v${VERSION}-released"
+          POST_DIR="site/content/blog/${SLUG}"
+          mkdir -p "$POST_DIR"
+          cat > "$POST_DIR/index.md" <<EOF
+          ---
+          title: "Polyphon v${VERSION} Released"
+          description: "Polyphon v${VERSION} is now available for download."
+          date: "${DATE}"
+          draft: false
+          tags: ["release", "announcement"]
+          categories: ["Announcements"]
+          ---
+
+          Polyphon v${VERSION} is now available.
+
+          [Download the latest release](https://polyphon.ai/#download) and see what's new.
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add site/hugo.yaml site/content/blog/
+          git diff --cached --quiet || git commit -m "chore(release): update site to v${{ github.event.inputs.version }}"
+          git push
+
+      - name: Trigger site deploy
+        run: gh workflow run deploy-site.yml --ref main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
