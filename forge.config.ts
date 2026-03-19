@@ -12,16 +12,24 @@ const config: ForgeConfig = {
     appBundleId: 'ai.polyphon.app',
     appCategoryType: 'public.app-category.productivity',
     darwinDarkModeSupport: true,
-    // Uncomment and configure when you have an Apple Developer account:
-    // osxSign: {
-    //   identity: 'Developer ID Application: Your Name (TEAMID)',
-    // },
-    // osxNotarize: {
-    //   tool: 'notarytool',
-    //   appleId: process.env.APPLE_ID,
-    //   appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD,
-    //   teamId: process.env.APPLE_TEAM_ID,
-    // },
+    // Signing and notarization — active when APPLE_SIGNING_IDENTITY is set (CI only).
+    // Local builds remain unsigned. Never use safeStorage: it requires a persistent
+    // signed keychain entry and breaks when the signing identity changes.
+    ...(process.env.APPLE_SIGNING_IDENTITY && {
+      osxSign: {
+        identity: process.env.APPLE_SIGNING_IDENTITY,
+        hardenedRuntime: true,
+        entitlements: 'entitlements.plist',
+        entitlementsInherit: 'entitlements.inherit.plist',
+        gatekeeperAssess: false,
+      },
+      osxNotarize: {
+        tool: 'notarytool',
+        appleId: process.env.APPLE_ID!,
+        appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD!,
+        teamId: process.env.APPLE_TEAM_ID!,
+      },
+    }),
   },
   rebuildConfig: {},
   makers: [

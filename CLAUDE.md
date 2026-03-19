@@ -28,12 +28,20 @@ Avoid casual synonyms (agent, bot, model) in domain-facing code.
 
 ## Code Signing Policy
 
-Polyphon is **not enrolled in the Apple Developer Program**. The app is unsigned and
-unnotarized on macOS. Do not use or recommend APIs, features, or patterns that require a
-signed or notarized app (e.g. `safeStorage`, Hardened Runtime entitlements, App Sandbox).
+Polyphon is signed and notarized with a **Developer ID Application** certificate via
+GitHub Actions. Release builds are signed with Hardened Runtime enabled; local builds
+remain unsigned.
 
-This is a permanent constraint, not a temporary alpha limitation. Any feature that would
-only work correctly in a signed context must be avoided or designed around.
+**Constraints that remain permanent:**
+- Do **not** use `safeStorage` — it requires a persistent signed keychain entry and
+  breaks when the signing identity changes or on a new machine.
+- Do **not** use the **App Sandbox** — it would block CLI voice subprocess spawning
+  (`claude`, `codex`, `copilot`) and is not compatible with the local-first model.
+- Do **not** add `'unsafe-inline'` or `'unsafe-eval'` to the production CSP — signing
+  does not change this requirement.
+
+Signing is gated on the `APPLE_SIGNING_IDENTITY` environment variable so development
+builds are unaffected. See `forge.config.ts` and `.github/workflows/release.yml`.
 
 ---
 
