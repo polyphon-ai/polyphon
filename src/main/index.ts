@@ -3,7 +3,6 @@ import path from 'path';
 import { registerIpcHandlers } from './ipc';
 import type { EncryptionContext } from './ipc/settingsHandlers';
 import { getDb, closeDb } from './db';
-import { loadShellEnv } from './utils/env';
 import { logger } from './utils/logger';
 import { VoiceManager } from './managers/VoiceManager';
 import { SessionManager } from './managers/SessionManager';
@@ -73,9 +72,6 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(async () => {
-  // Load shell-exported env vars before anything else so API keys set in
-  // ~/.zshrc, ~/.bashrc, etc. are visible regardless of how the app launched.
-  loadShellEnv();
   logger.info('Polyphon starting', { version: app.getVersion(), platform: process.platform });
 
   // Install CSP once, before any window is created, so the policy is in place
@@ -102,11 +98,7 @@ app.whenReady().then(async () => {
   initFieldEncryption(key);
 
   const db = getDb();
-  const voiceManager = new VoiceManager();
-  voiceManager.loadCustomProviders(db);
-  voiceManager.loadProviderConfigs(db);
-  voiceManager.loadTones(db);
-  voiceManager.loadSystemPromptTemplates(db);
+  const voiceManager = new VoiceManager(db);
   const sessionManager = new SessionManager(voiceManager);
 
   const encCtx: EncryptionContext = { userDataPath, dbKey: key, e2e };

@@ -41,6 +41,22 @@ export class VoiceManager {
   // id → SystemPromptTemplate
   private systemPromptTemplatesById: Map<string, SystemPromptTemplate> = new Map();
 
+  private _db: DatabaseSync | null = null;
+  private _dataLoaded = false;
+
+  constructor(db?: DatabaseSync) {
+    if (db) this._db = db;
+  }
+
+  private ensureLoaded(): void {
+    if (this._dataLoaded || !this._db) return;
+    this.loadCustomProviders(this._db);
+    this.loadProviderConfigs(this._db);
+    this.loadTones(this._db);
+    this.loadSystemPromptTemplates(this._db);
+    this._dataLoaded = true;
+  }
+
   loadCustomProviders(db: DatabaseSync): void {
     const providers = listCustomProviders(db);
     this.customProviders = new Map(providers.map((p) => [p.id, p]));
@@ -64,6 +80,7 @@ export class VoiceManager {
   }
 
   createVoice(compositionVoice: CompositionVoice): Voice {
+    this.ensureLoaded();
     // Resolve effective system prompt: template takes precedence over inline snapshot
     const effectiveSystemPrompt = compositionVoice.systemPromptTemplateId
       ? (this.systemPromptTemplatesById.get(compositionVoice.systemPromptTemplateId)?.content ?? compositionVoice.systemPrompt)
@@ -132,6 +149,7 @@ export class VoiceManager {
 
   // Builds the injected system prompt that makes a voice aware of the full ensemble
   buildEnsembleSystemPrompt(voice: Voice, ensemble: Voice[], mode: 'conductor' | 'broadcast', profile?: UserProfile): string {
+    this.ensureLoaded();
     const others = ensemble.filter((v) => v.id !== voice.id);
     const roster = others
       .map((v) => `- ${v.name} (${v.provider})`)
