@@ -78,18 +78,29 @@ git commit -m "chore(release): bump version to <new-version>
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ```
 
-### 9. Create an annotated tag
+### 9. Pull remote changes with rebase
+
+```bash
+git pull --rebase
+```
+
+This picks up any commits pushed to the remote since the version bump (e.g. automated
+site-version updates from a previous CI run). If the rebase fails, stop and tell the
+user to resolve conflicts before continuing.
+
+### 10. Create an annotated tag
 
 ```bash
 git tag -a <new-version> -m "Release <new-version>"
 ```
 
-### 10. Push branch and tag
+### 11. Push branch and tag
 
 ```bash
 git push
 git push origin <new-version>
 ```
+
 
 After pushing, tell the user the tag has been pushed and that the GitHub Actions
 release workflow will now build and publish the macOS arm64 DMG installer.
