@@ -3,7 +3,7 @@ import type { ApiKeyStatus } from '../../shared/types';
 import { logger } from './logger';
 
 // Normalizes a provider name to the env-var prefix convention.
-// "anthropic" → "ANTHROPIC", "claude-code" → "CLAUDE_CODE"
+// "anthropic" → "ANTHROPIC", "openai-compat" → "OPENAI_COMPAT"
 function toEnvPrefix(provider: string): string {
   return provider.toUpperCase().replace(/-/g, '_');
 }

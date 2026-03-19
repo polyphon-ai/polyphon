@@ -7,7 +7,7 @@ export interface Voice {
   readonly id: string;
   readonly name: string;
   readonly type: 'api' | 'cli';
-  readonly provider: string; // e.g. "anthropic", "openai", "claude-code"
+  readonly provider: string; // e.g. "anthropic", "openai", "copilot"
   readonly color: string;
   readonly avatarIcon: string;
   readonly toneOverride?: string; // tone ID (preset key or UUID); overrides conductor default_tone when set

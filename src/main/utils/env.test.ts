@@ -64,8 +64,8 @@ describe('resolveApiKey', () => {
   });
 
   it('handles hyphenated provider names (normalises to SNAKE_CASE)', () => {
-    vi.stubEnv('POLYPHON_CLAUDE_CODE_API_KEY', 'cli-key');
-    expect(resolveApiKey('claude-code')).toBe('cli-key');
+    vi.stubEnv('POLYPHON_OPENAI_COMPAT_API_KEY', 'compat-key');
+    expect(resolveApiKey('openai-compat')).toBe('compat-key');
   });
 });
 

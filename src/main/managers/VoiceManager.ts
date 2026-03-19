@@ -5,7 +5,6 @@ import { PROVIDER_METADATA, PROVIDER_NAMES } from '../../shared/constants';
 import { anthropicProvider } from '../voices/providers/anthropic';
 import { openaiProvider } from '../voices/providers/openai';
 import { geminiProvider } from '../voices/providers/gemini';
-import { claudeCodeProvider } from '../voices/providers/claude-code';
 import { copilotProvider } from '../voices/providers/copilot';
 import { OpenAICompatVoice } from '../voices/providers/openai-compat';
 import { MockVoice } from '../voices/MockVoice';
@@ -20,7 +19,6 @@ const PROVIDER_REGISTRY: VoiceProviderRegistration[] = [
   anthropicProvider,
   openaiProvider,
   geminiProvider,
-  claudeCodeProvider,
   copilotProvider,
 ];
 
