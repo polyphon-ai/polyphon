@@ -98,7 +98,7 @@ db.exec('PRAGMA journal_mode = WAL')
 ### Schema (SCHEMA_VERSION = 2)
 
 Tables: `schema_version`, `compositions`, `composition_voices`, `sessions`, `messages`,
-`provider_configs`, `custom_providers`, `tones`, `system_prompt_templates`, `user_profile`, `build_expiry`
+`provider_configs`, `custom_providers`, `tones`, `system_prompt_templates`, `user_profile`
 
 Key constraints:
 - `messages.role` CHECK: `('conductor', 'voice', 'system')`

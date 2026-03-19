@@ -13,3 +13,4 @@ sprint_id	title	status	created_at	updated_at
 012	Linux Sandboxed Packaging — Replace --no-sandbox AppImage Wrapper	completed	2026-03-17T22:51:51Z	2026-03-17T23:15:09Z
 013	Application Logging System	completed	2026-03-18T17:35:42Z	2026-03-18T18:05:06Z
 014	macOS arm64 Cleanup — Remove Cross-Platform Residue	completed	2026-03-19T03:38:59Z	2026-03-19T04:00:06Z
+015	Dead Code Audit and Cleanup	completed	2026-03-19T16:04:32Z	2026-03-19T16:33:39Z
