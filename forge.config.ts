@@ -6,7 +6,6 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 
 const config: ForgeConfig = {
   packagerConfig: {
-    name: 'Polyphon',
     asar: true,
     icon: 'assets/icons/icon',
     executableName: 'polyphon',
