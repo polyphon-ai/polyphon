@@ -97,13 +97,22 @@ test.describe('Custom Providers', () => {
     await expect(window.getByRole('button', { name: /add custom provider/i })).toBeVisible();
   });
 
-  test('creates a custom OpenAI-compatible provider', async () => {
+  test('creates and edits a custom OpenAI-compatible provider', async () => {
     await window.getByRole('button', { name: /add custom provider/i }).click();
     await window.getByPlaceholder('Ollama', { exact: true }).fill('Local Ollama');
     await window.getByPlaceholder('http://localhost:11434/v1').fill('http://localhost:11434/v1');
     await window.getByPlaceholder('llama3.2').fill('llama3.2');
     await window.getByRole('button', { name: /^save$/i }).click();
     await expect(window.getByText('Local Ollama')).toBeVisible({ timeout: 5000 });
+
+    const card = window.locator('[class*="rounded-xl"]').filter({ hasText: 'Local Ollama' }).first();
+    await card.getByRole('button', { name: /Edit Local Ollama/i }).click();
+    const nameInput = window.getByPlaceholder('Ollama', { exact: true });
+    await nameInput.clear();
+    await nameInput.fill('Renamed Ollama');
+    await window.getByRole('button', { name: /^save$/i }).click();
+    await expect(window.getByText('Renamed Ollama')).toBeVisible({ timeout: 5000 });
+    await expect(window.getByText('Local Ollama')).not.toBeVisible();
   });
 
   test('validation requires name to save', async () => {
@@ -131,17 +140,6 @@ test.describe('Custom Providers', () => {
     await window.getByRole('button', { name: /^save$/i }).click();
     await expect(window.getByText('Default model is required')).toBeVisible();
     await window.getByRole('button', { name: /^cancel$/i }).click();
-  });
-
-  test('edits an existing custom provider name', async () => {
-    const card = window.locator('[class*="rounded-xl"]').filter({ hasText: 'Local Ollama' }).first();
-    await card.getByRole('button', { name: /Edit Local Ollama/i }).click();
-    const nameInput = window.getByPlaceholder('Ollama', { exact: true });
-    await nameInput.clear();
-    await nameInput.fill('Renamed Ollama');
-    await window.getByRole('button', { name: /^save$/i }).click();
-    await expect(window.getByText('Renamed Ollama')).toBeVisible({ timeout: 5000 });
-    await expect(window.getByText('Local Ollama')).not.toBeVisible();
   });
 
   test('deletes a custom provider after confirmation', async () => {
