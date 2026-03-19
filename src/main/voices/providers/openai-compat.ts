@@ -1,4 +1,3 @@
-import OpenAI from 'openai';
 import type { Message } from '../../../shared/types';
 import { APIVoice } from '../APIVoice';
 import type { VoiceConfig } from '../Voice';
@@ -53,6 +52,7 @@ export class OpenAICompatVoice extends APIVoice {
   }
 
   async *send(_message: Message, context: Message[]): AsyncIterable<string> {
+    const { default: OpenAI } = await import('openai');
     const apiKey = this.apiKeyEnvVar
       ? (process.env[this.apiKeyEnvVar]?.trim() ?? 'no-key')
       : 'no-key';
