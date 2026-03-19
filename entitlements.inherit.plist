@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Required for V8 JIT compilation in helper / renderer processes -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <!-- Required for Node.js executable memory allocation in child processes -->
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <!-- Inherit parent entitlements for Electron helper processes -->
+  <key>com.apple.security.inherit</key>
+  <true/>
+</dict>
+</plist>
