@@ -89,7 +89,7 @@ describe('compositions queries', () => {
     const comp = makeComposition({
       voices: [
         makeVoice({
-          provider: 'claude-code',
+          provider: 'anthropic',
           cliCommand: 'claude',
           cliArgs: ['--verbose', '--no-stream'],
           model: undefined,

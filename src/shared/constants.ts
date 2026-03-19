@@ -129,7 +129,6 @@ export const PROVIDER_NAMES = {
   ANTHROPIC: 'anthropic',
   OPENAI: 'openai',
   GEMINI: 'gemini',
-  CLAUDE_CODE: 'claude-code',
   GEMINI_CLI: 'gemini-cli',
   COPILOT: 'copilot',
   OPENAI_COMPAT: 'openai-compat',

@@ -40,7 +40,7 @@ export interface Voice {
   id: string;
   name: string;
   type: 'api' | 'cli';
-  provider: string; // e.g. "anthropic", "openai", "claude-code"
+  provider: string; // e.g. "anthropic", "openai", "copilot"
   color: string; // assigned per session for UI differentiation
   avatarIcon: string; // icon identifier for the UI
 

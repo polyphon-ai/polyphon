@@ -32,7 +32,7 @@ const ensemble: VoiceDescriptor[] = [
     id: 'v3',
     name: 'Charlie',
     type: 'cli',
-    provider: 'claude-code',
+    provider: 'copilot',
     color: '#6366f1',
     avatarIcon: 'C',
     side: 'left',
