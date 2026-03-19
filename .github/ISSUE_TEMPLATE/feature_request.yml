@@ -1,0 +1,56 @@
+name: Feature Request
+description: Suggest a new feature or improvement for Polyphon
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Please describe your idea as clearly as you can.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Motivation
+      description: What problem does this solve, or what goal does it support? Why does this matter?
+      placeholder: I'm trying to... but currently...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the feature or change you'd like to see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any other approaches? Why do you prefer the proposed solution?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of Polyphon does this relate to?
+      options:
+        - Voice / agent integration
+        - Composition management
+        - Session / conversation UI
+        - Provider plugin system
+        - Documentation
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Mockups, examples from other tools, or anything else that helps illustrate your idea.
+    validations:
+      required: false

@@ -1,0 +1,43 @@
+services:
+  # ── Full CI gate: lint + unit + integration (mirrors the "test" job) ──────────
+  ci:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: ci
+    command: sh -c "npm run lint && npm run test:unit && npm run test:integration"
+    environment:
+      - CI=true
+
+  # ── Individual test stages ─────────────────────────────────────────────────────
+  unit:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: ci
+    command: npm run test:unit
+    environment:
+      - CI=true
+
+  integration:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: ci
+    command: npm run test:integration
+    environment:
+      - CI=true
+
+  # ── E2E: Playwright + Electron under Xvfb ─────────────────────────────────────
+  # xvfb-run starts a virtual X server and sets DISPLAY before launching Playwright.
+  # --no-sandbox is already passed in e2e/helpers.ts so no Docker privileges needed.
+  e2e:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: e2e
+    command: >
+      xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24"
+      npx playwright test
+    environment:
+      - CI=true
