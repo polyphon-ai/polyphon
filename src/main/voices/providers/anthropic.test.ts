@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { EventEmitter } from 'events';
 
 const mockMessagesStream = vi.fn();
 
@@ -14,6 +15,12 @@ vi.mock('../../utils/env', () => ({
   resolveApiKey: vi.fn(),
 }));
 
+vi.mock('child_process', () => ({
+  spawn: vi.fn(),
+  spawnSync: vi.fn(),
+}));
+
+import { spawn } from 'child_process';
 import { resolveApiKey } from '../../utils/env';
 import { anthropicProvider } from './anthropic';
 import type { Message } from '../../../shared/types';
@@ -237,5 +244,83 @@ describe('AnthropicCLIVoice constructor validation (base-class guard via Anthrop
 
   it('accepts valid cliCommand and creates AnthropicCLIVoice', () => {
     expect(() => anthropicProvider.create(makeConfig({ cliCommand: 'claude' }))).not.toThrow();
+  });
+});
+
+describe('AnthropicCLIVoice.send()', () => {
+  const mockSpawn = spawn as ReturnType<typeof vi.fn>;
+
+  function makeMockProcess() {
+    const stdout = new EventEmitter() as EventEmitter & { [Symbol.asyncIterator](): AsyncIterator<Buffer> };
+    const stdin = { write: vi.fn(), end: vi.fn() };
+    const proc = new EventEmitter() as EventEmitter & {
+      stdin: typeof stdin;
+      stdout: typeof stdout;
+      kill: ReturnType<typeof vi.fn>;
+    };
+    proc.stdin = stdin;
+    proc.stdout = stdout;
+    proc.kill = vi.fn();
+
+    const chunks: Buffer[] = [];
+    let resolveNext: ((val: IteratorResult<Buffer>) => void) | null = null;
+    let done = false;
+
+    stdout.on('data', (chunk: Buffer) => {
+      if (resolveNext) {
+        const r = resolveNext;
+        resolveNext = null;
+        r({ value: chunk, done: false });
+      } else {
+        chunks.push(chunk);
+      }
+    });
+
+    stdout[Symbol.asyncIterator] = function () {
+      return {
+        next(): Promise<IteratorResult<Buffer>> {
+          if (chunks.length > 0) {
+            return Promise.resolve({ value: chunks.shift()!, done: false });
+          }
+          if (done) {
+            return Promise.resolve({ value: undefined as unknown as Buffer, done: true });
+          }
+          return new Promise((resolve) => { resolveNext = resolve; });
+        },
+        return(): Promise<IteratorResult<Buffer>> {
+          done = true;
+          return Promise.resolve({ value: undefined as unknown as Buffer, done: true });
+        },
+      };
+    };
+
+    function emitEnd() {
+      done = true;
+      if (resolveNext) {
+        const r = resolveNext;
+        resolveNext = null;
+        r({ value: undefined as unknown as Buffer, done: true });
+      }
+    }
+
+    return { proc, emitEnd };
+  }
+
+  it('passes cliArgs to spawn', async () => {
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = anthropicProvider.create(makeConfig({ cliCommand: 'claude', cliArgs: ['--model', 'claude-opus-4-6'] }));
+
+    const sendPromise = (async () => {
+      for await (const _ of voice.send(makeMsg(), [])) { /* drain */ }
+    })();
+
+    emitEnd();
+    await sendPromise;
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).toContain('--model');
+    expect(spawnArgs).toContain('claude-opus-4-6');
   });
 });

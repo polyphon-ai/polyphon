@@ -366,6 +366,24 @@ describe('CodexVoice.send()', () => {
 
     expect(proc.kill).toHaveBeenCalled();
   });
+
+  it('passes cliArgs to spawn', async () => {
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = openaiProvider.create(makeConfig({ cliCommand: 'codex', cliArgs: ['--model', 'o4-mini'] }));
+
+    const sendPromise = (async () => {
+      for await (const _ of voice.send(makeMsg(), [])) { /* drain */ }
+    })();
+
+    emitEnd();
+    await sendPromise;
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).toContain('--model');
+    expect(spawnArgs).toContain('o4-mini');
+  });
 });
 
 describe('CodexVoice constructor validation (base-class guard via CodexVoice)', () => {

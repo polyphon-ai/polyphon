@@ -220,6 +220,24 @@ describe('CopilotVoice.send()', () => {
     expect(written).toContain('Be concise.');
   });
 
+  it('passes cliArgs to spawn', async () => {
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = copilotProvider.create(makeConfig({ cliArgs: ['--extensions', 'python'] }));
+
+    const sendPromise = (async () => {
+      for await (const _ of voice.send(makeMsg(), [])) { /* drain */ }
+    })();
+
+    emitEnd();
+    await sendPromise;
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).toContain('--extensions');
+    expect(spawnArgs).toContain('python');
+  });
+
   it('abort() kills the active process', async () => {
     const { proc, emitEnd } = makeMockProcess();
     mockSpawn.mockReturnValue(proc);
