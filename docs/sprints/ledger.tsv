@@ -1,0 +1,15 @@
+sprint_id	title	status	created_at	updated_at
+001	Docs Overhaul — Full Rewrite with Accurate Screenshots and Videos	completed	2026-03-15T01:03:41Z	2026-03-15T01:25:00Z
+002	Walkthrough Video — Deep Settings Tour + Richer Compositions and Sessions	completed	2026-03-15T23:51:46Z	2026-03-16T00:06:18Z
+003	In-App Update Notifications	completed	2026-03-16T00:00:49Z	2026-03-16T00:15:56Z
+004	At-Rest Database Encryption	completed	2026-03-17T18:36:09Z	2026-03-17T19:07:07Z
+005	IPC Input Validation	completed	2026-03-17T20:07:10Z	2026-03-17T20:42:02Z
+006	Renderer Content Security Policy	completed	2026-03-17T19:13:34Z	2026-03-17T19:53:37Z
+007	Encryption Hardening — Branded Types, Manifest, and CI Gate	completed	2026-03-17T19:36:48Z	2026-03-17T20:01:43Z
+008	CLI Command Hardening	completed	2026-03-17T20:47:01Z	2026-03-17T20:51:41Z
+009	GitHub API Response Hardening	completed	2026-03-17T21:05:39Z	2026-03-17T21:09:19Z
+010	loadShellEnv() Security Hardening	completed	2026-03-17T21:11:50Z	2026-03-17T21:13:55Z
+011	Conductor Avatar Upload Hardening	completed	2026-03-17T21:10:43Z	2026-03-17T21:29:39Z
+012	Linux Sandboxed Packaging — Replace --no-sandbox AppImage Wrapper	completed	2026-03-17T22:51:51Z	2026-03-17T23:15:09Z
+013	Application Logging System	completed	2026-03-18T17:35:42Z	2026-03-18T18:05:06Z
+014	macOS arm64 Cleanup — Remove Cross-Platform Residue	completed	2026-03-19T03:38:59Z	2026-03-19T04:00:06Z
