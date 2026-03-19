@@ -1,0 +1,149 @@
+{{ with .Site.Params.gaId }}
+<script>document.documentElement.dataset.gaId = "{{ . }}";</script>
+{{ end }}
+
+<div id="consent-banner" class="consent-banner" role="dialog" aria-live="polite" aria-label="Cookie preferences" style="display:none;">
+  <div class="consent-content">
+    <div class="consent-text">
+      <p class="consent-title">Cookie preferences</p>
+      <p class="consent-body">We use Google Analytics to understand how visitors use this site. No personal data is sold. Your choice is stored for 31 days.</p>
+    </div>
+    <div class="consent-actions">
+      <button class="btn-primary consent-allow" id="consent-allow" type="button">Allow</button>
+      <button class="btn-secondary consent-deny" id="consent-deny" type="button">Deny</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.consent-banner {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  width: calc(100% - 3rem);
+  max-width: 600px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 1.25rem 1.5rem;
+  font-family: 'Geist Sans', system-ui, sans-serif;
+}
+
+.consent-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.consent-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.consent-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.consent-body {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.consent-actions {
+  display: flex;
+  gap: 0.625rem;
+  flex-shrink: 0;
+}
+
+.consent-allow,
+.consent-deny {
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+}
+
+@media (max-width: 480px) {
+  .consent-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .consent-actions {
+    width: 100%;
+  }
+  .consent-allow,
+  .consent-deny {
+    flex: 1;
+    justify-content: center;
+  }
+}
+</style>
+
+<script>
+(function() {
+  var COOKIE_NAME = 'polyphon_consent';
+  var COOKIE_DAYS = 31;
+
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  function setCookie(name, value, days) {
+    var expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+  }
+
+  function loadGA() {
+    var gaId = document.documentElement.dataset.gaId;
+    if (!gaId) return;
+    var hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '') return;
+    var s = document.createElement('script');
+    s.src = '/js/ga.js';
+    document.head.appendChild(s);
+  }
+
+  var consent = getCookie(COOKIE_NAME);
+
+  if (consent === 'granted') {
+    loadGA();
+    return;
+  }
+
+  if (consent === 'denied') {
+    return;
+  }
+
+  var banner = document.getElementById('consent-banner');
+  if (!banner) return;
+  banner.style.display = '';
+
+  document.getElementById('consent-allow').addEventListener('click', function() {
+    setCookie(COOKIE_NAME, 'granted', COOKIE_DAYS);
+    banner.style.display = 'none';
+    loadGA();
+  });
+
+  document.getElementById('consent-deny').addEventListener('click', function() {
+    setCookie(COOKIE_NAME, 'denied', COOKIE_DAYS);
+    banner.style.display = 'none';
+  });
+
+  var manageLinks = document.querySelectorAll('.manage-consent');
+  manageLinks.forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      banner.style.display = '';
+    });
+  });
+})();
+</script>

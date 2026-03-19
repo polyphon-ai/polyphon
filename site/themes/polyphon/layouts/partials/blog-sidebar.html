@@ -1,0 +1,14 @@
+<nav class="blog-sidebar-nav" aria-label="Blog navigation">
+  {{ if .Site.Taxonomies.categories }}
+  <p class="blog-sidebar-label">Categories</p>
+  {{ range .Site.Taxonomies.categories.ByCount }}
+  <a href="{{ .Page.RelPermalink }}">{{ .Page.Title }}<span class="blog-sidebar-count">{{ .Count }}</span></a>
+  {{ end }}
+  {{ end }}
+  {{ if .Site.Taxonomies.tags }}
+  <p class="blog-sidebar-label{{ if .Site.Taxonomies.categories }} blog-sidebar-label--gap{{ end }}">Tags</p>
+  {{ range .Site.Taxonomies.tags.ByCount }}
+  <a href="{{ .Page.RelPermalink }}">{{ .Page.Title }}<span class="blog-sidebar-count">{{ .Count }}</span></a>
+  {{ end }}
+  {{ end }}
+</nav>

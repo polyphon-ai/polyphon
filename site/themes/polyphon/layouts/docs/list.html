@@ -1,0 +1,25 @@
+{{ define "main" }}
+{{ with .Params.redirect_to }}
+<meta http-equiv="refresh" content="0; url={{ . }}">
+<script>window.location.replace("{{ . }}");</script>
+<noscript><p>Redirecting to <a href="{{ . }}">Getting Started</a>…</p></noscript>
+{{ else }}
+<div class="container" style="padding-top:3rem;padding-bottom:3rem;">
+  <div class="docs-index-header">
+    <h1>Documentation</h1>
+    <p>Everything you need to install, configure, and use Polyphon.</p>
+  </div>
+  <div class="docs-cards-grid">
+    {{ range .Pages.ByWeight }}
+    <a class="card-base doc-card" href="{{ .RelPermalink }}">
+      <h3>
+        {{ .Title }}
+        {{ partial "icon.html" (dict "name" "chevron-right" "size" 14) }}
+      </h3>
+      {{ with .Description }}<p>{{ . }}</p>{{ end }}
+    </a>
+    {{ end }}
+  </div>
+</div>
+{{ end }}
+{{ end }}

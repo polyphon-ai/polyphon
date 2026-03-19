@@ -1,0 +1,88 @@
+items:
+  # ── Active / upcoming ──────────────────────────────────────
+
+  - title: "Encryption at Rest"
+    description: "Your sessions, compositions, and settings are encrypted on disk. Your data is protected even if your device is compromised."
+    pricing: free
+    status: working-on
+    discussion:
+    feature_request:
+
+  - title: "YOLO Mode for CLI Voices"
+    description: "Per-voice checkboxes to enable non-interactive / auto-approve mode for CLI providers like Claude Code and Codex. Let them run without confirmation prompts when you trust the session."
+    pricing: free
+    status: working-on
+    discussion:
+    feature_request:
+
+  - title: "Sync"
+    description: "End-to-end encrypted sync of your sessions, compositions, and settings across all your devices. Your data stays private — we can't read it."
+    pricing: paid
+    status: planned
+    discussion: https://github.com/polyphon-ai/releases/discussions/5
+    feature_request:
+
+  - title: "Session Export"
+    description: "Export full conversation transcripts in multiple formats — Markdown, JSON, or plain text."
+    pricing: free
+    status: planned
+    discussion: https://github.com/polyphon-ai/releases/discussions/2
+    feature_request:
+
+  - title: "Plugins"
+    description: "Extend Polyphon with community and first-party plugins. Add new voice providers, custom session behaviors, output formatters, and more — without touching core."
+    pricing: free
+    status: planned
+    discussion: https://github.com/polyphon-ai/releases/discussions/3
+    feature_request:
+
+  - title: "Extensions"
+    description: "Build and install extensions that hook into the Polyphon UI — custom panels, session widgets, and integrations with external tools and workflows."
+    pricing: free
+    status: planned
+    discussion: https://github.com/polyphon-ai/releases/discussions/4
+    feature_request:
+
+  # ── Released ───────────────────────────────────────────────
+
+  - title: "Tones & System Prompt Templates"
+    description: "Custom tone presets and reusable system prompt templates for fine-grained control over each voice's personality and behavior."
+    pricing: free
+    status: released
+    release_date: 2025-03-01
+
+  - title: "Conductor Profile"
+    description: "Set your name, pronouns, and context once. Every voice in every session knows who they're talking to, injected automatically into the ensemble system prompt."
+    pricing: free
+    status: released
+    release_date: 2025-02-15
+
+  - title: "Custom OpenAI-Compatible Providers"
+    description: "Add your own endpoints — Ollama, LM Studio, vLLM, or any OpenAI-compatible API — and run voices entirely on your machine."
+    pricing: free
+    status: released
+    release_date: 2025-02-15
+
+  - title: "CLI Voices"
+    description: "Use Claude Code, Codex, and GitHub Copilot as voices in your sessions. Spawned as local subprocesses — no extra credentials beyond what you already have."
+    pricing: free
+    status: released
+    release_date: 2025-02-01
+
+  - title: "API Voices"
+    description: "Connect Anthropic Claude, OpenAI GPT, and Google Gemini via API key with full model selection per voice and real-time streaming responses."
+    pricing: free
+    status: released
+    release_date: 2025-02-01
+
+  - title: "Compositions"
+    description: "Save and reuse multi-voice configurations. Build your preferred ensemble once and launch it instantly in any new session."
+    pricing: free
+    status: released
+    release_date: 2025-02-01
+
+  - title: "Multi-Voice Sessions"
+    description: "Orchestrate multiple AI voices simultaneously in a single conversation. Voices hear each other and build on each other's responses in real time."
+    pricing: free
+    status: released
+    release_date: 2025-02-01

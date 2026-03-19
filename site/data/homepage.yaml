@@ -1,0 +1,19 @@
+features:
+  - icon: music
+    title: Multiple voices, one conversation
+    body: Add any combination of Claude, GPT-4, Gemini, or local CLI tools. Every voice sees the full history.
+  - icon: layers
+    title: Compositions
+    body: Save a named set of voices as a composition, then launch new sessions from it instantly.
+  - icon: sliders
+    title: Reusable configuration
+    body: Save tone presets and system prompt templates. Attach them to any voice in any composition — update once, applies everywhere.
+  - icon: zap
+    title: Broadcast & conductor modes
+    body: Broadcast to all voices at once, or direct your message to a specific voice.
+  - icon: user
+    title: Conductor profile
+    body: Set your name, pronouns, and context. Every voice receives this in its system prompt.
+  - icon: shield
+    title: Local-first, no telemetry
+    body: Conversations and API keys stay on your machine. No account, no cloud sync.
