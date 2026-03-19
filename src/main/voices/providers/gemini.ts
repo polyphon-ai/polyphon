@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { Message } from '../../../shared/types';
 import { APIVoice } from '../APIVoice';
 import type { VoiceConfig, VoiceProviderRegistration } from '../Voice';
@@ -43,6 +42,7 @@ class GeminiVoice extends APIVoice {
   }
 
   async *send(_message: Message, context: Message[]): AsyncIterable<string> {
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const apiKey = resolveApiKey('gemini');
     const genAI = new GoogleGenerativeAI(apiKey);
     const systemPrompt = this.buildSystemPrompt();
