@@ -18,13 +18,13 @@ const config: ForgeConfig = {
     ...(process.env.APPLE_SIGNING_IDENTITY && {
       osxSign: {
         identity: process.env.APPLE_SIGNING_IDENTITY,
-        hardenedRuntime: true,
-        entitlements: 'entitlements.plist',
-        entitlementsInherit: 'entitlements.inherit.plist',
-        gatekeeperAssess: false,
+        optionsForFile: (filePath: string) => ({
+          entitlements: filePath.includes('Helper')
+            ? 'entitlements.inherit.plist'
+            : 'entitlements.plist',
+        }),
       },
       osxNotarize: {
-        tool: 'notarytool',
         appleId: process.env.APPLE_ID!,
         appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD!,
         teamId: process.env.APPLE_TEAM_ID!,
