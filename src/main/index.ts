@@ -26,6 +26,13 @@ if (process.env.POLYPHON_TEST_USER_DATA) {
   app.setPath('userData', process.env.POLYPHON_TEST_USER_DATA);
 }
 
+// Prevent Chromium from creating a "{AppName} Safe Storage" keychain entry on macOS.
+// Chromium uses OS-level key storage to encrypt its own internal data (cookies,
+// localStorage) — this is separate from Electron's safeStorage API but triggers the
+// same keychain prompt. 'basic' tells it to use plaintext storage instead, which is
+// consistent with our own key-management approach (file-permission-based, not keychain).
+app.commandLine.appendSwitch('password-store', 'basic');
+
 // Vite injects these globals during build
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
 declare const MAIN_WINDOW_VITE_NAME: string;
