@@ -97,6 +97,7 @@ test.beforeAll(async () => {
   win = await app.firstWindow();
   await win.waitForLoadState('domcontentloaded');
   await skipOnboarding(win);
+  await goToHome(win); // ensure stable home state before navigating to providers
 
   // Register two custom providers, both pointing at the mock server
   await addCustomProvider(win, 'Alpha', mockServer.baseUrl);
