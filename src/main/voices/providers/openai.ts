@@ -1,4 +1,3 @@
-import OpenAI from 'openai';
 import { spawn, spawnSync } from 'child_process';
 import type { Message } from '../../../shared/types';
 import { APIVoice } from '../APIVoice';
@@ -52,6 +51,7 @@ class OpenAIVoice extends APIVoice {
   }
 
   async *send(_message: Message, context: Message[]): AsyncIterable<string> {
+    const { default: OpenAI } = await import('openai');
     const apiKey = resolveApiKey('openai');
     const client = new OpenAI({ apiKey });
     const systemPrompt = this.buildSystemPrompt();

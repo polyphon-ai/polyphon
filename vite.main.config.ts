@@ -11,7 +11,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['node:sqlite'],
+      external: ['node:sqlite', '@anthropic-ai/sdk', 'openai', '@google/generative-ai'],
       output: {
         entryFileNames: 'main.js',
       },

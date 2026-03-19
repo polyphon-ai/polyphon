@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { spawn, spawnSync } from 'child_process';
 import type { Message } from '../../../shared/types';
 import { APIVoice } from '../APIVoice';
@@ -45,6 +44,7 @@ class AnthropicVoice extends APIVoice {
   }
 
   async *send(_message: Message, context: Message[]): AsyncIterable<string> {
+    const { default: Anthropic } = await import('@anthropic-ai/sdk');
     const apiKey = resolveApiKey('anthropic');
     const client = new Anthropic({ apiKey });
     const messages = buildMessages(this.id, context);
