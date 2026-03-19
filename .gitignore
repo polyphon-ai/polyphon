@@ -1,0 +1,55 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Build output
+dist/
+build/
+out/
+
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Go
+cli/poly
+cli/poly.exe
+
+# Electron Forge / Vite
+.vite/
+
+# User data (local-only, never committed)
+compositions/*.json
+sessions/*.json
+.dev-data
+
+# Test output
+test-results/
+playwright-report/
+coverage/
+
+# TypeScript incremental build
+*.tsbuildinfo
+
+# Claude Code (local-only settings)
+.claude/settings.local.json
+
+# Blog drafts (internal working documents)
+drafts/
