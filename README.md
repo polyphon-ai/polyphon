@@ -57,7 +57,7 @@ make dev
 
 ```sh
 make install        # install dependencies + git hooks
-make dev            # start in development mode (hot reload)
+make run            # start in development mode (hot reload)
 make build          # package the Electron app
 make dist           # create distributable installers
 ```
@@ -70,6 +70,7 @@ make test-unit         # Vitest unit tests only
 make test-integration  # Vitest integration tests only
 make test-e2e          # Playwright e2e with mocked voices (CI-safe, no credentials needed)
 make test-e2e-live     # e2e against real providers (opt-in, never CI)
+make test-openai-compatible # e2e against real openai compatible providers (ollama)
 make test-watch        # Vitest in watch mode
 ```
 
@@ -81,7 +82,7 @@ make lint           # TypeScript type-check (no emit)
 
 ### Developer tools
 
-Chrome DevTools are closed by default in `make dev`. To open them at launch:
+Chrome DevTools are closed by default in `make run`. To open them at launch:
 
 ```sh
 POLYPHON_DEVTOOLS=1 make dev
@@ -127,9 +128,9 @@ The pipeline runs automatically:
 
 ## Tech Stack
 
-| Layer | Technology |
+| Layer         | Technology                           |
 |---|---|
-| Shell | Electron 41 |
+| Shell         | Electron 41                          |
 | UI | React 19 + TypeScript + Tailwind CSS v4 |
 | State | Zustand 5 |
 | Database | Node.js built-in `node:sqlite` (`DatabaseSync`) |

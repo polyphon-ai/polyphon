@@ -49,10 +49,10 @@ test-e2e: ## Run e2e tests with mocked voices
 
 .PHONY: test-e2e-live
 test-e2e-live: ## Run live e2e tests against real providers — opt-in, never CI
-	npm run build:e2e && npx playwright test --config=playwright.config.e2e-live.ts
+	npm run build:e2e && npx playwright test --config=playwright.config.e2e-live.ts && npx playwright test --config=playwright.config.openai-compatible.ts
 
-.PHONY: test-openai-compatible
-test-openai-compatible: ## Run live e2e tests against Ollama in Docker — requires Docker
+.PHONY: test-openai-compatible-live
+test-openai-compatible-live: ## Run live e2e tests against Ollama in Docker — requires Docker
 	npm run build:e2e && npx playwright test --config=playwright.config.openai-compatible.ts
 
 .PHONY: test-watch
