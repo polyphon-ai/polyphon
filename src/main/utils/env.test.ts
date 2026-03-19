@@ -13,7 +13,7 @@ vi.mock('electron-log/main', () => ({
   },
 }));
 
-import { maskApiKey, resolveApiKey, resolveApiKeyStatus, parseEnvBlock, parseNulEnvBlock, SHELL_ENV_MAX_LEN, ENV_VALUE_MAX_BYTES } from './env';
+import { maskApiKey, resolveApiKey, resolveApiKeyStatus, parseNulEnvBlock, SHELL_ENV_MAX_LEN, ENV_VALUE_MAX_BYTES } from './env';
 import { logger } from './logger';
 
 describe('maskApiKey', () => {
@@ -69,100 +69,6 @@ describe('resolveApiKey', () => {
   });
 });
 
-describe('parseEnvBlock', () => {
-  afterEach(() => {
-    delete process.env['KEY'];
-    delete process.env['KEY2'];
-    delete process.env['MY_KEY'];
-    delete process.env['MY_KEY2'];
-  });
-
-  it('happy path: merges standard uppercase keys and returns true', () => {
-    const result = parseEnvBlock('KEY=value\nKEY2=value2\n');
-    expect(result).toBe(true);
-    expect(process.env['KEY']).toBe('value');
-    expect(process.env['KEY2']).toBe('value2');
-  });
-
-  it('empty block: no writes, no crash, returns true', () => {
-    const result = parseEnvBlock('');
-    expect(result).toBe(true);
-  });
-
-  it('key with lowercase letters: not written, returns true, warns with key name', () => {
-    const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => {});
-    const result = parseEnvBlock('my_key=value');
-    expect(result).toBe(true);
-    expect(process.env['my_key']).toBeUndefined();
-    expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('non-standard'), expect.objectContaining({ key: 'my_key' }));
-    debugSpy.mockRestore();
-  });
-
-  it('key with dot: not written, returns true', () => {
-    const result = parseEnvBlock('MY.KEY=value');
-    expect(result).toBe(true);
-    expect(process.env['MY.KEY']).toBeUndefined();
-  });
-
-  it('key with space: not written, returns true', () => {
-    const result = parseEnvBlock('MY KEY=value');
-    expect(result).toBe(true);
-    expect(process.env['MY KEY']).toBeUndefined();
-  });
-
-  it('empty key (line starts with =): skipped, returns true', () => {
-    const before = { ...process.env };
-    const result = parseEnvBlock('=value');
-    expect(result).toBe(true);
-    // no new keys should have been added
-    expect(Object.keys(process.env).length).toBe(Object.keys(before).length);
-  });
-
-  it('no = in line: skipped, no crash, returns true', () => {
-    const result = parseEnvBlock('NOEQUALS');
-    expect(result).toBe(true);
-    expect(process.env['NOEQUALS']).toBeUndefined();
-  });
-
-  it('value exactly at limit: written, returns true', () => {
-    const value = 'A'.repeat(ENV_VALUE_MAX_BYTES);
-    const result = parseEnvBlock(`KEY=${value}`);
-    expect(result).toBe(true);
-    expect(process.env['KEY']).toBe(value);
-  });
-
-  it('value over limit: not written, returns true, warns with key name', () => {
-    const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => {});
-    const value = 'A'.repeat(ENV_VALUE_MAX_BYTES + 1);
-    const result = parseEnvBlock(`KEY=${value}`);
-    expect(result).toBe(true);
-    expect(process.env['KEY']).toBeUndefined();
-    expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('oversized'), expect.objectContaining({ key: 'KEY' }));
-    debugSpy.mockRestore();
-  });
-
-  it('multi-= value: splits on first = only, returns true', () => {
-    const result = parseEnvBlock('KEY=a=b=c');
-    expect(result).toBe(true);
-    expect(process.env['KEY']).toBe('a=b=c');
-  });
-
-  it('empty value: written as empty string, returns true', () => {
-    const result = parseEnvBlock('KEY=');
-    expect(result).toBe(true);
-    expect(process.env['KEY']).toBe('');
-  });
-
-  it('size cap: no writes, returns false, logger.debug called with "size cap"', () => {
-    const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => {});
-    const block = 'A'.repeat(SHELL_ENV_MAX_LEN + 1);
-    const result = parseEnvBlock(block);
-    expect(result).toBe(false);
-    expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('size cap'));
-    debugSpy.mockRestore();
-  });
-});
-
 // ---------------------------------------------------------------------------
 // parseNulEnvBlock
 // ---------------------------------------------------------------------------
@@ -171,16 +77,95 @@ describe('parseNulEnvBlock', () => {
   afterEach(() => {
     delete process.env['KEY'];
     delete process.env['KEY2'];
+    delete process.env['MY_KEY'];
+    delete process.env['MY_KEY2'];
+    delete process.env['NOEQUALS'];
   });
 
-  it('parses NUL-terminated entries from env -0 output', () => {
+  it('happy path: merges standard uppercase keys and returns true', () => {
     const block = 'KEY=value\0KEY2=value2\0';
     expect(parseNulEnvBlock(block)).toBe(true);
     expect(process.env['KEY']).toBe('value');
     expect(process.env['KEY2']).toBe('value2');
   });
 
-  it('handles values containing newlines (which would break delimiter approach)', () => {
+  it('empty block: no writes, no crash, returns true', () => {
+    expect(parseNulEnvBlock('')).toBe(true);
+  });
+
+  it('key with lowercase letters: not written, returns true, warns with key name', () => {
+    const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => {});
+    const result = parseNulEnvBlock('my_key=value\0');
+    expect(result).toBe(true);
+    expect(process.env['my_key']).toBeUndefined();
+    expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('non-standard'), expect.objectContaining({ key: 'my_key' }));
+    debugSpy.mockRestore();
+  });
+
+  it('key with dot: not written, returns true', () => {
+    const result = parseNulEnvBlock('MY.KEY=value\0');
+    expect(result).toBe(true);
+    expect(process.env['MY.KEY']).toBeUndefined();
+  });
+
+  it('key with space: not written, returns true', () => {
+    const result = parseNulEnvBlock('MY KEY=value\0');
+    expect(result).toBe(true);
+    expect(process.env['MY KEY']).toBeUndefined();
+  });
+
+  it('empty key (entry starts with =): skipped, returns true', () => {
+    const before = { ...process.env };
+    const result = parseNulEnvBlock('=value\0');
+    expect(result).toBe(true);
+    expect(Object.keys(process.env).length).toBe(Object.keys(before).length);
+  });
+
+  it('no = in entry: skipped, no crash, returns true', () => {
+    const result = parseNulEnvBlock('NOEQUALS\0');
+    expect(result).toBe(true);
+    expect(process.env['NOEQUALS']).toBeUndefined();
+  });
+
+  it('value exactly at limit: written, returns true', () => {
+    const value = 'A'.repeat(ENV_VALUE_MAX_BYTES);
+    const result = parseNulEnvBlock(`KEY=${value}\0`);
+    expect(result).toBe(true);
+    expect(process.env['KEY']).toBe(value);
+  });
+
+  it('value over limit: not written, returns true, warns with key name', () => {
+    const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => {});
+    const value = 'A'.repeat(ENV_VALUE_MAX_BYTES + 1);
+    const result = parseNulEnvBlock(`KEY=${value}\0`);
+    expect(result).toBe(true);
+    expect(process.env['KEY']).toBeUndefined();
+    expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('oversized'), expect.objectContaining({ key: 'KEY' }));
+    debugSpy.mockRestore();
+  });
+
+  it('multi-= value: splits on first = only, returns true', () => {
+    const result = parseNulEnvBlock('KEY=a=b=c\0');
+    expect(result).toBe(true);
+    expect(process.env['KEY']).toBe('a=b=c');
+  });
+
+  it('empty value: written as empty string, returns true', () => {
+    const result = parseNulEnvBlock('KEY=\0');
+    expect(result).toBe(true);
+    expect(process.env['KEY']).toBe('');
+  });
+
+  it('size cap: no writes, returns false, logger.debug called with "size cap"', () => {
+    const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => {});
+    const block = 'A'.repeat(SHELL_ENV_MAX_LEN + 1);
+    const result = parseNulEnvBlock(block);
+    expect(result).toBe(false);
+    expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('size cap'));
+    debugSpy.mockRestore();
+  });
+
+  it('handles values containing newlines (NUL delimited is immune to this)', () => {
     const block = 'KEY=line1\nline2\0';
     expect(parseNulEnvBlock(block)).toBe(true);
     expect(process.env['KEY']).toBe('line1\nline2');
@@ -190,32 +175,6 @@ describe('parseNulEnvBlock', () => {
     const block = 'KEY=_POLYPHON_ENV_DELIM_\0';
     expect(parseNulEnvBlock(block)).toBe(true);
     expect(process.env['KEY']).toBe('_POLYPHON_ENV_DELIM_');
-  });
-
-  it('applies the same key filter as parseEnvBlock', () => {
-    const block = 'my_key=value\0';
-    expect(parseNulEnvBlock(block)).toBe(true);
-    expect(process.env['my_key']).toBeUndefined();
-  });
-
-  it('applies the same value length cap as parseEnvBlock', () => {
-    const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => {});
-    const value = 'A'.repeat(ENV_VALUE_MAX_BYTES + 1);
-    expect(parseNulEnvBlock(`KEY=${value}\0`)).toBe(true);
-    expect(process.env['KEY']).toBeUndefined();
-    debugSpy.mockRestore();
-  });
-
-  it('returns false and warns when block exceeds size cap', () => {
-    const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => {});
-    const block = 'A'.repeat(SHELL_ENV_MAX_LEN + 1);
-    expect(parseNulEnvBlock(block)).toBe(false);
-    expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('size cap'));
-    debugSpy.mockRestore();
-  });
-
-  it('empty block: no crash, returns true', () => {
-    expect(parseNulEnvBlock('')).toBe(true);
   });
 });
 

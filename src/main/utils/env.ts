@@ -15,12 +15,20 @@ export function maskApiKey(key: string): string {
   return `${key.slice(0, 3)}...${key.slice(-3)}`;
 }
 
+// Set to true in Vitest so tests don't spawn a login shell and overwrite stubbed env vars.
+let _shellEnvLoaded = typeof process.env['VITEST'] !== 'undefined';
+
+function ensureShellEnv(): void {
+  if (_shellEnvLoaded) return;
+  _shellEnvLoaded = true;
+  loadShellEnv();
+}
+
 export const SHELL_ENV_MAX_LEN = 512 * 1024; // JS string .length units (UTF-16 code units, ≈ bytes for ASCII)
 export const ENV_VALUE_MAX_BYTES = 8 * 1024; // same units
 export const ENV_KEY_RE = /^[A-Z0-9_]+$/;
 
-// Applies a list of pre-split "KEY=VALUE" entries to process.env, applying
-// the same key/value filters as parseEnvBlock.
+// Applies a list of pre-split "KEY=VALUE" entries to process.env.
 function applyEnvEntries(entries: string[]): void {
   for (const entry of entries) {
     const eq = entry.indexOf('=');
@@ -37,24 +45,6 @@ function applyEnvEntries(entries: string[]): void {
     }
     process.env[key] = value;
   }
-}
-
-// Parses a newline-delimited env block (legacy delimiter-based capture) and
-// merges matching variables into process.env. Returns false if the block
-// exceeds the size cap, true otherwise.
-//
-// Filters applied:
-//   - Block size: > SHELL_ENV_MAX_LEN chars → return false
-//   - Key name: must match ENV_KEY_RE ([A-Z0-9_]+) — lowercase and dotted
-//     names are intentionally excluded (policy decision, not a bug)
-//   - Value length: > ENV_VALUE_MAX_BYTES chars → entry skipped
-export function parseEnvBlock(block: string): boolean {
-  if (block.length > SHELL_ENV_MAX_LEN) {
-    logger.debug('[loadShellEnv] env block exceeds size cap; skipping shell env merge — API keys from shell config will not be available from this shell');
-    return false;
-  }
-  applyEnvEntries(block.split('\n'));
-  return true;
 }
 
 // Parses a NUL-terminated env block produced by `env -0` and merges matching
@@ -135,6 +125,7 @@ export function loadShellEnv(): void {
 // Throws an Error whose .message can be forwarded to the renderer to show
 // a "set your API key" prompt.
 export function resolveApiKey(provider: string): string {
+  ensureShellEnv();
   const prefix = toEnvPrefix(provider);
   const polyphonKey = `POLYPHON_${prefix}_API_KEY`;
   const providerKey = `${prefix}_API_KEY`;
@@ -154,6 +145,7 @@ export function resolveApiKey(provider: string): string {
 // Returns the API key resolution status for a provider without throwing.
 // The returned maskedKey is safe to send over IPC to the renderer.
 export function resolveApiKeyStatus(provider: string): ApiKeyStatus {
+  ensureShellEnv();
   const prefix = toEnvPrefix(provider);
   const polyphonKey = `POLYPHON_${prefix}_API_KEY`;
   const providerKey = `${prefix}_API_KEY`;
