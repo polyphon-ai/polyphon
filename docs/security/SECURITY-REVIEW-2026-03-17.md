@@ -348,3 +348,8 @@ spawn(cliCommand, [...cliArgs, '-p', prompt, '--allow-all-tools'])
 ### CI/CD
 - `.github/workflows/release.yml`
 - `.github/workflows/deploy-site.yml`
+
+---
+**Sprint 015 update (2026-03-19):** `parseEnvBlock()` was removed. The production env-loading
+path was always `parseNulEnvBlock()` exclusively. The edge-case test coverage previously
+anchored to `parseEnvBlock` was migrated to the `parseNulEnvBlock` test suite.
