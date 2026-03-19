@@ -98,11 +98,20 @@ describe('loadOrCreateKey', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('e2e mode returns ephemeral 32-byte key without touching filesystem', async () => {
+  it('e2e mode persists key to isolated test dir and returns 32-byte key', async () => {
     const result = await loadOrCreateKey(tmpDir, true);
     expect(result.key.length).toBe(32);
     expect(result.keyWasAbsent).toBe(false);
-    expect(fs.existsSync(path.join(tmpDir, 'polyphon.key.json'))).toBe(false);
+    // Key is written to the isolated test dir so restart-persistence tests can
+    // decrypt messages across app restarts without touching the real user data dir.
+    expect(fs.existsSync(path.join(tmpDir, 'polyphon.key.json'))).toBe(true);
+  });
+
+  it('e2e mode returns the same key on second call (restart persistence)', async () => {
+    const first = await loadOrCreateKey(tmpDir, true);
+    const second = await loadOrCreateKey(tmpDir, true);
+    expect(second.key.toString('hex')).toBe(first.key.toString('hex'));
+    expect(second.keyWasAbsent).toBe(false);
   });
 
   it('creates unprotected key file on first run without triggering absent warning', async () => {

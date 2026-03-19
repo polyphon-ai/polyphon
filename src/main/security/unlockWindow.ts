@@ -13,6 +13,9 @@ export function createUnlockWindow(keyFile: KeyFilePassword): { window: BrowserW
     resizable: false,
     center: true,
     frame: true,
+    // Mirror the main window's hide logic: suppress visibility when running in
+    // background test mode so the unlock dialog doesn't steal focus from the user.
+    show: !process.env.POLYPHON_HIDE_WINDOW || !!process.env.POLYPHON_SHOW_WINDOW,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,

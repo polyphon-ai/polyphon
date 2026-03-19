@@ -114,9 +114,18 @@ export async function loadOrCreateKey(
   createUnlockWindow?: (keyFile: KeyFilePassword) => Promise<Buffer>,
 ): Promise<LoadKeyResult> {
   if (e2e) {
-    // Use a random ephemeral key so that accidentally enabling POLYPHON_E2E on a
-    // real data directory does not produce a known-key (all-zeros) data set.
-    return { key: randomBytes(32), keyWasAbsent: false };
+    // In e2e mode, persist the key to the test data dir (POLYPHON_TEST_USER_DATA)
+    // so restart-persistence tests can decrypt messages across app restarts.
+    // A random key is still generated on first launch — no fixed/known key is used —
+    // but it is written to the isolated test dir rather than the real user data dir.
+    const filePath = path.join(userDataPath, KEY_FILE_NAME);
+    const existingKeyFile = readKeyFile(filePath);
+    if (existingKeyFile?.wrapping === 'none') {
+      return { key: Buffer.from(existingKeyFile.key, 'hex'), keyWasAbsent: false };
+    }
+    const key = generateDbKey();
+    writeKeyFileAtomic(filePath, { version: 1, wrapping: 'none', key: key.toString('hex') });
+    return { key, keyWasAbsent: false };
   }
 
   const filePath = path.join(userDataPath, KEY_FILE_NAME);
