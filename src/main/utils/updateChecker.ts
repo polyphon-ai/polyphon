@@ -21,17 +21,19 @@ export function _resetForTests(): void { cachedUpdateInfo = null; }
 
 const GITHUB_RELEASES_URL = 'https://api.github.com/repos/polyphon-ai/releases/releases/latest';
 const MAX_TAG_NAME_LENGTH = 30;
-const STRICT_VERSION_RE = /^\d+\.\d+\.\d+$/;
+// Accepts stable (X.Y.Z) and alpha/beta pre-releases (X.Y.Z-alpha.N, X.Y.Z-beta.N).
+// Other pre-release formats (rc, etc.) are intentionally excluded.
+const STRICT_VERSION_RE = /^\d+\.\d+\.\d+(?:-(alpha|beta)\.\d+)?$/;
 
 // Single fetch-layer gate: validates the three fields consumed downstream (draft,
-// prerelease, tag_name) before any version string reaches further code. Downstream
-// logic (isNewerVersion, cache, IPC) only ever sees a validated "X.Y.Z" string.
+// tag_name) before any version string reaches further code. Drafts are always
+// excluded. Pre-releases are allowed when the tag matches an alpha/beta pattern.
 function parseReleaseVersion(payload: unknown): string | null {
   if (!payload || typeof payload !== 'object') return null;
   const r = payload as Record<string, unknown>;
   if (typeof r.draft !== 'boolean') return null;
   if (typeof r.prerelease !== 'boolean') return null;
-  if (r.draft || r.prerelease) return null;
+  if (r.draft) return null;
   if (typeof r.tag_name !== 'string') return null;
   if (r.tag_name.length > MAX_TAG_NAME_LENGTH) return null;
   const version = r.tag_name.startsWith('v') ? r.tag_name.slice(1) : r.tag_name;

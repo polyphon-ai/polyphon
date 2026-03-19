@@ -83,8 +83,26 @@ describe('parseReleaseVersion (via checkForUpdateNow)', () => {
     expect(mockSend).not.toHaveBeenCalled();
   });
 
-  it('prerelease: true → no update', async () => {
-    setFetchResponse(makeRelease({ prerelease: true }));
+  it('prerelease: true with stable-format tag → triggers update', async () => {
+    setFetchResponse(makeRelease({ prerelease: true, tag_name: 'v1.2.3' }));
+    const result = await checkForUpdateNow(makeWin());
+    expect(result).toEqual({ version: '1.2.3' });
+  });
+
+  it('prerelease: true with alpha tag → triggers update', async () => {
+    setFetchResponse(makeRelease({ prerelease: true, tag_name: 'v1.2.3-alpha.4' }));
+    const result = await checkForUpdateNow(makeWin());
+    expect(result).toEqual({ version: '1.2.3-alpha.4' });
+  });
+
+  it('prerelease: true with beta tag → triggers update', async () => {
+    setFetchResponse(makeRelease({ prerelease: true, tag_name: 'v1.2.3-beta.2' }));
+    const result = await checkForUpdateNow(makeWin());
+    expect(result).toEqual({ version: '1.2.3-beta.2' });
+  });
+
+  it('prerelease: true with rc tag (unsupported format) → no update', async () => {
+    setFetchResponse(makeRelease({ prerelease: true, tag_name: 'v1.2.3-rc.1' }));
     expect(await checkForUpdateNow(makeWin())).toBeNull();
     expect(mockSend).not.toHaveBeenCalled();
   });
@@ -240,7 +258,7 @@ describe('checkForUpdateNow', () => {
     expect(mockSend).not.toHaveBeenCalled();
   });
 
-  it('malformed tag (pre-release suffix) → returns null; webContents.send NOT called; cache remains null', async () => {
+  it('unsupported pre-release format (no numeric suffix) → returns null; no side effects', async () => {
     setFetchResponse(makeRelease({ tag_name: 'v1.2.3-beta' }));
     expect(await checkForUpdateNow(makeWin())).toBeNull();
     expect(mockSend).not.toHaveBeenCalled();
