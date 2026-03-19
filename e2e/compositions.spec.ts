@@ -98,16 +98,12 @@ test.describe('Composition list and archive', () => {
     await expect(window.locator('#main-content').getByText('Listed Comp B')).toBeVisible();
   });
 
-  test('archives a composition via the Archive button', async () => {
+  test('archives a composition and it reappears when Show archived is toggled', async () => {
     await buildComposition('To Archive Comp', ['Anthropic', 'Gemini'], { mode: 'broadcast' });
     await window.getByRole('button', { name: /compositions/i }).click();
     const card = window.locator('[class*="rounded-lg"]').filter({ hasText: 'To Archive Comp' }).first();
     await card.getByRole('button', { name: /^archive$/i }).click();
     await expect(window.getByText('To Archive Comp')).not.toBeVisible({ timeout: 5000 });
-  });
-
-  test('archived composition reappears when Show archived is toggled', async () => {
-    await window.getByRole('button', { name: /compositions/i }).click();
     await window.getByRole('button', { name: /show archived/i }).click();
     await expect(window.locator('#main-content').getByText('To Archive Comp')).toBeVisible({ timeout: 5000 });
     await window.getByRole('button', { name: /show archived/i }).click();

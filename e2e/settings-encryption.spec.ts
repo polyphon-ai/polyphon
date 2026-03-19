@@ -180,14 +180,11 @@ test.describe('Set password form — validation', () => {
     await app.close();
   });
 
-  test('set password form opens when "Set password" button is clicked', async () => {
+  test('set password form opens and can be cancelled', async () => {
     await window.getByRole('button', { name: /^set password$/i }).click();
     await expect(window.getByText('Set a password')).toBeVisible();
     await expect(window.getByPlaceholder('New password', { exact: true })).toBeVisible();
     await expect(window.getByPlaceholder('Confirm password')).toBeVisible();
-  });
-
-  test('cancel returns to idle state with "Set password" button visible', async () => {
     await window.getByRole('button', { name: /^cancel$/i }).click();
     await expect(window.getByText('Set a password')).not.toBeVisible();
     await expect(window.getByRole('button', { name: /^set password$/i })).toBeVisible();
@@ -231,32 +228,22 @@ test.describe('Password lifecycle', () => {
     await app.close();
   });
 
-  test('sets a password successfully — form closes and status becomes "Password-protected"', async () => {
+  test('set → change → remove password lifecycle', async () => {
+    // Set password
     await window.getByRole('button', { name: /^set password$/i }).click();
     await window.getByPlaceholder('New password', { exact: true }).fill('InitialPass1!');
     await window.getByPlaceholder('Confirm password').fill('InitialPass1!');
     await window.getByRole('button', { name: /^save$/i }).click();
-    // Form closing indicates the operation succeeded (errors keep the form open)
     await expect(window.getByText('Set a password')).not.toBeVisible({ timeout: 15_000 });
-    // Re-navigate to get a fresh loadStatus() and confirm the persisted state
     await window.getByRole('button', { name: /sessions/i }).click();
     await goToEncryptionTab(window);
     await expect(window.getByText('Password-protected')).toBeVisible();
-  });
-
-  test('irrecoverability warning is visible when a password is set', async () => {
-    await expect(
-      window.getByText(/If you forget your password, your encrypted data is unrecoverable/i),
-    ).toBeVisible();
-  });
-
-  test('"Change password" and "Remove password" buttons appear after password is set', async () => {
+    await expect(window.getByText(/If you forget your password, your encrypted data is unrecoverable/i)).toBeVisible();
     await expect(window.getByRole('button', { name: /^change password$/i })).toBeVisible();
     await expect(window.getByRole('button', { name: /^remove password$/i })).toBeVisible();
     await expect(window.getByRole('button', { name: /^set password$/i })).not.toBeVisible();
-  });
 
-  test('change password form shows mismatch error when new passwords differ', async () => {
+    // Change password — mismatch error
     await window.getByRole('button', { name: /^change password$/i }).click();
     await window.getByPlaceholder('Current password').fill('InitialPass1!');
     await window.getByPlaceholder('New password', { exact: true }).fill('NewPass1!');
@@ -264,42 +251,33 @@ test.describe('Password lifecycle', () => {
     await window.getByRole('button', { name: /^save$/i }).click();
     await expect(window.getByText('New passwords do not match.')).toBeVisible();
     await window.getByRole('button', { name: /^cancel$/i }).click();
-  });
 
-  test('changes the password — form closes and status remains "Password-protected"', async () => {
+    // Change password — success
     await window.getByRole('button', { name: /^change password$/i }).click();
     await window.getByPlaceholder('Current password').fill('InitialPass1!');
     await window.getByPlaceholder('New password', { exact: true }).fill('ChangedPass2@');
     await window.getByPlaceholder('Confirm new password').fill('ChangedPass2@');
     await window.getByRole('button', { name: /^save$/i }).click();
-    // "Confirm new password" field disappearing means the form closed
     await expect(window.getByPlaceholder('Confirm new password')).not.toBeVisible({ timeout: 15_000 });
     await window.getByRole('button', { name: /sessions/i }).click();
     await goToEncryptionTab(window);
     await expect(window.getByText('Password-protected')).toBeVisible();
-  });
 
-  test('remove password form shows error when current password field is empty', async () => {
+    // Remove password — empty field error
     await window.getByRole('button', { name: /^remove password$/i }).click();
     await window.getByRole('button', { name: /^remove$/i }).click();
     await expect(window.getByText('Current password is required to confirm removal.')).toBeVisible();
     await window.getByRole('button', { name: /^cancel$/i }).click();
-  });
 
-  test('removes the password — form closes and status returns to "Encrypted (no password)"', async () => {
+    // Remove password — success
     await window.getByRole('button', { name: /^remove password$/i }).click();
-    // Fill the "Current password" field in the remove-password form
     const currentPwField = window.getByPlaceholder('Current password');
     await currentPwField.fill('ChangedPass2@');
     await window.getByRole('button', { name: /^remove$/i }).click();
-    // "Current password" field disappearing means the remove form closed
     await expect(currentPwField).not.toBeVisible({ timeout: 15_000 });
     await window.getByRole('button', { name: /sessions/i }).click();
     await goToEncryptionTab(window);
     await expect(window.getByText('Encrypted (no password)')).toBeVisible();
-  });
-
-  test('irrecoverability warning is gone and "Set password" button returns after removal', async () => {
     await expect(window.getByText(/If you forget your password/i)).not.toBeVisible();
     await expect(window.getByRole('button', { name: /^set password$/i })).toBeVisible();
     await expect(window.getByRole('button', { name: /^change password$/i })).not.toBeVisible();

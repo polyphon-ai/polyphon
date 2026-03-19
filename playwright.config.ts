@@ -8,8 +8,10 @@ export default defineConfig({
   // Cap the entire suite. voices.spec.ts alone takes ~14 min on Linux/Windows runners.
   globalTimeout: process.env.CI ? 30 * 60 * 1_000 : 0,
   retries: process.env.CI ? 2 : 0,
-  // Run spec files in parallel — each launches its own isolated Electron instance.
-  workers: process.env.CI ? 3 : 5,
+  // Run all tests in parallel — each launches its own isolated Electron instance.
+  // test.describe.serial blocks still enforce sequential order within that group.
+  fullyParallel: true,
+  workers: process.env.CI ? 3 : 10,
   reporter: process.env.CI ? 'github' : 'list',
   // Electron tests launch the app process directly — no browser URL needed.
   use: {

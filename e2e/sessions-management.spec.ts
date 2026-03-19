@@ -70,25 +70,22 @@ test.describe('Session creation', () => {
     await expect(window.getByText('Dir Session 1').first()).toBeVisible();
   });
 
-  test('multiple sessions appear in the session list', async () => {
+  test('multiple sessions from different compositions appear together in the session list', async () => {
     await startSession('Broadcast Base', 'BC Session 2');
+    await startSession('Directed Base', 'Dir Session 2');
     await window.getByRole('button', { name: 'Sessions', exact: true }).click();
     await expect(window.getByText('BC Session 2').first()).toBeVisible();
-    await expect(window.getByText('Dir Session 1').first()).toBeVisible();
+    await expect(window.getByText('Dir Session 2').first()).toBeVisible();
   });
 });
 
 test.describe('Session archive and management', () => {
-  test('archives a session via the Archive button', async () => {
+  test('archives a session and it reappears when Show archived is toggled', async () => {
     await startSession('Broadcast Base', 'To Archive Session');
     await window.getByRole('button', { name: 'Sessions', exact: true }).click();
     const card = window.locator('[class*="rounded-lg"]').filter({ hasText: 'To Archive Session' }).first();
     await card.getByRole('button', { name: /^archive$/i }).click();
     await expect(window.locator('[class*="rounded-lg"]').filter({ hasText: 'To Archive Session' })).not.toBeVisible({ timeout: 5000 });
-  });
-
-  test('archived session reappears when Show archived is toggled', async () => {
-    await window.getByRole('button', { name: 'Sessions', exact: true }).click();
     await window.getByRole('button', { name: /show archived/i }).click();
     await expect(window.locator('[class*="rounded-lg"]').filter({ hasText: 'To Archive Session' })).toBeVisible({ timeout: 5000 });
     await window.getByRole('button', { name: /show archived/i }).click();
