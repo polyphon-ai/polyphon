@@ -35,6 +35,10 @@ remain unsigned.
 **Constraints that remain permanent:**
 - Do **not** use `safeStorage` — it requires a persistent signed keychain entry and
   breaks when the signing identity changes or on a new machine.
+- Do **not** re-enable `FuseV1Options.EnableCookieEncryption` — it triggers the same
+  macOS keychain prompt as `safeStorage`. The renderer makes zero network requests so
+  cookie encryption provides no benefit. Suppressed via `password-store=basic` switch
+  in `src/main/index.ts` and `EnableCookieEncryption: false` in `forge.config.ts`.
 - Do **not** use the **App Sandbox** — it would block CLI voice subprocess spawning
   (`claude`, `codex`, `copilot`) and is not compatible with the local-first model.
 - Do **not** add `'unsafe-inline'` or `'unsafe-eval'` to the production CSP — signing
