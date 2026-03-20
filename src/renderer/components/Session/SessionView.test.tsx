@@ -285,11 +285,11 @@ describe('SessionView', () => {
     capturedOnContinuation!({ roundIndex: 1, voiceResponses: [] });
 
     await waitFor(() => {
-      expect(screen.getByText('Agents have more to say — let them continue?')).toBeTruthy();
+      expect(screen.getByText('Let the voices go another round without your input?')).toBeTruthy();
     });
   });
 
-  it('Allow button calls voice.send with empty content', async () => {
+  it('Yes button calls voice.send with empty content', async () => {
     let capturedOnContinuation: ((payload: { roundIndex: number; voiceResponses: any[] }) => void) | null = null;
     const stub = stubPolyphon({
       session: {
@@ -308,14 +308,14 @@ describe('SessionView', () => {
     capturedOnContinuation!({ roundIndex: 1, voiceResponses: [] });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Allow' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Yes' })).toBeTruthy();
     });
 
-    await user.click(screen.getByRole('button', { name: 'Allow' }));
+    await user.click(screen.getByRole('button', { name: 'Yes' }));
 
     expect(stub.voice.send).toHaveBeenCalledWith(
       'sess-1',
-      expect.objectContaining({ content: '', sessionId: 'sess-1', role: 'conductor' }),
+      expect.objectContaining({ content: 'Please continue.', sessionId: 'sess-1', role: 'conductor' }),
     );
   });
 
@@ -338,13 +338,13 @@ describe('SessionView', () => {
     capturedOnContinuation!({ roundIndex: 1, voiceResponses: [] });
 
     await waitFor(() => {
-      expect(screen.getByText('Agents have more to say — let them continue?')).toBeTruthy();
+      expect(screen.getByText('Let the voices go another round without your input?')).toBeTruthy();
     });
 
     await user.click(screen.getByRole('button', { name: 'Dismiss' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('Agents have more to say — let them continue?')).toBeNull();
+      expect(screen.queryByText('Let the voices go another round without your input?')).toBeNull();
     });
   });
 
