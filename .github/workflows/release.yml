@@ -52,7 +52,7 @@ jobs:
             playwright-report/
           retention-days: 7
 
-  # ── 2. Build, sign, and notarize macOS arm64 DMG ─────────────────────────
+  # ── 2. Build, sign, and notarize macOS arm64 ─────────────────────────────
   make-macos-arm64:
     name: Make (macOS arm64)
     needs: [test]
@@ -89,13 +89,20 @@ jobs:
             -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
 
-      - name: Build, sign, and notarize macOS arm64 DMG
+      - name: Build, sign, and notarize macOS arm64 (DMG + ZIP)
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: npm run make -- --arch arm64
+
+      - name: Generate latest-mac.yml for electron-updater
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          ZIP_PATH=$(find out/make/zip/darwin/arm64 -name "*.zip" | head -1)
+          node scripts/generate-update-metadata.mjs "$ZIP_PATH" "$VERSION"
 
       - name: Remove signing keychain
         if: always()
@@ -105,7 +112,10 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: installers-macos-arm64
-          path: out/make/**/*.dmg
+          path: |
+            out/make/**/*.dmg
+            out/make/zip/darwin/arm64/*.zip
+            out/make/zip/darwin/arm64/latest-mac.yml
           if-no-files-found: error
           retention-days: 3
 
@@ -136,6 +146,8 @@ jobs:
             See the [documentation](https://polyphon.ai/docs/getting-started/) for installation instructions.
           files: |
             dist/macos/**/*.dmg
+            dist/macos/**/*.zip
+            dist/macos/**/latest-mac.yml
 
   # ── 4. Update site download version ──────────────────────────────────────
   # update-site:
