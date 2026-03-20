@@ -143,18 +143,38 @@ See [Logging](../logging/) for the full details.
 
 ## About
 
-The **About** tab shows information about your current installation:
+The **About** tab shows information about your current installation and lets you manage updates.
 
-- **Version** — the installed version number (e.g. `v0.2.0`)
-- **Channel badge** — shown for pre-release builds: Alpha, Beta, or Dev
-- **Build expiry** — for alpha and beta builds, an animated countdown shows how many days remain before the build expires. Expired alpha/beta builds stop working; download the latest release to continue.
-- **Glossary** — a quick-reference list of Polyphon's domain vocabulary (Voice, Session, Composition, Round, etc.)
+### Updates
+
+Polyphon checks for updates automatically on startup and notifies you with a banner at the top of the window when one is available. You can also check manually:
+
+1. Open **Settings → About**.
+2. Click **Check for updates**.
+
+When an update is found you have three options:
+
+- **Update Now** — downloads the update in the background. A progress bar appears during the download. When complete, a **Restart & Install** button replaces the banner — click it to apply the update immediately, or close the banner to install on next restart.
+- **Remind me later** — dismisses the banner for 24 hours (also what the **×** button does).
+- **Skip this version** — permanently dismisses the banner for this specific release. The next release will prompt you again.
+
+### Update channel
+
+The **Update channel** selector controls which releases Polyphon notifies you about:
+
+| Channel | What you receive |
+|---|---|
+| **Stable** | Finished, well-tested releases only |
+| **Preview** | Stable releases plus alpha and beta pre-releases |
+
+Switch to **Preview** if you want early access to new features. You can switch back to **Stable** at any time.
+
+### Other information
+
+- **Version** — the installed version number
 - **Documentation** — a link to [polyphon.ai/docs](https://polyphon.ai/docs)
 - **Community links** — file a bug, request a feature, join the discussion, report a vulnerability (all link to GitHub)
 - **Social** — link to [@PolyphonAI on X](https://x.com/PolyphonAI)
-
-![Settings About tab showing version badge, channel badge, waveform animation, and build expiry countdown](/images/screenshots/settings/about-page.webp)
-<!-- Prerequisites: Settings → About tab open; use a beta or alpha build to show the expiry countdown and waveform | Platform: any | Theme: any | Window: default -->
 
 ---
 

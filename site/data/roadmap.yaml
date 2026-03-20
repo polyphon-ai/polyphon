@@ -29,14 +29,14 @@ items:
     discussion: https://github.com/polyphon-ai/releases/discussions/4
     feature_request:
 
+  # ── Released ───────────────────────────────────────────────
+
   - title: "Auto Update"
     description: "Polyphon checks for new releases in the background and notifies you when one is available. Install with one click — no manual download required."
     pricing: free
-    status: planned
+    status: released
     discussion:
     feature_request:
-
-  # ── Released ───────────────────────────────────────────────
 
   - title: "YOLO Mode for CLI Voices"
     description: "Per-voice checkboxes to enable non-interactive / auto-approve mode for CLI providers like Claude Code and Codex. Let them run without confirmation prompts when you trust the session."
