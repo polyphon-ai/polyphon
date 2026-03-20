@@ -2,6 +2,9 @@
 .DS_Store
 Thumbs.db
 
+# electron-updater dev mode config
+dev-app-update.yml
+
 # Editor
 .vscode/
 .idea/
