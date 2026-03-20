@@ -234,8 +234,9 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     createdAt: 0,
     updatedAt: 0,
     archived: false,
+    workingDir: null,
     ...overrides,
-  };
+  } as Session;
 }
 
 function makeConductorMessage(content = 'Hello everyone'): Message {

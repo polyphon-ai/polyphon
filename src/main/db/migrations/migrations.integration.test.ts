@@ -39,7 +39,7 @@ describe('runMigrations (fresh install)', () => {
     }
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(6);
+    expect(row.version).toBe(7);
   });
 
   it('seeds built-in tones', () => {
@@ -86,7 +86,7 @@ describe('runMigrations (fresh install)', () => {
     expect(templates).toHaveLength(5);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(6);
+    expect(row.version).toBe(7);
   });
 });
 

@@ -99,8 +99,9 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     createdAt: 1000,
     updatedAt: 1000,
     archived: false,
+    workingDir: null,
     ...overrides,
-  };
+  } as Session;
 }
 
 beforeEach(() => {

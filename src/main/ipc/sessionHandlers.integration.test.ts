@@ -62,6 +62,7 @@ function makeSession(): Session {
     createdAt: 1000,
     updatedAt: 1000,
     archived: false,
+    workingDir: null,
   };
 }
 
@@ -148,7 +149,7 @@ describe('SessionManager + DB integration', () => {
         (c: any[]) => c[0] === `voice:done:${SESS_ID}`,
       );
       expect(doneCalls).toHaveLength(1);
-      expect(doneCalls[0][1]).toEqual({ voiceId: VOICE_ID });
+      expect(doneCalls[0][1]).toMatchObject({ voiceId: VOICE_ID });
 
       // Message should be in DB
       const messages = listMessages(db, SESS_ID);

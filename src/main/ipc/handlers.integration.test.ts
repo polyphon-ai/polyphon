@@ -113,8 +113,9 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     createdAt: 1000,
     updatedAt: 1000,
     archived: false,
+    workingDir: null,
     ...overrides,
-  };
+  } as Session;
 }
 
 function makeMessage(overrides: Partial<Message> = {}): Message {
@@ -169,7 +170,7 @@ describe('IPC handlers integration', () => {
       });
       expect(typeof result.id).toBe('string');
       expect(result.id.length).toBeGreaterThan(0);
-      expect(voiceManager.initSession).toHaveBeenCalledWith(result.id, expect.any(Array), 'broadcast', expect.any(Object));
+      expect(voiceManager.initSession).toHaveBeenCalledWith(result.id, expect.any(Array), 'broadcast', expect.any(Object), null);
     });
 
     it('throws when composition not found', async () => {

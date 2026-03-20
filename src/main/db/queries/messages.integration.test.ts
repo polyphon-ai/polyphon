@@ -26,6 +26,7 @@ function makeSession(): Session {
     createdAt: 1000,
     updatedAt: 1000,
     archived: false,
+    workingDir: null,
   };
 }
 
