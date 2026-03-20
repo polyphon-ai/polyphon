@@ -8,10 +8,7 @@ import wordmarkDarkUrl from '../../../../assets/wordmark-dark.svg?url';
 type CheckState = 'idle' | 'checking' | 'up-to-date' | 'update-available' | 'downloading' | 'ready';
 
 export default function AboutPage() {
-  const version =
-    typeof (globalThis as any).__APP_VERSION__ !== 'undefined'
-      ? (globalThis as any).__APP_VERSION__
-      : 'unknown';
+  const version = __APP_VERSION__;
 
   const [checkState, setCheckState] = useState<CheckState>('idle');
   const [availableVersion, setAvailableVersion] = useState<string | null>(null);

@@ -4,6 +4,7 @@ import { render, screen, cleanup } from '@testing-library/react';
 import AboutPage from './AboutPage';
 
 beforeAll(() => {
+  (globalThis as any).__APP_VERSION__ = '0.0.0-test';
   (window as any).polyphon = {
     shell: { openExternal: vi.fn() },
     update: {
@@ -30,8 +31,7 @@ describe('AboutPage', () => {
 
   it('renders the version badge', () => {
     render(<AboutPage />);
-    // __APP_VERSION__ is not defined in test env, so version falls back to 'unknown'
-    expect(screen.getByText(/^v/)).toBeTruthy();
+    expect(screen.getByText('v0.0.0-test')).toBeTruthy();
   });
 
   it('renders community links', () => {
