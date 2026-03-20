@@ -43,6 +43,8 @@ const api = {
       ipcRenderer.invoke(IPC.SESSION_CREATE, compositionId, name, workingDir ?? null),
     pickWorkingDir: (): Promise<string | null> =>
       ipcRenderer.invoke(IPC.SESSION_PICK_WORKING_DIR),
+    validateWorkingDir: (path: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC.SESSION_VALIDATE_WORKING_DIR, path),
     list: (archived = false): Promise<Session[]> =>
       ipcRenderer.invoke(IPC.SESSION_LIST, archived),
     get: (id: string): Promise<Session | null> =>

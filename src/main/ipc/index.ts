@@ -93,6 +93,16 @@ export function registerIpcHandlers(
     return result.filePaths[0];
   });
 
+  ipcMain.handle(IPC.SESSION_VALIDATE_WORKING_DIR, async (_event, dirPath: unknown) => {
+    if (typeof dirPath !== 'string' || !dirPath.trim()) return false;
+    try {
+      const stats = await fs.promises.stat(dirPath.trim());
+      return stats.isDirectory();
+    } catch {
+      return false;
+    }
+  });
+
   ipcMain.handle(IPC.SESSION_LIST, async (_event, archived: unknown) =>
     listSessions(db, coerceBoolean(archived, 'archived')),
   );

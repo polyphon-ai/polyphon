@@ -103,6 +103,7 @@ export const IPC = {
   SESSION_MESSAGES_LIST: 'session:messages:list',
 
   SESSION_PICK_WORKING_DIR: 'session:pickWorkingDir',
+  SESSION_VALIDATE_WORKING_DIR: 'session:validateWorkingDir',
 
   SHELL_OPEN_EXTERNAL: 'shell:openExternal',
 
