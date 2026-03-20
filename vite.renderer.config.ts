@@ -19,6 +19,9 @@ function stripMetaCspPlugin(): Plugin {
 
 export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss(), ...(command === 'serve' ? [stripMetaCspPlugin()] : [])],
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0'),
+  },
   server: {
     watch: {
       ignored: ['**/site/**'],
