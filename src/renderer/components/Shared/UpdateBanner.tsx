@@ -113,7 +113,7 @@ export default function UpdateBanner() {
           onClick={handleDismissPermanently}
           className="px-3 py-1 rounded hover:bg-indigo-500 transition-colors"
         >
-          Don't remind me again
+          Skip this version
         </button>
         <button
           onClick={handleRemindLater}

@@ -108,11 +108,11 @@ describe('UpdateBanner', () => {
     expect(useUIStore.getState().updateAvailable).toBeNull();
   });
 
-  it('"Don\'t remind me again" button calls dismiss(version, true) and clears store', async () => {
+  it('"Skip this version" button calls dismiss(version, true) and clears store', async () => {
     useUIStore.setState({ updateAvailable: { version: '1.2.3' } });
     await act(async () => { render(<UpdateBanner />); });
 
-    fireEvent.click(screen.getByText("Don't remind me again"));
+    fireEvent.click(screen.getByText("Skip this version"));
 
     expect(mockDismiss).toHaveBeenCalledWith('1.2.3', true);
     expect(useUIStore.getState().updateAvailable).toBeNull();
