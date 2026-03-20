@@ -40,6 +40,7 @@ export class SessionManager {
     voiceId: string,
     message: Message,
     context: Message[],
+    roundIndex: number,
   ): Promise<string> {
     const voice = this.voiceManager.getVoice(sessionId, voiceId);
     if (!voice) {
@@ -57,10 +58,10 @@ export class SessionManager {
         accumulated += token;
         win.webContents.send(`${IPC.VOICE_TOKEN}:${sessionId}`, { voiceId, token });
       }
-      win.webContents.send(`${IPC.VOICE_DONE}:${sessionId}`, { voiceId });
+      win.webContents.send(`${IPC.VOICE_DONE}:${sessionId}`, { voiceId, roundIndex });
     } catch (err) {
       if (isAbortError(err)) {
-        win.webContents.send(`${IPC.VOICE_DONE}:${sessionId}`, { voiceId });
+        win.webContents.send(`${IPC.VOICE_DONE}:${sessionId}`, { voiceId, roundIndex });
         return accumulated;
       }
       const error = err instanceof Error ? err.message : String(err);
@@ -83,13 +84,12 @@ export class SessionManager {
     // conductorMessage was already inserted into DB by the VOICE_SEND handler,
     // so listMessages includes it — do not append again.
     const context = listMessages(db, session.id);
-    const roundIndex = (this.roundCounters.get(session.id) ?? 0) + 1;
+    const roundIndex = this.incrementRound(session.id);
     logger.info('Broadcast round starting', { sessionId: session.id, roundIndex, mode: 'broadcast', voiceCount: ensemble.length });
     const roundResponses: Message[] = [];
 
     for (const voice of ensemble) {
-      const content = await this.streamVoice(win, session.id, voice.id, conductorMessage, [...context]);
-      const roundIndex = this.incrementRound(session.id);
+      const content = await this.streamVoice(win, session.id, voice.id, conductorMessage, [...context], roundIndex);
       const voiceMessage: Message = {
         id: generateId(),
         sessionId: session.id,
@@ -174,14 +174,11 @@ export class SessionManager {
       return;
     }
 
-    const directedRoundIndex = (this.roundCounters.get(session.id) ?? 0) + 1;
-    logger.info('Directed round starting', { sessionId: session.id, roundIndex: directedRoundIndex, mode: 'directed', voiceId: targetVoiceId });
-
     // conductorMessage was already inserted into DB by the VOICE_SEND handler.
     const context = listMessages(db, session.id);
-    const content = await this.streamVoice(win, session.id, targetVoiceId, conductorMessage, context);
-
     const roundIndex = this.incrementRound(session.id);
+    logger.info('Directed round starting', { sessionId: session.id, roundIndex, mode: 'directed', voiceId: targetVoiceId });
+    const content = await this.streamVoice(win, session.id, targetVoiceId, conductorMessage, context, roundIndex);
     const voiceMessage: Message = {
       id: generateId(),
       sessionId: session.id,
