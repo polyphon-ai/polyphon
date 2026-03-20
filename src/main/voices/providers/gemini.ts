@@ -72,15 +72,8 @@ class GeminiVoice extends APIVoice {
     }
   }
 
-  async isAvailable(): Promise<boolean> {
-    try {
-      resolveApiKey('gemini');
-      return true;
-    } catch {
-      return false;
-    }
-  }
 }
+
 
 export const geminiProvider: VoiceProviderRegistration = {
   provider: PROVIDER_NAMES.GEMINI,

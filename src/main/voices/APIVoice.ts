@@ -1,5 +1,6 @@
 import type { Message } from '../../shared/types';
 import type { Voice, VoiceConfig } from './Voice';
+import { resolveApiKey } from '../utils/env';
 
 // Base class for all API-backed voices (Anthropic, OpenAI, Gemini, etc.).
 // Subclass per provider, or use the provider registration pattern instead.
@@ -27,7 +28,15 @@ export abstract class APIVoice implements Voice {
   }
 
   abstract send(message: Message, context: Message[]): AsyncIterable<string>;
-  abstract isAvailable(): Promise<boolean>;
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      resolveApiKey(this.provider);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   abort(): void {
     this.abortController?.abort();

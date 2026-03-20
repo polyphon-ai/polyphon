@@ -1,4 +1,3 @@
-import { spawn, spawnSync } from 'child_process';
 import type { Message } from '../../../shared/types';
 import { APIVoice } from '../APIVoice';
 import { CLIVoice } from '../CLIVoice';
@@ -79,28 +78,6 @@ class AnthropicVoice extends APIVoice {
       this.abortController = null;
     }
   }
-
-  async isAvailable(): Promise<boolean> {
-    try {
-      resolveApiKey('anthropic');
-      return true;
-    } catch {
-      return false;
-    }
-  }
-}
-
-function buildPrompt(context: Message[], systemPrompt: string): string {
-  const parts: string[] = [];
-  if (systemPrompt) { parts.push(systemPrompt); parts.push(''); }
-  for (const msg of context) {
-    if (msg.role === 'conductor') {
-      parts.push(`User: ${msg.content.trim() || 'Please continue.'}`);
-    } else {
-      parts.push(`${msg.voiceName ?? 'Assistant'}: ${msg.content}`);
-    }
-  }
-  return parts.join('\n');
 }
 
 class AnthropicCLIVoice extends CLIVoice {
@@ -111,31 +88,7 @@ class AnthropicCLIVoice extends CLIVoice {
   }
 
   async *send(_message: Message, context: Message[]): AsyncIterable<string> {
-    const prompt = buildPrompt(context, this.buildSystemPrompt());
-    const proc = spawn(this.cliCommand, [...this.cliArgs, '--print'], {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      ...(this.workingDir ? { cwd: this.workingDir } : {}),
-    });
-    this.setActiveProcess(proc);
-    try {
-      proc.stdin.write(prompt);
-      proc.stdin.end();
-      let buffer = '';
-      for await (const chunk of proc.stdout) {
-        buffer += (chunk as Buffer).toString('utf8');
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-        for (const line of lines) { if (line) yield line + '\n'; }
-      }
-      if (buffer) yield buffer;
-    } finally {
-      this.clearActiveProcess();
-    }
-  }
-
-  async isAvailable(): Promise<boolean> {
-    const result = spawnSync(this.cliCommand, ['--version'], { timeout: 3000, encoding: 'utf8' });
-    return !result.error && result.status === 0;
+    yield* this.spawnAndStream(this.buildPrompt(context), ['--print']);
   }
 }
 

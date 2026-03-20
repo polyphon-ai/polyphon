@@ -1,4 +1,4 @@
-import type { ChildProcess } from 'child_process';
+import { spawn, spawnSync, type ChildProcess } from 'child_process';
 import type { Message } from '../../shared/types';
 import type { Voice, VoiceConfig } from './Voice';
 import { requireCliCommand } from '../ipc/validate';
@@ -40,7 +40,11 @@ export abstract class CLIVoice implements Voice {
   }
 
   abstract send(message: Message, context: Message[]): AsyncIterable<string>;
-  abstract isAvailable(): Promise<boolean>;
+
+  async isAvailable(): Promise<boolean> {
+    const result = spawnSync(this.cliCommand, ['--version'], { timeout: 3000, encoding: 'utf8' });
+    return !result.error && result.status === 0;
+  }
 
   abort(): void {
     if (this.activeProcess) {
@@ -59,6 +63,42 @@ export abstract class CLIVoice implements Voice {
 
   protected buildSystemPrompt(): string {
     return [this.ensembleSystemPrompt, this.systemPrompt].filter(Boolean).join('\n\n');
+  }
+
+  protected buildPrompt(context: Message[]): string {
+    const parts: string[] = [];
+    const systemPrompt = this.buildSystemPrompt();
+    if (systemPrompt) { parts.push(systemPrompt); parts.push(''); }
+    for (const msg of context) {
+      if (msg.role === 'conductor') {
+        parts.push(`User: ${msg.content.trim() || 'Please continue.'}`);
+      } else {
+        parts.push(`${msg.voiceName ?? 'Assistant'}: ${msg.content}`);
+      }
+    }
+    return parts.join('\n');
+  }
+
+  protected async *spawnAndStream(prompt: string, extraArgs: string[]): AsyncIterable<string> {
+    const proc = spawn(this.cliCommand, [...this.cliArgs, ...extraArgs], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      ...(this.workingDir ? { cwd: this.workingDir } : {}),
+    });
+    this.setActiveProcess(proc);
+    try {
+      proc.stdin.write(prompt);
+      proc.stdin.end();
+      let buffer = '';
+      for await (const chunk of proc.stdout) {
+        buffer += (chunk as Buffer).toString('utf8');
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) { if (line) yield line + '\n'; }
+      }
+      if (buffer) yield buffer;
+    } finally {
+      this.clearActiveProcess();
+    }
   }
 
   protected setActiveProcess(proc: ChildProcess): void {
