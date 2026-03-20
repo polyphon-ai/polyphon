@@ -6,11 +6,11 @@ import {
   PROVIDER_NAMES,
   SETTINGS_PROVIDERS,
   PRESET_COLORS,
-  PRESET_COLOR_NAMES,
   type VoiceType,
 } from '../../../shared/constants';
 import { useSettingsStore } from '../../store/settingsStore';
 import ProviderLogo from '../Shared/ProviderLogo';
+import { ColorPicker } from '../Shared';
 
 export interface VoiceSelectorProps {
   onSelect: (voice: Omit<CompositionVoice, 'id' | 'compositionId' | 'order'>) => void;
@@ -279,28 +279,7 @@ export default function VoiceSelector({
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
               Color
             </label>
-            <div className="flex gap-2">
-              {PRESET_COLORS.map((c) => {
-                const isExcluded = excludedColors.has(c);
-                return (
-                  <button
-                    key={c}
-                    onClick={() => !isExcluded && setColor(c)}
-                    disabled={isExcluded}
-                    title={isExcluded ? 'Already in use' : (PRESET_COLOR_NAMES[c] ?? c)}
-                    aria-label={`Voice color: ${PRESET_COLOR_NAMES[c] ?? c}${isExcluded ? ' (already in use)' : ''}`}
-                    className={`w-6 h-6 rounded-full transition-transform ${
-                      isExcluded
-                        ? 'opacity-25 cursor-not-allowed'
-                        : color === c
-                          ? 'ring-2 ring-offset-2 ring-indigo-500 scale-110'
-                          : 'hover:scale-110'
-                    }`}
-                    style={{ backgroundColor: c }}
-                  />
-                );
-              })}
-            </div>
+            <ColorPicker value={color} onChange={setColor} excludedColors={excludedColors} />
           </div>
 
           {/* Voice type — only shown when multiple types are enabled for this provider */}

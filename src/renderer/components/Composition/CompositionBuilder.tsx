@@ -263,14 +263,14 @@ export default function CompositionBuilder({
         {/* Voice roster */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            Available Voices — click to add to Ensemble
+            Available Voices — click to add to your Ensemble
             <HelpTooltip text="Click a voice to add it to the ensemble. Each voice can have its own model, system prompt, and tone." />
           </label>
           <VoiceSelector onSelect={addVoice} voices={voices} />
           {voices.length > 0 ? (
             <div className="mt-4">
-              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                Ensemble — drag to reorder
+              <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Your Ensemble — drag to reorder
               </div>
               <VoiceOrderList
                 voices={voices}

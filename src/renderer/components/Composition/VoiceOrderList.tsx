@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { GripVertical, X, ChevronDown, ChevronUp, Check, Lock } from 'lucide-react';
+import { GripVertical, X, Trash2, ChevronDown, ChevronUp, Check, Lock } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -18,7 +18,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { CompositionVoice } from '../../../shared/types';
-import { PRESET_COLORS, PRESET_COLOR_NAMES, PROVIDER_METADATA, type VoiceType } from '../../../shared/constants';
+import { PROVIDER_METADATA, type VoiceType } from '../../../shared/constants';
+import { ColorPicker } from '../Shared';
 import { useSettingsStore } from '../../store/settingsStore';
 import { HelpTooltip } from '../Shared/HelpTooltip';
 
@@ -217,7 +218,7 @@ function SortableVoiceRow({
             className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors shrink-0 ml-1"
             aria-label={`Remove ${voice.displayName}`}
           >
-            <X size={14} strokeWidth={1.75} />
+            <Trash2 size={14} strokeWidth={1.75} />
           </button>
         )}
       </div>
@@ -248,28 +249,7 @@ function SortableVoiceRow({
               Color
               <HelpTooltip text="Visually distinguishes this voice's messages in the conversation. Each voice must have a unique color." />
             </label>
-            <div className="flex gap-2">
-              {PRESET_COLORS.map((c) => {
-                const isExcluded = excludedColors.has(c);
-                return (
-                  <button
-                    key={c}
-                    onClick={() => !isExcluded && setColor(c)}
-                    disabled={isExcluded}
-                    title={isExcluded ? 'Already in use' : (PRESET_COLOR_NAMES[c] ?? c)}
-                    aria-label={`Voice color: ${PRESET_COLOR_NAMES[c] ?? c}${isExcluded ? ' (already in use)' : ''}`}
-                    className={`w-6 h-6 rounded-full transition-transform ${
-                      isExcluded
-                        ? 'opacity-25 cursor-not-allowed'
-                        : color === c
-                          ? 'ring-2 ring-offset-2 ring-indigo-500 scale-110'
-                          : 'hover:scale-110'
-                    }`}
-                    style={{ backgroundColor: c }}
-                  />
-                );
-              })}
-            </div>
+            <ColorPicker value={color} onChange={setColor} excludedColors={excludedColors} />
           </div>
 
           {/* Voice type toggle or locked indicator */}
