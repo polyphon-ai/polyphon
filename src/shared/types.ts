@@ -117,6 +117,7 @@ export interface Session {
   createdAt: number;
   updatedAt: number;
   archived: boolean;
+  workingDir: string | null;
 }
 
 // Settings — provider configuration persisted to SQLite

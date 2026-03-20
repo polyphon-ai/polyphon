@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import type { Session } from '../../../shared/types';
+import { encryptField, decryptField, type EncryptedField } from '../encryption';
 
 interface SessionRow {
   id: string;
@@ -11,6 +12,7 @@ interface SessionRow {
   created_at: number;
   updated_at: number;
   archived: number;
+  working_dir: EncryptedField | null;
 }
 
 function rowToSession(row: SessionRow): Session {
@@ -24,6 +26,7 @@ function rowToSession(row: SessionRow): Session {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     archived: row.archived === 1,
+    workingDir: row.working_dir ? decryptField(row.working_dir) : null,
   };
 }
 
@@ -43,8 +46,8 @@ export function getSession(db: DatabaseSync, id: string): Session | null {
 
 export function insertSession(db: DatabaseSync, session: Session): void {
   db.prepare(`
-    INSERT INTO sessions (id, composition_id, name, mode, continuation_policy, continuation_max_rounds, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO sessions (id, composition_id, name, mode, continuation_policy, continuation_max_rounds, created_at, updated_at, working_dir)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     session.id,
     session.compositionId,
@@ -54,6 +57,7 @@ export function insertSession(db: DatabaseSync, session: Session): void {
     session.continuationMaxRounds,
     session.createdAt,
     session.updatedAt,
+    session.workingDir ? encryptField(session.workingDir) : null,
   );
 }
 

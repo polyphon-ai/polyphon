@@ -15,7 +15,7 @@ import { createCustomProvider, getCustomProvider } from './queries/customProvide
 import { createSystemPromptTemplate, getSystemPromptTemplate } from './queries/systemPromptTemplates';
 import { insertComposition, getComposition } from './queries/compositions';
 import { createTone, getTone } from './queries/tones';
-import { insertSession } from './queries/sessions';
+import { insertSession, listSessions } from './queries/sessions';
 import type { Message, Session, Composition, CompositionVoice } from '../../shared/types';
 
 const TEST_KEY = Buffer.alloc(32);
@@ -42,7 +42,7 @@ describe('Encryption manifest — all encrypted fields are stored as ciphertext'
   });
 
   it('messages.content is stored as ENC:v1:…', () => {
-    const session: Session = { id: 's1', compositionId: 'c1', name: 'S', mode: 'broadcast', continuationPolicy: 'none', continuationMaxRounds: 1, createdAt: 0, updatedAt: 0, archived: false };
+    const session: Session = { id: 's1', compositionId: 'c1', name: 'S', mode: 'broadcast', continuationPolicy: 'none', continuationMaxRounds: 1, createdAt: 0, updatedAt: 0, archived: false, workingDir: null };
     insertSession(db, session);
     const msg: Message = { id: 'm1', sessionId: 's1', role: 'conductor', voiceId: null, voiceName: null, content: SENTINEL, timestamp: 0, roundIndex: 0 };
     insertMessage(db, msg);
@@ -107,6 +107,17 @@ describe('Encryption manifest — all encrypted fields are stored as ciphertext'
     expect(retrieved!.voices[0]!.cliCommand).toBe(SENTINEL);
   });
 
+  it('sessions.working_dir is stored as ENC:v1:… when present', () => {
+    const session: Session = { id: 's-wd', compositionId: 'c1', name: 'S', mode: 'broadcast', continuationPolicy: 'none', continuationMaxRounds: 1, createdAt: 0, updatedAt: 0, archived: false, workingDir: SENTINEL };
+    insertSession(db, session);
+    const row = db.prepare('SELECT working_dir FROM sessions WHERE id = ?').get('s-wd') as { working_dir: string };
+    expect(row.working_dir).toMatch(/^ENC:v1:/);
+    expect(row.working_dir).not.toContain(SENTINEL);
+    // Round-trip: query layer must decrypt back to the original value
+    const retrieved = listSessions(db, false);
+    expect(retrieved.find((s) => s.id === 's-wd')!.workingDir).toBe(SENTINEL);
+  });
+
   it('tones.description is stored as ENC:v1:…', () => {
     const tone = createTone(db, { name: 'Test Tone', description: SENTINEL });
     const row = db.prepare('SELECT description FROM tones WHERE id = ?').get(tone.id) as { description: string };
@@ -117,7 +128,7 @@ describe('Encryption manifest — all encrypted fields are stored as ciphertext'
   });
 
   it('messages.metadata is stored as ENC:v1:… when present', () => {
-    const session: Session = { id: 's1', compositionId: 'c1', name: 'S', mode: 'broadcast', continuationPolicy: 'none', continuationMaxRounds: 1, createdAt: 0, updatedAt: 0, archived: false };
+    const session: Session = { id: 's1', compositionId: 'c1', name: 'S', mode: 'broadcast', continuationPolicy: 'none', continuationMaxRounds: 1, createdAt: 0, updatedAt: 0, archived: false, workingDir: null };
     insertSession(db, session);
     const msg: Message = { id: 'm1', sessionId: 's1', role: 'voice', voiceId: 'v1', voiceName: 'Alice', content: 'hi', timestamp: 0, roundIndex: 0, metadata: { provider: SENTINEL, tokens: 42 } };
     insertMessage(db, msg);

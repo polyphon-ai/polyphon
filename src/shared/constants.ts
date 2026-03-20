@@ -102,6 +102,8 @@ export const IPC = {
   SESSION_NO_TARGET: 'session:no-target', // suffixed with `:${sessionId}` at runtime
   SESSION_MESSAGES_LIST: 'session:messages:list',
 
+  SESSION_PICK_WORKING_DIR: 'session:pickWorkingDir',
+
   SHELL_OPEN_EXTERNAL: 'shell:openExternal',
 
   UPDATE_AVAILABLE: 'update:available',

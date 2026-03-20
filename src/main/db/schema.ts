@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export const CREATE_TABLES_SQL = `
   CREATE TABLE IF NOT EXISTS schema_version (
@@ -42,7 +42,8 @@ export const CREATE_TABLES_SQL = `
     continuation_max_rounds INTEGER NOT NULL DEFAULT 1,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
-    archived INTEGER NOT NULL DEFAULT 0
+    archived INTEGER NOT NULL DEFAULT 0,
+    working_dir TEXT
   );
 
   CREATE TABLE IF NOT EXISTS messages (
