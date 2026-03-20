@@ -39,8 +39,10 @@ const api = {
   },
 
   session: {
-    create: (compositionId: string, name: string): Promise<Session> =>
-      ipcRenderer.invoke(IPC.SESSION_CREATE, compositionId, name),
+    create: (compositionId: string, name: string, workingDir?: string | null): Promise<Session> =>
+      ipcRenderer.invoke(IPC.SESSION_CREATE, compositionId, name, workingDir ?? null),
+    pickWorkingDir: (): Promise<string | null> =>
+      ipcRenderer.invoke(IPC.SESSION_PICK_WORKING_DIR),
     list: (archived = false): Promise<Session[]> =>
       ipcRenderer.invoke(IPC.SESSION_LIST, archived),
     get: (id: string): Promise<Session | null> =>
@@ -104,12 +106,12 @@ const api = {
       ipcRenderer.on(channel, listener);
       return () => ipcRenderer.off(channel, listener);
     },
-    onDone: (sessionId: string, handler: (voiceId: string) => void) => {
+    onDone: (sessionId: string, handler: (voiceId: string, roundIndex: number) => void) => {
       const channel = `${IPC.VOICE_DONE}:${sessionId}`;
       const listener = (
         _: Electron.IpcRendererEvent,
-        payload: { voiceId: string },
-      ) => handler(payload.voiceId);
+        payload: { voiceId: string; roundIndex: number },
+      ) => handler(payload.voiceId, payload.roundIndex);
       ipcRenderer.on(channel, listener);
       return () => ipcRenderer.off(channel, listener);
     },

@@ -54,9 +54,12 @@ export function registerIpcHandlers(
 ): void {
   // --- Session handlers ---
 
-  ipcMain.handle(IPC.SESSION_CREATE, async (_event, compositionId: unknown, name: unknown) => {
+  ipcMain.handle(IPC.SESSION_CREATE, async (_event, compositionId: unknown, name: unknown, workingDir: unknown) => {
     const validCompositionId = requireId(compositionId, 'compositionId');
     const validName = requireString(name, 'name', MAX_NAME);
+    const validWorkingDir = (typeof workingDir === 'string' && workingDir.trim().length > 0)
+      ? workingDir.trim()
+      : null;
     const composition = getComposition(db, validCompositionId);
     if (!composition) throw new Error(`Composition not found: ${validCompositionId}`);
 
@@ -72,12 +75,22 @@ export function registerIpcHandlers(
       createdAt: now,
       updatedAt: now,
       archived: false,
+      workingDir: validWorkingDir,
     };
 
     const profile = getUserProfile(db);
-    voiceManager.initSession(session.id, voices, session.mode, profile);
+    voiceManager.initSession(session.id, voices, session.mode, profile, validWorkingDir);
     insertSession(db, session);
     return session;
+  });
+
+  ipcMain.handle(IPC.SESSION_PICK_WORKING_DIR, async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Choose Working Directory',
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
   });
 
   ipcMain.handle(IPC.SESSION_LIST, async (_event, archived: unknown) =>
