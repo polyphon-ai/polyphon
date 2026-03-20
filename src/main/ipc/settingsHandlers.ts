@@ -306,6 +306,16 @@ export interface EncryptionContext {
   e2e: boolean;
 }
 
+async function pickAvatarFilePath(): Promise<string | null> {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    title: 'Choose avatar image',
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }],
+    properties: ['openFile'],
+  });
+  if (canceled || filePaths.length === 0) return null;
+  return filePaths[0]!;
+}
+
 export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceManager, encCtx?: EncryptionContext): void {
   ipcMain.handle(IPC.SETTINGS_GET_PROVIDER_STATUS, () => getProviderStatus());
 
@@ -357,14 +367,10 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
   );
 
   ipcMain.handle(IPC.SETTINGS_UPLOAD_CONDUCTOR_AVATAR, async () => {
-    const { canceled, filePaths } = await dialog.showOpenDialog({
-      title: 'Choose avatar image',
-      filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }],
-      properties: ['openFile'],
-    });
-    if (canceled || filePaths.length === 0) return null;
+    const filePath = await pickAvatarFilePath();
+    if (!filePath) return null;
 
-    const img = nativeImage.createFromPath(filePaths[0]!);
+    const img = nativeImage.createFromPath(filePath);
     if (img.isEmpty()) return null;
     const resized = img.resize({ width: 100, height: 100 });
     const dataUrl = `data:image/png;base64,${resized.toPNG().toString('base64')}`;
@@ -377,14 +383,10 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
   // Opens file picker and returns raw image data URL for renderer-side editing.
   // Does not resize or save — the renderer edits then saves via saveUserProfile.
   ipcMain.handle(IPC.SETTINGS_PICK_AVATAR_FILE, async () => {
-    const { canceled, filePaths } = await dialog.showOpenDialog({
-      title: 'Choose avatar image',
-      filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }],
-      properties: ['openFile'],
-    });
-    if (canceled || filePaths.length === 0) return null;
+    const filePath = await pickAvatarFilePath();
+    if (!filePath) return null;
 
-    const img = nativeImage.createFromPath(filePaths[0]!);
+    const img = nativeImage.createFromPath(filePath);
     if (img.isEmpty()) return null;
     const size = img.getSize();
     const maxDim = 1200;
