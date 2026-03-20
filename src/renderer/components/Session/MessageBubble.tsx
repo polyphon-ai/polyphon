@@ -3,6 +3,7 @@ import { Wand2 } from 'lucide-react';
 import type { Message } from '../../../shared/types';
 import ProviderLogo from '../Shared/ProviderLogo';
 import { useSettingsStore } from '../../store/settingsStore';
+import MarkdownContent from './MarkdownContent';
 
 const DECRYPTION_FAILED_SENTINEL = '\u0000[decryption-failed]\u0000';
 
@@ -78,7 +79,7 @@ export default function MessageBubble({
           )}
         </div>
 
-        <div className="flex-1 max-w-2xl min-w-0">
+        <div className="w-fit min-w-0 max-w-[85%]">
           {/* Header */}
           <div className="flex items-center gap-2 mb-1.5 flex-wrap justify-end">
             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -91,10 +92,10 @@ export default function MessageBubble({
 
           {/* Content bubble */}
           <div
-            className="rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words"
+            className="rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-gray-900 dark:text-gray-100 break-words"
             style={{ borderRight: `3px solid ${color}`, backgroundColor: bgColor }}
           >
-            {displayContent}
+            <MarkdownContent content={displayContent} isStreaming={isStreaming} />
           </div>
 
           <div className="text-xs text-gray-400 dark:text-gray-600 mt-1 text-right">
@@ -124,7 +125,7 @@ export default function MessageBubble({
         <ProviderLogo provider={voiceProvider ?? ''} size={18} color={borderColor} fallbackInitial={displayName.charAt(0).toUpperCase()} />
       </div>
 
-      <div className="flex-1 max-w-2xl min-w-0">
+      <div className="w-fit min-w-0 max-w-[85%]">
         {/* Header */}
         <div className={`flex items-center gap-2 mb-1.5 flex-wrap${isRight ? ' justify-end' : ''}`}>
           <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -156,7 +157,7 @@ export default function MessageBubble({
 
         {/* Content bubble */}
         <div
-          className={`rounded-2xl px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words${isRight ? ' rounded-tr-sm' : ' rounded-tl-sm'}`}
+          className={`rounded-2xl px-4 py-3 text-sm text-gray-900 dark:text-gray-100 break-words${isRight ? ' rounded-tr-sm' : ' rounded-tl-sm'}`}
           style={{
             borderLeft: isRight ? undefined : `3px solid ${borderColor}`,
             borderRight: isRight ? `3px solid ${borderColor}` : undefined,
@@ -173,7 +174,9 @@ export default function MessageBubble({
                 />
               ))}
             </span>
-          ) : displayContent}
+          ) : (
+            <MarkdownContent content={displayContent} isStreaming={isStreaming} />
+          )}
         </div>
 
         {!isThinking && (

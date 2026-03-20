@@ -20,9 +20,13 @@ export default function MessageFeed({
 }: MessageFeedProps): React.JSX.Element {
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Include a content-size signal so the feed stays pinned as markdown
+  // expands bubble height on each incoming token.
+  const streamingContentSize = Object.values(streamingContent).join('').length;
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, streamingVoices.size, pendingVoices.size]);
+  }, [messages.length, streamingVoices.size, pendingVoices.size, streamingContentSize]);
 
   const voiceMap = Object.fromEntries(ensemble.map((v) => [v.id, v]));
 

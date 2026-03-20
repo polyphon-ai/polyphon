@@ -104,3 +104,69 @@ body {
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* Scoped typography for markdown-rendered message bubbles.
+   Applied only inside MarkdownContent — never globally. */
+.prose-voice {
+  line-height: 1.55;
+}
+.prose-voice p {
+  margin: 0 0 0.5em;
+}
+.prose-voice p:last-child {
+  margin-bottom: 0;
+}
+.prose-voice h1,
+.prose-voice h2,
+.prose-voice h3,
+.prose-voice h4 {
+  font-weight: 600;
+  margin: 0.75em 0 0.35em;
+  line-height: 1.3;
+}
+.prose-voice h1 { font-size: 1.15em; }
+.prose-voice h2 { font-size: 1.07em; }
+.prose-voice h3 { font-size: 1.00em; }
+.prose-voice h4 { font-size: 0.95em; }
+.prose-voice ul,
+.prose-voice ol {
+  margin: 0.35em 0 0.5em;
+  padding-left: 1.4em;
+}
+.prose-voice li {
+  margin: 0.15em 0;
+}
+.prose-voice blockquote {
+  margin: 0.5em 0;
+  padding-left: 0.85em;
+  border-left: 3px solid oklch(80% 0.004 90);
+  color: oklch(50% 0.006 90);
+}
+.prose-voice a {
+  color: oklch(50% 0.22 264);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-voice a:hover {
+  color: oklch(44% 0.22 264);
+}
+.prose-voice hr {
+  border: none;
+  border-top: 1px solid oklch(88% 0.004 90);
+  margin: 0.75em 0;
+}
+
+/* Dark mode variants */
+:where(.dark, .dark *) .prose-voice blockquote {
+  border-left-color: oklch(35% 0.004 90);
+  color: oklch(60% 0.006 90);
+}
+:where(.dark, .dark *) .prose-voice a {
+  color: oklch(65% 0.22 264);
+}
+:where(.dark, .dark *) .prose-voice a:hover {
+  color: oklch(72% 0.22 264);
+}
+:where(.dark, .dark *) .prose-voice hr {
+  border-top-color: oklch(30% 0.004 90);
+}
