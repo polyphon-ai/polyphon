@@ -10,9 +10,9 @@ install-npm: ## Install npm dependencies only
 	npm install
 
 .PHONY: hooks-install
-hooks-install: ## Install pre-commit and pre-push git hooks via pre-commit
+hooks-install: ## Install git hooks (pre-commit via pre-commit; pre-push via scripts/pre-push-hook.sh)
 	pre-commit install
-	pre-commit install --hook-type pre-push
+	install -m 755 scripts/pre-push-hook.sh .git/hooks/pre-push
 
 ##@ Development
 

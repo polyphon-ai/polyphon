@@ -133,7 +133,7 @@ test.describe('Continuation policy', () => {
 
     await expectResponse(window, 'Anthropic');
     await expectResponse(window, 'OpenAI');
-    await expect(window.getByText(/Agents have more to say/)).toBeVisible({ timeout: 10_000 });
+    await expect(window.getByText(/Let the voices go another round/)).toBeVisible({ timeout: 10_000 });
   });
 
   test('"Prompt me" shows nudge after mixed API + CLI broadcast round', async ({ sharedWindow: window }) => {
@@ -146,7 +146,7 @@ test.describe('Continuation policy', () => {
 
     await expectResponse(window, 'Anthropic');
     await expectResponse(window, 'Copilot');
-    await expect(window.getByText(/Agents have more to say/)).toBeVisible({ timeout: 10_000 });
+    await expect(window.getByText(/Let the voices go another round/)).toBeVisible({ timeout: 10_000 });
   });
 
   test('dismissing the continuation nudge removes it', async ({ sharedWindow: window }) => {
@@ -157,9 +157,9 @@ test.describe('Continuation policy', () => {
     await startSession(window, 'Cont Dismiss', 'Dismiss Session');
     await sendMessage(window, 'Hello!');
 
-    await expect(window.getByText(/Agents have more to say/)).toBeVisible({ timeout: 10_000 });
+    await expect(window.getByText(/Let the voices go another round/)).toBeVisible({ timeout: 10_000 });
     await window.getByRole('button', { name: 'Dismiss' }).click();
-    await expect(window.getByText(/Agents have more to say/)).not.toBeVisible();
+    await expect(window.getByText(/Let the voices go another round/)).not.toBeVisible();
   });
 
   test('allowing continuation triggers a second streaming round', async ({ sharedWindow: window }) => {
@@ -173,10 +173,10 @@ test.describe('Continuation policy', () => {
     // First round completes
     await expectResponse(window, 'Anthropic');
     await expectResponse(window, 'OpenAI');
-    await expect(window.getByText(/Agents have more to say/)).toBeVisible({ timeout: 10_000 });
+    await expect(window.getByText(/Let the voices go another round/)).toBeVisible({ timeout: 10_000 });
 
     // Allow the continuation
-    await window.getByRole('button', { name: 'Allow' }).click();
+    await window.getByRole('button', { name: 'Yes' }).click();
 
     // Voices stream during the second round
     await expect(
@@ -185,7 +185,7 @@ test.describe('Continuation policy', () => {
     await waitIdle(window);
 
     // The nudge reappears after the second round (still within max-rounds limit)
-    await expect(window.getByText(/Agents have more to say/)).toBeVisible({ timeout: 10_000 });
+    await expect(window.getByText(/Let the voices go another round/)).toBeVisible({ timeout: 10_000 });
   });
 
   test('allowing continuation works with mixed API + CLI voices', async ({ sharedWindow: window }) => {
@@ -198,15 +198,15 @@ test.describe('Continuation policy', () => {
 
     await expectResponse(window, 'Anthropic');
     await expectResponse(window, 'Copilot');
-    await expect(window.getByText(/Agents have more to say/)).toBeVisible({ timeout: 10_000 });
+    await expect(window.getByText(/Let the voices go another round/)).toBeVisible({ timeout: 10_000 });
 
-    await window.getByRole('button', { name: 'Allow' }).click();
+    await window.getByRole('button', { name: 'Yes' }).click();
 
     await expect(
       window.getByPlaceholder('Waiting for voices\u2026'),
     ).toBeVisible({ timeout: 10_000 });
     await waitIdle(window);
 
-    await expect(window.getByText(/Agents have more to say/)).toBeVisible({ timeout: 10_000 });
+    await expect(window.getByText(/Let the voices go another round/)).toBeVisible({ timeout: 10_000 });
   });
 });

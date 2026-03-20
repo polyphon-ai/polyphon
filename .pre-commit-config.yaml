@@ -6,36 +6,3 @@ repos:
         name: Detect secrets (gitleaks)
         stages: [pre-commit]
 
-  - repo: local
-    hooks:
-      - id: lint
-        name: TypeScript type-check
-        language: system
-        entry: npm run lint
-        pass_filenames: false
-        stages: [pre-push]
-        files: ^(src/|e2e/|package(-lock)?\.json|forge\.config\.ts|vite\..+\.config\.ts|tsconfig.*\.json|playwright\.config.*\.ts)
-
-      - id: test-unit
-        name: Unit tests
-        language: system
-        entry: npm run test:unit
-        pass_filenames: false
-        stages: [pre-push]
-        files: ^(src/|e2e/|package(-lock)?\.json|forge\.config\.ts|vite\..+\.config\.ts|tsconfig.*\.json|playwright\.config.*\.ts)
-
-      - id: test-integration
-        name: Integration tests
-        language: system
-        entry: npm run test:integration
-        pass_filenames: false
-        stages: [pre-push]
-        files: ^(src/|e2e/|package(-lock)?\.json|forge\.config\.ts|vite\..+\.config\.ts|tsconfig.*\.json|playwright\.config.*\.ts)
-
-      - id: test-e2e
-        name: E2E tests (mocked voices)
-        language: system
-        entry: npm run test:e2e
-        pass_filenames: false
-        stages: [pre-push]
-        files: ^(src/|e2e/|package(-lock)?\.json|forge\.config\.ts|vite\..+\.config\.ts|tsconfig.*\.json|playwright\.config.*\.ts)

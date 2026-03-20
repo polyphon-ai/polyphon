@@ -149,14 +149,14 @@ test('broadcast with "prompt" policy shows continuation nudge and resumes on All
   await expect(responses.first()).toBeVisible({ timeout: 20_000 });
 
   // Nudge banner appears
-  await expect(win.getByText(/Agents have more to say/i)).toBeVisible({ timeout: 10_000 });
+  await expect(win.getByText(/Let the voices go another round/i)).toBeVisible({ timeout: 10_000 });
 
   // Allow triggers a second round
-  await win.getByRole('button', { name: /^Allow$/i }).click();
+  await win.getByRole('button', { name: /^Yes$/i }).click();
   await expect(responses.nth(1)).toBeVisible({ timeout: 20_000 });
 
   // Dismiss the follow-up nudge to stop further rounds
-  await expect(win.getByText(/Agents have more to say/i)).toBeVisible({ timeout: 10_000 });
+  await expect(win.getByText(/Let the voices go another round/i)).toBeVisible({ timeout: 10_000 });
   await win.getByRole('button', { name: /^Dismiss$/i }).click();
   await waitIdle(win);
 });
