@@ -485,17 +485,7 @@
             </span>
           </a>
         </div>
-        <div class="download-gatekeeper-note">
-          <span class="gatekeeper-label">
-            {{ partial "icon.html" (dict "name" "terminal" "size" 11) }}
-            macOS tip
-          </span>
-          <div class="gatekeeper-command">
-            <span class="gatekeeper-prompt" aria-hidden="true">$</span>
-            <code>xattr -cr /Applications/Polyphon.app</code>
-          </div>
-          <p class="gatekeeper-desc">On first launch, right-click the app and select <strong>Open</strong> if macOS blocks it. If it says the app is damaged, run the command above in Terminal, then open it again.</p>
-        </div>
+
         <a class="download-docs-link" href="/docs/getting-started/">
           {{ partial "icon.html" (dict "name" "book-open" "size" 14) }}
           <span>New to Polyphon? Read the getting started guide</span>

@@ -29,6 +29,13 @@ items:
     discussion: https://github.com/polyphon-ai/releases/discussions/4
     feature_request:
 
+  - title: "Auto Update"
+    description: "Polyphon checks for new releases in the background and notifies you when one is available. Install with one click — no manual download required."
+    pricing: free
+    status: planned
+    discussion:
+    feature_request:
+
   # ── Released ───────────────────────────────────────────────
 
   - title: "YOLO Mode for CLI Voices"
