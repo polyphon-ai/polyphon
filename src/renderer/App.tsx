@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MessageSquare, Music2, Settings2, Archive, Plus, PanelLeftClose, PanelLeftOpen, Pencil, Check, X, Camera, Wand2, BookOpen, AlertTriangle } from 'lucide-react';
+import { MessageSquare, Music2, Settings2, Archive, Plus, PanelLeftClose, PanelLeftOpen, Pencil, Check, X, Camera, Wand2, BookOpen, AlertTriangle, Trash2 } from 'lucide-react';
 import wordmarkLightUrl from '../../assets/wordmark-light.svg?url';
 import wordmarkDarkUrl from '../../assets/wordmark-dark.svg?url';
 import iconLightUrl from '../../assets/icon-light-transparent.svg?url';
@@ -92,9 +92,9 @@ function CardActions({
       <button
         onClick={() => setConfirmDelete(true)}
         title="Delete"
-        className="p-1 rounded text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs"
+        className="p-1 rounded text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       >
-        ✕
+        <Trash2 size={14} strokeWidth={1.75} />
       </button>
     </div>
   );
@@ -245,6 +245,7 @@ function SessionsList({
   const [showPicker, setShowPicker] = useState(false);
   const [pickerComp, setPickerComp] = useState<Composition | null>(null);
   const [newName, setNewName] = useState('');
+  const [newWorkingDir, setNewWorkingDir] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
@@ -273,11 +274,13 @@ function SessionsList({
       const session = await window.polyphon.session.create(
         pickerComp.id,
         newName.trim(),
+        newWorkingDir,
       );
       setSessions([session, ...sessions]);
       setShowPicker(false);
       setPickerComp(null);
       setNewName('');
+      setNewWorkingDir(null);
       onOpenSession(session);
     } finally {
       setCreating(false);
@@ -288,6 +291,7 @@ function SessionsList({
     setShowPicker(false);
     setPickerComp(null);
     setNewName('');
+    setNewWorkingDir(null);
   }
 
   return (
@@ -378,6 +382,37 @@ function SessionsList({
                     autoFocus
                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
+                </div>
+                <div>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                    Working directory <span className="font-normal text-gray-400 dark:text-gray-600">(optional)</span>
+                    <HelpTooltip text="CLI voices (claude, codex, copilot) will be spawned in this directory." />
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {newWorkingDir ?? 'None'}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const dir = await window.polyphon.session.pickWorkingDir();
+                        if (dir) setNewWorkingDir(dir);
+                      }}
+                      className="shrink-0 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl transition-colors text-gray-700 dark:text-gray-300"
+                    >
+                      Browse
+                    </button>
+                    {newWorkingDir && (
+                      <button
+                        type="button"
+                        onClick={() => setNewWorkingDir(null)}
+                        aria-label="Clear working directory"
+                        className="shrink-0 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      >
+                        <X size={14} strokeWidth={1.75} />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={handleCreate}
@@ -614,6 +649,7 @@ function Dashboard({
   const [showPicker, setShowPicker] = useState(false);
   const [pickerComp, setPickerComp] = useState<Composition | null>(null);
   const [newName, setNewName] = useState('');
+  const [newWorkingDir, setNewWorkingDir] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -629,11 +665,12 @@ function Dashboard({
     if (!pickerComp || !newName.trim()) return;
     setCreating(true);
     try {
-      const session = await window.polyphon.session.create(pickerComp.id, newName.trim());
+      const session = await window.polyphon.session.create(pickerComp.id, newName.trim(), newWorkingDir);
       setSessions([session, ...sessions]);
       setShowPicker(false);
       setPickerComp(null);
       setNewName('');
+      setNewWorkingDir(null);
       onOpenSession(session);
     } finally {
       setCreating(false);
@@ -644,6 +681,7 @@ function Dashboard({
     setShowPicker(false);
     setPickerComp(null);
     setNewName('');
+    setNewWorkingDir(null);
   }
 
   return (
@@ -928,6 +966,37 @@ function Dashboard({
                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
+                <div>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                    Working directory <span className="font-normal text-gray-400 dark:text-gray-600">(optional)</span>
+                    <HelpTooltip text="CLI voices (claude, codex, copilot) will be spawned in this directory." />
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {newWorkingDir ?? 'None'}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const dir = await window.polyphon.session.pickWorkingDir();
+                        if (dir) setNewWorkingDir(dir);
+                      }}
+                      className="shrink-0 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl transition-colors text-gray-700 dark:text-gray-300"
+                    >
+                      Browse
+                    </button>
+                    {newWorkingDir && (
+                      <button
+                        type="button"
+                        onClick={() => setNewWorkingDir(null)}
+                        aria-label="Clear working directory"
+                        className="shrink-0 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      >
+                        <X size={14} strokeWidth={1.75} />
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <button
                   onClick={handleCreate}
                   disabled={creating || !newName.trim()}
@@ -984,6 +1053,7 @@ export default function App(): React.JSX.Element {
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [newSessionPickerComp, setNewSessionPickerComp] = useState<Composition | null>(null);
   const [newSessionName, setNewSessionName] = useState('');
+  const [newSessionWorkingDir, setNewSessionWorkingDir] = useState<string | null>(null);
   const [newSessionCreating, setNewSessionCreating] = useState(false);
 
 
@@ -1106,11 +1176,13 @@ export default function App(): React.JSX.Element {
       const session = await window.polyphon.session.create(
         newSessionPickerComp.id,
         newSessionName.trim(),
+        newSessionWorkingDir,
       );
       setSessions([session, ...sessions]);
       setShowNewSessionModal(false);
       setNewSessionPickerComp(null);
       setNewSessionName('');
+      setNewSessionWorkingDir(null);
       handleOpenSession(session);
     } finally {
       setNewSessionCreating(false);
@@ -1121,6 +1193,7 @@ export default function App(): React.JSX.Element {
     setShowNewSessionModal(false);
     setNewSessionPickerComp(null);
     setNewSessionName('');
+    setNewSessionWorkingDir(null);
   }
 
   async function handleSaveComposition(
@@ -1516,6 +1589,37 @@ export default function App(): React.JSX.Element {
                     autoFocus
                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
+                </div>
+                <div>
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                    Working directory <span className="font-normal text-gray-400 dark:text-gray-600">(optional)</span>
+                    <HelpTooltip text="CLI voices (claude, codex, copilot) will be spawned in this directory." />
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {newSessionWorkingDir ?? 'None'}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const dir = await window.polyphon.session.pickWorkingDir();
+                        if (dir) setNewSessionWorkingDir(dir);
+                      }}
+                      className="shrink-0 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl transition-colors text-gray-700 dark:text-gray-300"
+                    >
+                      Browse
+                    </button>
+                    {newSessionWorkingDir && (
+                      <button
+                        type="button"
+                        onClick={() => setNewSessionWorkingDir(null)}
+                        aria-label="Clear working directory"
+                        className="shrink-0 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      >
+                        <X size={14} strokeWidth={1.75} />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={handleSidebarCreateSession}
