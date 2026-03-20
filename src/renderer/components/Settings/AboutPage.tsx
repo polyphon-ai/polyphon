@@ -1,48 +1,11 @@
-import React, { useState } from 'react';
-import { ExternalLink, Music2, Bug, Lightbulb, MessageSquare, ShieldAlert, RefreshCw, CheckCircle, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import type { UpdateChannel } from '../../../shared/types';
+import { ExternalLink, Bug, Lightbulb, MessageSquare, ShieldAlert, RefreshCw, CheckCircle, Download, RotateCcw, ChevronDown } from 'lucide-react';
 import wordmarkLightUrl from '../../../../assets/wordmark-light.svg?url';
 import wordmarkDarkUrl from '../../../../assets/wordmark-dark.svg?url';
 
-const GLOSSARY: Array<{ term: string; description: string }> = [
-  {
-    term: 'Voice',
-    description: 'An AI agent participating in your session. Each voice has its own provider, model, and personality.',
-  },
-  {
-    term: 'Session',
-    description: 'A conversation thread where voices respond to you and to each other in real time.',
-  },
-  {
-    term: 'Composition',
-    description: 'A saved configuration of voices. Load a composition to instantly recreate your preferred ensemble.',
-  },
-  {
-    term: 'Round',
-    description: 'One full cycle in which every voice in the session has responded.',
-  },
-  {
-    term: 'Conductor',
-    description: 'You. The human directing the ensemble, setting the tone, and guiding the conversation.',
-  },
-  {
-    term: 'Tone',
-    description: 'A personality preset that shapes how a voice communicates — its style, formality, and approach. Applied per-voice in a composition.',
-  },
-  {
-    term: 'Broadcast',
-    description: 'A session mode where your message is sent to all voices at once. The alternative is directing a message at a specific voice.',
-  },
-  {
-    term: 'Directed',
-    description: 'A session mode where you address one voice at a time. Only the targeted voice responds, keeping the conversation focused.',
-  },
-  {
-    term: 'Provider',
-    description: 'The AI service powering a voice — Anthropic, OpenAI, Gemini, a local CLI tool, or a custom OpenAI-compatible endpoint.',
-  },
-];
 
-type CheckState = 'idle' | 'checking' | 'up-to-date' | 'update-available';
+type CheckState = 'idle' | 'checking' | 'up-to-date' | 'update-available' | 'downloading' | 'ready';
 
 export default function AboutPage() {
   const version =
@@ -52,6 +15,19 @@ export default function AboutPage() {
 
   const [checkState, setCheckState] = useState<CheckState>('idle');
   const [availableVersion, setAvailableVersion] = useState<string | null>(null);
+  const [channel, setChannel] = useState<UpdateChannel>('stable');
+
+  useEffect(() => {
+    window.polyphon.update.getChannel().then(setChannel);
+  }, []);
+
+  async function handleChannelChange(next: UpdateChannel) {
+    setChannel(next);
+    // Clear any stale update notification — channel change triggers a fresh check
+    setCheckState('idle');
+    setAvailableVersion(null);
+    await window.polyphon.update.setChannel(next);
+  }
 
   function handleDocs() {
     window.polyphon.shell.openExternal('https://polyphon.ai/docs');
@@ -142,12 +118,14 @@ export default function AboutPage() {
 
       {/* ── Updates ──────────────────────────────────────────────────── */}
       <div
-        className="rounded-xl p-4 flex items-center justify-between gap-4"
+        className="rounded-xl overflow-hidden"
         style={{
           background: 'var(--color-surface-raised)',
           border: '1px solid var(--color-border)',
         }}
       >
+        {/* Check for updates row */}
+        <div className="p-4 flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
             Updates
@@ -177,7 +155,10 @@ export default function AboutPage() {
           )}
           {checkState === 'update-available' && availableVersion && (
             <button
-              onClick={() => window.polyphon.shell.openExternal('https://polyphon.ai/#download')}
+              onClick={() => {
+                setCheckState('downloading');
+                window.polyphon.update.download().then(() => setCheckState('ready')).catch(() => setCheckState('update-available'));
+              }}
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-ring"
               style={{
                 background: 'var(--color-brand)',
@@ -192,7 +173,40 @@ export default function AboutPage() {
               }}
             >
               <Download size={13} strokeWidth={1.75} />
-              Download v{availableVersion}
+              Update Now
+            </button>
+          )}
+          {checkState === 'downloading' && (
+            <span
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium"
+              style={{
+                background: 'color-mix(in oklch, var(--color-brand) 12%, transparent)',
+                color: 'var(--color-brand)',
+                border: '1px solid color-mix(in oklch, var(--color-brand) 30%, transparent)',
+              }}
+            >
+              <RefreshCw size={13} strokeWidth={1.75} className="animate-spin" />
+              Downloading…
+            </span>
+          )}
+          {checkState === 'ready' && (
+            <button
+              onClick={() => window.polyphon.update.install()}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-ring"
+              style={{
+                background: '#10b981',
+                color: '#fff',
+                border: '1px solid transparent',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = '0.88';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = '1';
+              }}
+            >
+              <RotateCcw size={13} strokeWidth={1.75} />
+              Restart & Install
             </button>
           )}
           <button
@@ -225,52 +239,45 @@ export default function AboutPage() {
             {checkState === 'checking' ? 'Checking…' : 'Check for updates'}
           </button>
         </div>
-      </div>
-
-      {/* ── Glossary ─────────────────────────────────────────────────── */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Music2
-            size={14}
-            strokeWidth={1.75}
-            style={{ color: 'var(--color-text-muted)' }}
-          />
-          <h3
-            className="text-xs font-semibold uppercase tracking-widest"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            The Ensemble
-          </h3>
         </div>
 
+        {/* Channel selector row */}
         <div
-          className="rounded-xl overflow-hidden"
-          style={{
-            border: '1px solid var(--color-border)',
-          }}
+          className="flex items-center justify-between gap-4 px-4 py-3"
+          style={{ borderTop: '1px solid var(--color-border)' }}
         >
-          {GLOSSARY.map((entry, i) => (
-            <div
-              key={entry.term}
-              className="flex gap-3 px-4 py-3 text-sm"
+          <div className="min-w-0">
+            <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+              Update channel
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+              {channel === 'stable'
+                ? 'Receive only stable releases'
+                : 'Receive stable and pre-release builds'}
+            </p>
+          </div>
+          <div className="relative shrink-0">
+            <select
+              value={channel}
+              onChange={(e) => handleChannelChange(e.target.value as UpdateChannel)}
+              className="text-sm rounded-lg pl-2.5 pr-7 py-1.5 focus-ring appearance-none cursor-pointer"
               style={{
-                background: i % 2 === 0 ? 'var(--color-surface-raised)' : 'var(--color-surface)',
-                borderTop: i > 0 ? '1px solid var(--color-border)' : undefined,
+                background: 'var(--color-surface-overlay)',
+                border: '1px solid var(--color-border-strong)',
+                color: 'var(--color-text-primary)',
+                minWidth: '7rem',
               }}
             >
-              <div className="shrink-0 w-24">
-                <span
-                  className="font-semibold"
-                  style={{ color: 'var(--color-text-primary)' }}
-                >
-                  {entry.term}
-                </span>
-              </div>
-              <p style={{ color: 'var(--color-text-secondary)' }} className="leading-snug">
-                {entry.description}
-              </p>
-            </div>
-          ))}
+              <option value="stable">Stable</option>
+              <option value="preview">Preview</option>
+            </select>
+            <ChevronDown
+              size={13}
+              strokeWidth={1.75}
+              className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+              style={{ color: 'var(--color-text-muted)' }}
+            />
+          </div>
         </div>
       </div>
 

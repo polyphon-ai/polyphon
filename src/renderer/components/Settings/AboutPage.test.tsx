@@ -6,7 +6,13 @@ import AboutPage from './AboutPage';
 beforeAll(() => {
   (window as any).polyphon = {
     shell: { openExternal: vi.fn() },
-    update: { checkNow: vi.fn().mockResolvedValue(null) },
+    update: {
+      checkNow: vi.fn().mockResolvedValue(null),
+      download: vi.fn().mockResolvedValue(undefined),
+      install: vi.fn().mockResolvedValue(undefined),
+      getChannel: vi.fn().mockResolvedValue('stable'),
+      setChannel: vi.fn().mockResolvedValue(undefined),
+    },
   };
 });
 

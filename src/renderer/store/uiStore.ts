@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { UpdateInfo } from '../../shared/types';
+import type { UpdateInfo, UpdateDownloadProgress } from '../../shared/types';
 
 type View = 'home' | 'session' | 'composition-builder' | 'settings';
 export type Theme = 'light' | 'dark' | 'system';
@@ -9,6 +9,8 @@ interface UIState {
   sidebarOpen: boolean;
   theme: Theme;
   updateAvailable: UpdateInfo | null;
+  updateDownloadProgress: UpdateDownloadProgress | null;
+  updateReadyToInstall: UpdateInfo | null;
 }
 
 interface UIActions {
@@ -16,6 +18,8 @@ interface UIActions {
   toggleSidebar: () => void;
   setTheme: (theme: Theme) => void;
   setUpdateAvailable: (info: UpdateInfo) => void;
+  setUpdateDownloadProgress: (progress: UpdateDownloadProgress) => void;
+  setUpdateReadyToInstall: (info: UpdateInfo) => void;
   clearUpdate: () => void;
 }
 
@@ -30,6 +34,8 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   sidebarOpen: true,
   theme: loadTheme(),
   updateAvailable: null,
+  updateDownloadProgress: null,
+  updateReadyToInstall: null,
 
   setView: (activeView) => set({ activeView }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
@@ -38,5 +44,7 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
     set({ theme });
   },
   setUpdateAvailable: (info) => set({ updateAvailable: info }),
-  clearUpdate: () => set({ updateAvailable: null }),
+  setUpdateDownloadProgress: (progress) => set({ updateDownloadProgress: progress }),
+  setUpdateReadyToInstall: (info) => set({ updateReadyToInstall: info, updateDownloadProgress: null }),
+  clearUpdate: () => set({ updateAvailable: null, updateDownloadProgress: null, updateReadyToInstall: null }),
 }));

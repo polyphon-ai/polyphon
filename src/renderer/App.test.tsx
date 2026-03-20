@@ -117,7 +117,13 @@ function stubPolyphon(compositions: Composition[] = [], sessions: Session[] = []
       getState: vi.fn().mockResolvedValue(null),
       dismiss: vi.fn(),
       checkNow: vi.fn().mockResolvedValue(null),
+      download: vi.fn().mockResolvedValue(undefined),
+      install: vi.fn().mockResolvedValue(undefined),
+      getChannel: vi.fn().mockResolvedValue('stable'),
+      setChannel: vi.fn().mockResolvedValue(undefined),
       onAvailable: vi.fn().mockReturnValue(() => {}),
+      onDownloadProgress: vi.fn().mockReturnValue(() => {}),
+      onReadyToInstall: vi.fn().mockReturnValue(() => {}),
     },
     shell: {
       openExternal: vi.fn(),
