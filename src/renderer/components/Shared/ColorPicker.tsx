@@ -9,11 +9,13 @@ interface ColorPickerProps {
   excludedColors?: Set<string>;
   /** Show a gray "no color" swatch as the first option. */
   includeGray?: boolean;
+  /** Prefix for swatch aria-labels. Defaults to "Voice color". */
+  labelPrefix?: string;
 }
 
 const GRAY = '#6b7280';
 
-export function ColorPicker({ value, onChange, excludedColors, includeGray }: ColorPickerProps): React.JSX.Element {
+export function ColorPicker({ value, onChange, excludedColors, includeGray, labelPrefix = 'Voice color' }: ColorPickerProps): React.JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null);
   // Track the last preset/gray value so X can revert to it when custom is active
   const lastPresetRef = useRef<string>(value);
@@ -58,7 +60,7 @@ export function ColorPicker({ value, onChange, excludedColors, includeGray }: Co
             onClick={() => !disabled && onChange(c)}
             disabled={disabled}
             title={disabled ? 'Already in use' : (PRESET_COLOR_NAMES[c] ?? c)}
-            aria-label={`Color: ${PRESET_COLOR_NAMES[c] ?? c}${disabled ? ' (already in use)' : ''}`}
+            aria-label={`${labelPrefix}: ${PRESET_COLOR_NAMES[c] ?? c}${disabled ? ' (already in use)' : ''}`}
             aria-pressed={value === c}
             className={`w-6 h-6 rounded-full ${swatchClass(value === c, disabled)}`}
             style={{ backgroundColor: c }}

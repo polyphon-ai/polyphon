@@ -525,6 +525,7 @@ function ConductorProfile() {
                 value={conductorColor || '#6b7280'}
                 onChange={handleColorSelect}
                 includeGray
+                labelPrefix="Voice color"
               />
             </div>
           )}
