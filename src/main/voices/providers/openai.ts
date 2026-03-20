@@ -116,6 +116,7 @@ class CodexVoice extends CLIVoice {
     // `codex exec -` reads the prompt from stdin and runs non-interactively
     const proc = spawn(this.cliCommand, [...this.cliArgs, 'exec', '-'], {
       stdio: ['pipe', 'pipe', 'pipe'],
+      ...(this.workingDir ? { cwd: this.workingDir } : {}),
     });
     this.setActiveProcess(proc);
     try {

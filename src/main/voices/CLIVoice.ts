@@ -15,6 +15,7 @@ export abstract class CLIVoice implements Voice {
   readonly toneOverride: string | undefined;
   protected readonly cliCommand: string;
   protected readonly cliArgs: string[];
+  protected workingDir: string | null;
   protected readonly systemPrompt: string | undefined;
   protected ensembleSystemPrompt = '';
 
@@ -34,6 +35,7 @@ export abstract class CLIVoice implements Voice {
     requireCliCommand(cliCommand, 'cliCommand');
     this.cliCommand = cliCommand;
     this.cliArgs = config.cliArgs ?? [];
+    this.workingDir = config.workingDir ?? null;
     this.systemPrompt = config.systemPrompt;
   }
 
@@ -49,6 +51,10 @@ export abstract class CLIVoice implements Voice {
 
   setEnsembleSystemPrompt(prompt: string): void {
     this.ensembleSystemPrompt = prompt;
+  }
+
+  setWorkingDir(dir: string | null): void {
+    this.workingDir = dir;
   }
 
   protected buildSystemPrompt(): string {

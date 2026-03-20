@@ -38,6 +38,7 @@ class CopilotVoice extends CLIVoice {
 
     const proc = spawn(this.cliCommand, [...this.cliArgs], {
       stdio: ['pipe', 'pipe', 'pipe'],
+      ...(this.workingDir ? { cwd: this.workingDir } : {}),
     });
     this.setActiveProcess(proc);
 

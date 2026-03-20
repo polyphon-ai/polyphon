@@ -31,6 +31,7 @@ export interface VoiceConfig {
   // CLI voices
   cliCommand?: string;
   cliArgs?: string[];
+  workingDir?: string | null;
   // OpenAI-compatible custom providers
   baseUrl?: string;
   apiKeyEnvVar?: string | null;

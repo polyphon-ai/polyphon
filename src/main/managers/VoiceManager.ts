@@ -148,7 +148,7 @@ export class VoiceManager {
   }
 
   // Builds the injected system prompt that makes a voice aware of the full ensemble
-  buildEnsembleSystemPrompt(voice: Voice, ensemble: Voice[], mode: 'conductor' | 'broadcast', profile?: UserProfile): string {
+  buildEnsembleSystemPrompt(voice: Voice, ensemble: Voice[], mode: 'conductor' | 'broadcast', profile?: UserProfile, workingDir?: string | null): string {
     this.ensureLoaded();
     const others = ensemble.filter((v) => v.id !== voice.id);
     const roster = others
@@ -192,6 +192,11 @@ export class VoiceManager {
     parts.push(ensembleSection);
     parts.push('');
 
+    if (workingDir) {
+      parts.push(`Working directory: ${workingDir}`);
+      parts.push('');
+    }
+
     if (mode === 'conductor') {
       parts.push(
         'This is a conductor-directed session. The conductor controls who speaks — only respond when addressed directly. You may reference or mention other voices by name when relevant, but do not direct questions or tasks at them as if expecting them to reply. The conductor will decide if and when to involve other voices.',
@@ -205,11 +210,14 @@ export class VoiceManager {
     return parts.join('\n');
   }
 
-  initSession(sessionId: string, voices: Voice[], mode: 'conductor' | 'broadcast', profile?: UserProfile): void {
+  initSession(sessionId: string, voices: Voice[], mode: 'conductor' | 'broadcast', profile?: UserProfile, workingDir?: string | null): void {
     this.sessions.set(sessionId, new Map(voices.map((v) => [v.id, v])));
     for (const voice of voices) {
+      if (voice.type === 'cli' && 'setWorkingDir' in voice) {
+        (voice as unknown as { setWorkingDir: (d: string | null) => void }).setWorkingDir(workingDir ?? null);
+      }
       voice.setEnsembleSystemPrompt(
-        this.buildEnsembleSystemPrompt(voice, voices, mode, profile)
+        this.buildEnsembleSystemPrompt(voice, voices, mode, profile, workingDir)
       );
     }
     logger.info('Session voices initialized', {

@@ -114,6 +114,7 @@ class AnthropicCLIVoice extends CLIVoice {
     const prompt = buildPrompt(context, this.buildSystemPrompt());
     const proc = spawn(this.cliCommand, [...this.cliArgs, '--print'], {
       stdio: ['pipe', 'pipe', 'pipe'],
+      ...(this.workingDir ? { cwd: this.workingDir } : {}),
     });
     this.setActiveProcess(proc);
     try {
