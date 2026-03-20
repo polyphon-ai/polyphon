@@ -69,6 +69,11 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version }}"
           TAG="v${VERSION#v}"
-          gh release edit "$TAG" --repo polyphon-ai/releases --prerelease=false --latest
+          # Keep pre-release flag for alpha/beta; only promote stable releases to latest
+          if echo "$VERSION" | grep -qE '\-(alpha|beta)'; then
+            gh release edit "$TAG" --repo polyphon-ai/releases --prerelease=true
+          else
+            gh release edit "$TAG" --repo polyphon-ai/releases --prerelease=false --latest
+          fi
         env:
           GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
