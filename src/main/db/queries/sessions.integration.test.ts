@@ -74,6 +74,20 @@ describe('sessions queries', () => {
     expect(retrieved?.continuationPolicy).toBe('auto');
     expect(retrieved?.continuationMaxRounds).toBe(3);
   });
+
+  it('round-trips a non-null workingDir', () => {
+    const session = makeSession({ id: 'sess-wd', workingDir: '/Users/corey/projects/my-app' });
+    insertSession(db, session);
+    const retrieved = getSession(db, 'sess-wd');
+    expect(retrieved?.workingDir).toBe('/Users/corey/projects/my-app');
+  });
+
+  it('round-trips a null workingDir', () => {
+    const session = makeSession({ id: 'sess-no-wd', workingDir: null });
+    insertSession(db, session);
+    const retrieved = getSession(db, 'sess-no-wd');
+    expect(retrieved?.workingDir).toBeNull();
+  });
 });
 
 describe('archiveSession', () => {

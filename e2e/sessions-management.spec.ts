@@ -57,6 +57,18 @@ async function startSession(compositionName: string, sessionName: string): Promi
   await expect(window.getByPlaceholder('Message the ensemble\u2026')).toBeVisible({ timeout: 10_000 });
 }
 
+test.describe('New session panel', () => {
+  test('shows the working directory field with a Browse button after selecting a composition', async () => {
+    await window.getByRole('button', { name: 'Sessions', exact: true }).click();
+    await window.getByRole('button', { name: 'New Session', exact: true }).click();
+    await window.getByRole('button', { name: /broadcast base/i }).first().click();
+    await expect(window.getByText('Working directory')).toBeVisible();
+    await expect(window.getByRole('button', { name: 'Browse' })).toBeVisible();
+    // Close the modal without creating a session
+    await window.getByRole('button', { name: 'Cancel' }).click();
+  });
+});
+
 test.describe('Session creation', () => {
   test('starts a broadcast session and it appears in the session list', async () => {
     await startSession('Broadcast Base', 'BC Session 1');

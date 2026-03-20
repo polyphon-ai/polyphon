@@ -15,13 +15,19 @@ Click the **+** button at the top of the sidebar to open the new session panel.
 ![Sidebar showing the New Session (+) button at the top](/images/screenshots/sessions/new-button.webp)
 <!-- Prerequisites: app open | Platform: any | Theme: any | Window: default -->
 
-You can start a session in two ways:
-
-1. **From a composition** — select a saved composition and click **Start Session**. The session launches with the composition's voices pre-configured.
-2. **Ad-hoc** — add voices manually without a composition. Configure each voice's provider, model, name, and system prompt inline.
+Select a saved composition from the list, give the session a name, optionally set a working directory, and click **Start Session**.
 
 ![New session panel showing composition picker and option to add voices manually](/images/screenshots/sessions/new-panel.webp)
 <!-- Prerequisites: at least one saved composition | Platform: any | Theme: any | Window: default -->
+
+### Working Directory
+
+When creating a session you can optionally choose a working directory from your machine using the **Browse** button. If set:
+
+- **CLI voices** (claude, codex, copilot) are spawned with that directory as their working directory.
+- **All voices** receive the path in their ensemble system prompt so they have context about which project they are working in.
+
+The working directory is shown in the session header next to the mode badge. It is stored encrypted and never leaves your machine.
 
 ---
 
@@ -74,9 +80,7 @@ The continuation policy is set on the composition, not on individual voices. It 
 
 **None** — voices respond once and wait. This is the default for new compositions.
 
-**Prompt me** — after each round completes, a nudge banner appears at the bottom of the message feed asking whether to continue:
-
-Click **Allow** to start the next round, or **Dismiss** to stop without continuing.
+**Prompt me** — after each round completes, a banner appears asking "Let the voices go another round without your input?" Click **Yes** to start the next round, or **Dismiss** to stop.
 
 **Auto** — voices continue responding automatically up to the configured max rounds (1–3). A round divider appears in the message feed each time a new round starts.
 
