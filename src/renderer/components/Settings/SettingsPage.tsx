@@ -29,13 +29,12 @@ import { useUIStore, type Theme } from '../../store/uiStore';
 import {
   SETTINGS_PROVIDERS,
   PROVIDER_METADATA,
-  PRESET_COLORS,
-  PRESET_COLOR_NAMES,
   type VoiceType,
 } from '../../../shared/constants';
 import type { ApiKeyStatus, ProviderConfig, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate } from '../../../shared/types';
 import ProviderLogo from '../Shared/ProviderLogo';
 import { HelpTooltip } from '../Shared/HelpTooltip';
+import { ColorPicker } from '../Shared';
 import { AvatarEditor } from './AvatarEditor';
 import AboutPage from './AboutPage';
 import EncryptionSection from './EncryptionSection';
@@ -522,35 +521,11 @@ function ConductorProfile() {
                 Choose display color for your voice
                 <HelpTooltip text="Appears next to your messages in the conversation view. This color is reserved so no voice can use the same one." />
               </label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => handleColorSelect('#6b7280')}
-                  title="No color"
-                  aria-label="No color"
-                  aria-pressed={!conductorColor || conductorColor === '#6b7280'}
-                  className={`w-6 h-6 rounded-full transition-transform ${
-                    !conductorColor || conductorColor === '#6b7280'
-                      ? 'ring-2 ring-offset-2 ring-indigo-500 scale-110'
-                      : 'hover:scale-110'
-                  }`}
-                  style={{ backgroundColor: '#6b7280' }}
-                />
-                {PRESET_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => handleColorSelect(c)}
-                    title={PRESET_COLOR_NAMES[c]}
-                    aria-label={`Your color: ${PRESET_COLOR_NAMES[c] ?? c}`}
-                    aria-pressed={conductorColor === c}
-                    className={`w-6 h-6 rounded-full transition-transform ${
-                      conductorColor === c
-                        ? 'ring-2 ring-offset-2 ring-indigo-500 scale-110'
-                        : 'hover:scale-110'
-                    }`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
+              <ColorPicker
+                value={conductorColor || '#6b7280'}
+                onChange={handleColorSelect}
+                includeGray
+              />
             </div>
           )}
         </div>
