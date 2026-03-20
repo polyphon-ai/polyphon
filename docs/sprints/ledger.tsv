@@ -14,3 +14,4 @@ sprint_id	title	status	created_at	updated_at
 013	Application Logging System	completed	2026-03-18T17:35:42Z	2026-03-18T18:05:06Z
 014	macOS arm64 Cleanup — Remove Cross-Platform Residue	completed	2026-03-19T03:38:59Z	2026-03-19T04:00:06Z
 015	Dead Code Audit and Cleanup	completed	2026-03-19T16:04:32Z	2026-03-19T16:33:39Z
+016	Markdown Rendering for Voice Responses	completed	2026-03-20T18:29:15Z	2026-03-20T19:03:08Z

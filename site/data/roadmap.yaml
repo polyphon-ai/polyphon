@@ -27,6 +27,14 @@ items:
     status: released
     release_date: 2026-03-19
 
+  - title: "Markdown Rendering"
+    description: "Voice responses rendered as formatted Markdown — headings, code blocks, lists, bold, italics, and inline code displayed as intended rather than as raw syntax."
+    pricing: free
+    status: released
+    release_date: 2026-03-20
+    discussion:
+    feature_request:
+
   - title: "Session Export"
     description: "Export full conversation transcripts in multiple formats — Markdown, JSON, or plain text."
     pricing: free
