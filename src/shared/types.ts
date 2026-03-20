@@ -158,8 +158,17 @@ export interface ModelsResult {
   error?: string;
 }
 
+export type UpdateChannel = 'stable' | 'preview';
+
 export interface UpdateInfo {
   version: string;
+}
+
+export interface UpdateDownloadProgress {
+  percent: number;
+  transferred: number;
+  total: number;
+  bytesPerSecond: number;
 }
 
 export interface EncryptionStatus {

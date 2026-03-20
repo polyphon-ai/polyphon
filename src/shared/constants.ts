@@ -108,6 +108,12 @@ export const IPC = {
   UPDATE_GET_STATE: 'update:get-state',
   UPDATE_DISMISS: 'update:dismiss',
   UPDATE_CHECK_NOW: 'update:check-now',
+  UPDATE_DOWNLOAD: 'update:download',
+  UPDATE_DOWNLOAD_PROGRESS: 'update:download-progress',
+  UPDATE_READY_TO_INSTALL: 'update:ready-to-install',
+  UPDATE_INSTALL: 'update:install',
+  UPDATE_GET_CHANNEL: 'update:get-channel',
+  UPDATE_SET_CHANNEL: 'update:set-channel',
 
   ENCRYPTION_GET_STATUS: 'settings:encryption:getStatus',
   ENCRYPTION_SET_PASSWORD: 'settings:encryption:setPassword',
@@ -123,7 +129,7 @@ export const IPC = {
   LOGS_GET_PATHS: 'logs:getPaths',
 } as const;
 
-export const CONTINUATION_MAX_ROUNDS_LIMIT = 3;
+export const CONTINUATION_MAX_ROUNDS_LIMIT = 10;
 
 export const PROVIDER_NAMES = {
   ANTHROPIC: 'anthropic',
