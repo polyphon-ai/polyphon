@@ -42,8 +42,9 @@ import {
   upsertCompositionVoices,
 } from '../db/queries/compositions';
 import { generateId } from '../utils';
-import { getUserProfile, setDismissedUpdateVersion, setUpdateRemindAfter } from '../db/queries/userProfile';
-import { getCachedUpdateInfo, checkForUpdateNow } from '../utils/updateChecker';
+import { getUserProfile, setDismissedUpdateVersion, setUpdateRemindAfter, getUpdateChannel, setUpdateChannel } from '../db/queries/userProfile';
+import { getCachedUpdateInfo, checkForUpdateNow, downloadUpdate, quitAndInstall, changeChannel } from '../utils/updateChecker';
+import type { UpdateChannel } from '../../shared/types';
 
 export function registerIpcHandlers(
   db: DatabaseSync,
@@ -291,13 +292,22 @@ export function registerIpcHandlers(
 
   ipcMain.handle(IPC.UPDATE_GET_STATE, () => getCachedUpdateInfo());
 
-  ipcMain.handle(IPC.UPDATE_CHECK_NOW, async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    if (!win) return null;
-    return checkForUpdateNow(win);
+  ipcMain.handle(IPC.UPDATE_CHECK_NOW, async () => checkForUpdateNow());
+
+  ipcMain.handle(IPC.UPDATE_DOWNLOAD, async () => downloadUpdate());
+
+  ipcMain.handle(IPC.UPDATE_INSTALL, () => quitAndInstall());
+
+  ipcMain.handle(IPC.UPDATE_GET_CHANNEL, () => getUpdateChannel(db));
+
+  ipcMain.handle(IPC.UPDATE_SET_CHANNEL, (_event, channel: unknown) => {
+    if (channel !== 'stable' && channel !== 'preview') return;
+    setUpdateChannel(db, channel as UpdateChannel);
+    changeChannel(channel as UpdateChannel);
   });
 
-  const VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
+  // Accepts stable (X.Y.Z) and alpha/beta pre-releases (X.Y.Z-alpha.N, X.Y.Z-beta.N)
+  const VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-(alpha|beta)\.\d+)?$/;
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
   ipcMain.handle(

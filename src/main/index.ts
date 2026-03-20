@@ -6,7 +6,7 @@ import { getDb, closeDb } from './db';
 import { logger } from './utils/logger';
 import { VoiceManager } from './managers/VoiceManager';
 import { SessionManager } from './managers/SessionManager';
-import { checkForUpdate } from './utils/updateChecker';
+import { setupAutoUpdater } from './utils/updateChecker';
 import { loadOrCreateKey } from './security/keyManager';
 import { initFieldEncryption } from './security/fieldEncryption';
 import { createUnlockWindow } from './security/unlockWindow';
@@ -112,7 +112,7 @@ app.whenReady().then(async () => {
   registerIpcHandlers(db, voiceManager, sessionManager, encCtx);
   const win = createWindow();
   logger.info('Main window created');
-  checkForUpdate(db, win);
+  setupAutoUpdater(db, win);
 
   // After the renderer finishes loading, send any one-time push notifications.
   win.webContents.once('did-finish-load', () => {

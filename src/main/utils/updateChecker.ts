@@ -1,13 +1,13 @@
+import { autoUpdater } from 'electron-updater';
 import { app } from 'electron';
-import { logger } from './logger';
 import type { BrowserWindow } from 'electron';
 import type { DatabaseSync } from 'node:sqlite';
+import { logger } from './logger';
 import { IPC } from '../../shared/constants';
-import type { UpdateInfo } from '../../shared/types';
-import { isNewerVersion } from './version';
-import { getUpdatePreferences } from '../db/queries/userProfile';
+import { getUpdatePreferences, getUpdateChannel } from '../db/queries/userProfile';
+import type { UpdateInfo, UpdateChannel } from '../../shared/types';
 
-// Module-level cache — set once per startup; never mutated after checkForUpdate runs.
+// Cached update info — set when an update is detected and not dismissed.
 // getCachedUpdateInfo() exposes it so the update:get-state handler can return it
 // even if the check completed before the renderer registered its onAvailable listener.
 let cachedUpdateInfo: UpdateInfo | null = null;
@@ -16,86 +16,109 @@ export function getCachedUpdateInfo(): UpdateInfo | null {
   return cachedUpdateInfo;
 }
 
-// Test isolation — reset module-level cache between tests.
-export function _resetForTests(): void { cachedUpdateInfo = null; }
-
-const GITHUB_RELEASES_URL = 'https://api.github.com/repos/polyphon-ai/releases/releases/latest';
-const MAX_TAG_NAME_LENGTH = 30;
-// Accepts stable (X.Y.Z) and alpha/beta pre-releases (X.Y.Z-alpha.N, X.Y.Z-beta.N).
-// Other pre-release formats (rc, etc.) are intentionally excluded.
-const STRICT_VERSION_RE = /^\d+\.\d+\.\d+(?:-(alpha|beta)\.\d+)?$/;
-
-// Single fetch-layer gate: validates the three fields consumed downstream (draft,
-// tag_name) before any version string reaches further code. Drafts are always
-// excluded. Pre-releases are allowed when the tag matches an alpha/beta pattern.
-function parseReleaseVersion(payload: unknown): string | null {
-  if (!payload || typeof payload !== 'object') return null;
-  const r = payload as Record<string, unknown>;
-  if (typeof r.draft !== 'boolean') return null;
-  if (typeof r.prerelease !== 'boolean') return null;
-  if (r.draft) return null;
-  if (typeof r.tag_name !== 'string') return null;
-  if (r.tag_name.length > MAX_TAG_NAME_LENGTH) return null;
-  const version = r.tag_name.startsWith('v') ? r.tag_name.slice(1) : r.tag_name;
-  return STRICT_VERSION_RE.test(version) ? version : null;
+// Test isolation — reset module-level state between tests.
+export function _resetForTests(): void {
+  cachedUpdateInfo = null;
+  manualCheck = false;
 }
 
-// Manual on-demand check — bypasses dismissal preferences, clears and resets the cache.
-// Returns UpdateInfo if a newer release is available, null otherwise.
-export async function checkForUpdateNow(win: BrowserWindow): Promise<UpdateInfo | null> {
-  try {
-    const currentVersion = app.getVersion();
-    const response = await fetch(
-      GITHUB_RELEASES_URL,
-      { headers: { 'User-Agent': `polyphon/${currentVersion}` }, signal: AbortSignal.timeout(10000) },
-    );
+// Flag to bypass dismissal prefs when the user explicitly triggers a check.
+let manualCheck = false;
 
-    if (!response.ok) return null;
+// Stored reference to the active window so changeChannel can use it.
+let activeWin: BrowserWindow | null = null;
+let activeDb: DatabaseSync | null = null;
 
-    const data = await response.json() as unknown;
-    const latestVersion = parseReleaseVersion(data);
-    if (!latestVersion) return null;
+export function setupAutoUpdater(db: DatabaseSync, win: BrowserWindow): void {
+  if (process.env.POLYPHON_E2E) return;
 
-    if (!isNewerVersion(currentVersion, latestVersion)) {
-      cachedUpdateInfo = null;
-      return null;
+  activeWin = win;
+  activeDb = db;
+
+  const channel = getUpdateChannel(db);
+
+  autoUpdater.logger = null;
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.allowPrerelease = channel === 'preview';
+  autoUpdater.forceDevUpdateConfig = !app.isPackaged;
+
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'polyphon-ai',
+    repo: 'releases',
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    const version = info.version;
+
+    if (!manualCheck) {
+      const prefs = getUpdatePreferences(db);
+      if (version === prefs.dismissedUpdateVersion) return;
+      if (Date.now() < prefs.updateRemindAfter) return;
     }
+    manualCheck = false;
 
-    cachedUpdateInfo = { version: latestVersion };
-    win.webContents.send(IPC.UPDATE_AVAILABLE, cachedUpdateInfo);
+    cachedUpdateInfo = { version };
+    win.webContents.send(IPC.UPDATE_AVAILABLE, { version });
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    manualCheck = false;
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    win.webContents.send(IPC.UPDATE_DOWNLOAD_PROGRESS, {
+      percent: progress.percent,
+      transferred: progress.transferred,
+      total: progress.total,
+      bytesPerSecond: progress.bytesPerSecond,
+    });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    win.webContents.send(IPC.UPDATE_READY_TO_INSTALL, { version: info.version });
+  });
+
+  autoUpdater.on('error', (err) => {
+    manualCheck = false;
+    logger.error('[autoUpdater] error', err);
+  });
+
+  // Startup check — fire-and-forget; errors are non-fatal
+  autoUpdater.checkForUpdates().catch((err) => {
+    logger.debug('[autoUpdater] startup check failed', err);
+  });
+}
+
+// Called when the user changes their update channel preference.
+// Clears any stale update notification and re-checks with the new setting.
+export function changeChannel(channel: UpdateChannel): void {
+  autoUpdater.allowPrerelease = channel === 'preview';
+  cachedUpdateInfo = null;
+
+  autoUpdater.checkForUpdates().catch((err) => {
+    logger.debug('[autoUpdater] channel-change check failed', err);
+  });
+}
+
+// Manual on-demand check — bypasses dismissal preferences.
+export async function checkForUpdateNow(): Promise<UpdateInfo | null> {
+  try {
+    manualCheck = true;
+    await autoUpdater.checkForUpdates();
     return cachedUpdateInfo;
   } catch {
-    logger.debug('[updateChecker] manual check failed');
+    manualCheck = false;
+    logger.debug('[autoUpdater] manual check failed');
     return null;
   }
 }
 
-export async function checkForUpdate(db: DatabaseSync, win: BrowserWindow, now = Date.now()): Promise<void> {
-  if (process.env.POLYPHON_E2E) return;
+export async function downloadUpdate(): Promise<void> {
+  await autoUpdater.downloadUpdate();
+}
 
-  try {
-    const currentVersion = app.getVersion();
-    const response = await fetch(
-      GITHUB_RELEASES_URL,
-      { headers: { 'User-Agent': `polyphon/${currentVersion}` }, signal: AbortSignal.timeout(10000) },
-    );
-
-    if (!response.ok) return;
-
-    const data = await response.json() as unknown;
-    const latestVersion = parseReleaseVersion(data);
-    if (!latestVersion) return;
-
-    if (!isNewerVersion(currentVersion, latestVersion)) return;
-
-    const prefs = getUpdatePreferences(db);
-
-    if (latestVersion === prefs.dismissedUpdateVersion) return;
-    if (now < prefs.updateRemindAfter) return;
-
-    cachedUpdateInfo = { version: latestVersion };
-    win.webContents.send(IPC.UPDATE_AVAILABLE, cachedUpdateInfo);
-  } catch {
-    logger.debug('[updateChecker] check failed');
-  }
+export function quitAndInstall(): void {
+  autoUpdater.quitAndInstall(false, false);
 }

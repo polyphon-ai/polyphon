@@ -1,356 +1,214 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
-import { CREATE_TABLES_SQL } from '../db/schema';
-import { initFieldEncryption, _resetForTests as _resetFieldEncryption } from '../security/fieldEncryption';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { EventEmitter } from 'events';
 
-// --- Electron mocks ---
+// --- electron-updater mock ---
 
-const mockSend = vi.fn();
-const mockGetVersion = vi.fn().mockReturnValue('1.0.0');
-const mockIsPackaged = false;
+const autoUpdaterEmitter = new EventEmitter();
+const mockCheckForUpdates = vi.fn();
+const mockDownloadUpdate = vi.fn();
+const mockQuitAndInstall = vi.fn();
+const mockSetFeedURL = vi.fn();
+
+vi.mock('electron-updater', () => ({
+  autoUpdater: Object.assign(autoUpdaterEmitter, {
+    logger: null,
+    autoDownload: true,
+    autoInstallOnAppQuit: true,
+    setFeedURL: mockSetFeedURL,
+    checkForUpdates: mockCheckForUpdates,
+    downloadUpdate: mockDownloadUpdate,
+    quitAndInstall: mockQuitAndInstall,
+  }),
+}));
 
 vi.mock('electron', () => ({
-  app: {
-    getVersion: () => mockGetVersion(),
-    isPackaged: mockIsPackaged,
-  },
+  app: { getVersion: () => '1.0.0' },
   BrowserWindow: {},
 }));
 
 vi.mock('../db/queries/userProfile', () => ({
   getUpdatePreferences: vi.fn().mockReturnValue({ dismissedUpdateVersion: '', updateRemindAfter: 0 }),
+  getUpdateChannel: vi.fn().mockReturnValue('stable'),
 }));
 
 // --- Helpers ---
 
 function makeWin() {
-  return { webContents: { send: mockSend } } as any;
+  return { webContents: { send: vi.fn() } } as any;
 }
 
-function makeResponse(payload: unknown, ok = true) {
-  return {
-    ok,
-    json: () => Promise.resolve(payload),
-  } as any;
-}
-
-function makeRelease(overrides: Record<string, unknown> = {}) {
-  return { tag_name: 'v1.2.3', draft: false, prerelease: false, ...overrides };
+function makeDb() {
+  return {} as any;
 }
 
 // --- Tests ---
 
-describe('parseReleaseVersion (via checkForUpdateNow)', () => {
-  let checkForUpdateNow: typeof import('./updateChecker').checkForUpdateNow;
-  let _resetForTests: typeof import('./updateChecker')._resetForTests;
-
-  beforeEach(async () => {
-    vi.resetModules();
-    vi.stubGlobal('fetch', vi.fn());
-    const mod = await import('./updateChecker');
-    checkForUpdateNow = mod.checkForUpdateNow;
-    _resetForTests = mod._resetForTests;
-    _resetForTests();
-    mockSend.mockClear();
-    mockGetVersion.mockReturnValue('1.0.0');
-  });
-
-  function setFetchResponse(payload: unknown, ok = true) {
-    vi.mocked(fetch).mockResolvedValueOnce(makeResponse(payload, ok));
-  }
-
-  it('null payload → no update', async () => {
-    setFetchResponse(null);
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('undefined payload → no update', async () => {
-    setFetchResponse(undefined);
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('non-object (number 42) → no update', async () => {
-    setFetchResponse(42);
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('draft: true → no update', async () => {
-    setFetchResponse(makeRelease({ draft: true }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('prerelease: true with stable-format tag → triggers update', async () => {
-    setFetchResponse(makeRelease({ prerelease: true, tag_name: 'v1.2.3' }));
-    const result = await checkForUpdateNow(makeWin());
-    expect(result).toEqual({ version: '1.2.3' });
-  });
-
-  it('prerelease: true with alpha tag → triggers update', async () => {
-    setFetchResponse(makeRelease({ prerelease: true, tag_name: 'v1.2.3-alpha.4' }));
-    const result = await checkForUpdateNow(makeWin());
-    expect(result).toEqual({ version: '1.2.3-alpha.4' });
-  });
-
-  it('prerelease: true with beta tag → triggers update', async () => {
-    setFetchResponse(makeRelease({ prerelease: true, tag_name: 'v1.2.3-beta.2' }));
-    const result = await checkForUpdateNow(makeWin());
-    expect(result).toEqual({ version: '1.2.3-beta.2' });
-  });
-
-  it('prerelease: true with rc tag (unsupported format) → no update', async () => {
-    setFetchResponse(makeRelease({ prerelease: true, tag_name: 'v1.2.3-rc.1' }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('draft missing (not a boolean) → no update', async () => {
-    setFetchResponse({ tag_name: 'v1.2.3', prerelease: false });
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('prerelease missing (not a boolean) → no update', async () => {
-    setFetchResponse({ tag_name: 'v1.2.3', draft: false });
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('tag_name: null → no update', async () => {
-    setFetchResponse(makeRelease({ tag_name: null }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('tag_name: 123 (number) → no update', async () => {
-    setFetchResponse(makeRelease({ tag_name: 123 }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('tag_name > 30 chars → no update', async () => {
-    setFetchResponse(makeRelease({ tag_name: 'v' + '1'.repeat(30) }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('"v1.2.3-beta" → no update', async () => {
-    setFetchResponse(makeRelease({ tag_name: 'v1.2.3-beta' }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('"v1.2.3+build" → no update', async () => {
-    setFetchResponse(makeRelease({ tag_name: 'v1.2.3+build' }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('"1.2.3.4" → no update', async () => {
-    setFetchResponse(makeRelease({ tag_name: '1.2.3.4' }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('"abc" → no update', async () => {
-    setFetchResponse(makeRelease({ tag_name: 'abc' }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('"1.2.3 " (trailing space) → no update', async () => {
-    setFetchResponse(makeRelease({ tag_name: '1.2.3 ' }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('"v1.2.3" → returns "1.2.3" (v-prefix stripped)', async () => {
-    mockGetVersion.mockReturnValue('1.0.0');
-    setFetchResponse(makeRelease({ tag_name: 'v1.2.3' }));
-    const result = await checkForUpdateNow(makeWin());
-    expect(result).toEqual({ version: '1.2.3' });
-  });
-
-  it('"1.2.3" (no prefix) → returns "1.2.3"', async () => {
-    mockGetVersion.mockReturnValue('1.0.0');
-    setFetchResponse(makeRelease({ tag_name: '1.2.3' }));
-    const result = await checkForUpdateNow(makeWin());
-    expect(result).toEqual({ version: '1.2.3' });
-  });
-});
-
-describe('GitHub releases URL', () => {
-  let checkForUpdateNow: typeof import('./updateChecker').checkForUpdateNow;
-  let _resetForTests: typeof import('./updateChecker')._resetForTests;
-
-  beforeEach(async () => {
-    vi.resetModules();
-    vi.stubGlobal('fetch', vi.fn());
-    const mod = await import('./updateChecker');
-    checkForUpdateNow = mod.checkForUpdateNow;
-    _resetForTests = mod._resetForTests;
-    _resetForTests();
-    mockSend.mockClear();
-    mockGetVersion.mockReturnValue('1.0.0');
-  });
-
-  it('fetches the correct GitHub releases API endpoint', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: false } as any);
-    await checkForUpdateNow(makeWin());
-    expect(fetch).toHaveBeenCalledWith(
-      'https://api.github.com/repos/polyphon-ai/releases/releases/latest',
-      expect.objectContaining({ headers: expect.objectContaining({ 'User-Agent': 'polyphon/1.0.0' }) }),
-    );
-  });
-});
-
-describe('checkForUpdateNow', () => {
-  let checkForUpdateNow: typeof import('./updateChecker').checkForUpdateNow;
-  let getCachedUpdateInfo: typeof import('./updateChecker').getCachedUpdateInfo;
-  let _resetForTests: typeof import('./updateChecker')._resetForTests;
-
-  beforeEach(async () => {
-    vi.resetModules();
-    vi.stubGlobal('fetch', vi.fn());
-    const mod = await import('./updateChecker');
-    checkForUpdateNow = mod.checkForUpdateNow;
-    getCachedUpdateInfo = mod.getCachedUpdateInfo;
-    _resetForTests = mod._resetForTests;
-    _resetForTests();
-    mockSend.mockClear();
-    mockGetVersion.mockReturnValue('1.0.0');
-  });
-
-  function setFetchResponse(payload: unknown, ok = true) {
-    vi.mocked(fetch).mockResolvedValueOnce(makeResponse(payload, ok));
-  }
-
-  it('non-200 response → returns null; no webContents.send call', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: false } as any);
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('response.json() throws → returns null; no crash', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.reject(new Error('parse error')),
-    } as any);
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('valid newer release → returns UpdateInfo; webContents.send called', async () => {
-    setFetchResponse(makeRelease({ tag_name: 'v1.2.3' }));
-    const result = await checkForUpdateNow(makeWin());
-    expect(result).toEqual({ version: '1.2.3' });
-    expect(mockSend).toHaveBeenCalledTimes(1);
-  });
-
-  it('valid but not-newer release → returns null; getCachedUpdateInfo returns null', async () => {
-    mockGetVersion.mockReturnValue('2.0.0');
-    setFetchResponse(makeRelease({ tag_name: 'v1.2.3' }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(getCachedUpdateInfo()).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('unsupported pre-release format (no numeric suffix) → returns null; no side effects', async () => {
-    setFetchResponse(makeRelease({ tag_name: 'v1.2.3-beta' }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-    expect(getCachedUpdateInfo()).toBeNull();
-  });
-
-  it('null tag_name → returns null; no side effects', async () => {
-    setFetchResponse(makeRelease({ tag_name: null }));
-    expect(await checkForUpdateNow(makeWin())).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it('stale-cache preservation: malformed response does not clear previously valid cache', async () => {
-    // Seed cache with a valid check
-    setFetchResponse(makeRelease({ tag_name: 'v1.2.3' }));
-    await checkForUpdateNow(makeWin());
-    expect(getCachedUpdateInfo()).toEqual({ version: '1.2.3' });
-
-    // Now a malformed response comes in
-    mockSend.mockClear();
-    setFetchResponse(makeRelease({ tag_name: 'v1.2.3-bad' }));
-    await checkForUpdateNow(makeWin());
-
-    // Cache must be preserved
-    expect(getCachedUpdateInfo()).toEqual({ version: '1.2.3' });
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-});
-
-describe('checkForUpdate', () => {
-  let checkForUpdate: typeof import('./updateChecker').checkForUpdate;
-  let getCachedUpdateInfo: typeof import('./updateChecker').getCachedUpdateInfo;
+describe('setupAutoUpdater', () => {
+  let setupAutoUpdater: typeof import('./updateChecker').setupAutoUpdater;
   let _resetForTests: typeof import('./updateChecker')._resetForTests;
   let getUpdatePreferences: ReturnType<typeof vi.fn>;
-  let db: DatabaseSync;
 
   beforeEach(async () => {
     vi.resetModules();
-    vi.stubGlobal('fetch', vi.fn());
-    _resetFieldEncryption();
-    initFieldEncryption(Buffer.alloc(32));
-    db = new DatabaseSync(':memory:');
-    db.exec(CREATE_TABLES_SQL);
-    db.prepare(
-      'INSERT OR IGNORE INTO user_profile (id, conductor_name, pronouns, conductor_context, default_tone, conductor_color, conductor_avatar, updated_at) VALUES (1, \'\', \'\', \'\', \'collaborative\', \'\', \'\', 0)',
-    ).run();
+    autoUpdaterEmitter.removeAllListeners();
+    mockCheckForUpdates.mockResolvedValue(null);
+    mockSetFeedURL.mockClear();
 
     const userProfileMod = await import('../db/queries/userProfile');
     getUpdatePreferences = vi.mocked(userProfileMod.getUpdatePreferences);
     getUpdatePreferences.mockReturnValue({ dismissedUpdateVersion: '', updateRemindAfter: 0 });
 
     const mod = await import('./updateChecker');
-    checkForUpdate = mod.checkForUpdate;
-    getCachedUpdateInfo = mod.getCachedUpdateInfo;
+    setupAutoUpdater = mod.setupAutoUpdater;
     _resetForTests = mod._resetForTests;
     _resetForTests();
-    mockSend.mockClear();
-    mockGetVersion.mockReturnValue('1.0.0');
+
     delete process.env.POLYPHON_E2E;
   });
 
-  afterEach(() => { db.close(); _resetFieldEncryption(); });
-
-  function setFetchResponse(payload: unknown, ok = true) {
-    vi.mocked(fetch).mockResolvedValueOnce(makeResponse(payload, ok));
-  }
-
-  it('POLYPHON_E2E set → early return without fetch', async () => {
+  it('POLYPHON_E2E set → skips setup entirely', async () => {
     process.env.POLYPHON_E2E = '1';
-    await checkForUpdate(db, makeWin());
-    expect(fetch).not.toHaveBeenCalled();
-    expect(getCachedUpdateInfo()).toBeNull();
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+    expect(mockSetFeedURL).not.toHaveBeenCalled();
+    expect(mockCheckForUpdates).not.toHaveBeenCalled();
   });
 
-  it('non-200 response → no cache, no IPC send', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: false } as any);
-    await checkForUpdate(db, makeWin());
-    expect(getCachedUpdateInfo()).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
+  it('configures feed URL pointing at polyphon-ai/releases', async () => {
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+    expect(mockSetFeedURL).toHaveBeenCalledWith(expect.objectContaining({
+      provider: 'github',
+      owner: 'polyphon-ai',
+      repo: 'releases',
+    }));
   });
 
-  it('valid newer release → sets cache, sends IPC', async () => {
-    setFetchResponse(makeRelease({ tag_name: 'v1.2.3' }));
-    await checkForUpdate(db, makeWin());
-    expect(getCachedUpdateInfo()).toEqual({ version: '1.2.3' });
-    expect(mockSend).toHaveBeenCalledTimes(1);
+  it('triggers a startup checkForUpdates', async () => {
+    mockCheckForUpdates.mockClear();
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+    await vi.waitFor(() => expect(mockCheckForUpdates).toHaveBeenCalled());
   });
 
-  it('malformed tag → no cache, no IPC send', async () => {
-    setFetchResponse(makeRelease({ tag_name: 'v1.2.3-rc1' }));
-    await checkForUpdate(db, makeWin());
-    expect(getCachedUpdateInfo()).toBeNull();
-    expect(mockSend).not.toHaveBeenCalled();
+  it('update-available → sends UPDATE_AVAILABLE IPC and caches info', async () => {
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+    autoUpdaterEmitter.emit('update-available', { version: '2.0.0' });
+    expect(win.webContents.send).toHaveBeenCalledWith('update:available', { version: '2.0.0' });
+  });
+
+  it('update-available with dismissed version → no IPC send', async () => {
+    getUpdatePreferences.mockReturnValue({ dismissedUpdateVersion: '2.0.0', updateRemindAfter: 0 });
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+    autoUpdaterEmitter.emit('update-available', { version: '2.0.0' });
+    expect(win.webContents.send).not.toHaveBeenCalled();
+  });
+
+  it('update-available within remind-after window → no IPC send', async () => {
+    getUpdatePreferences.mockReturnValue({ dismissedUpdateVersion: '', updateRemindAfter: Date.now() + 9999999 });
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+    autoUpdaterEmitter.emit('update-available', { version: '2.0.0' });
+    expect(win.webContents.send).not.toHaveBeenCalled();
+  });
+
+  it('download-progress → forwards progress event to renderer', async () => {
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+    const progress = { percent: 42, transferred: 100, total: 200, bytesPerSecond: 1000 };
+    autoUpdaterEmitter.emit('download-progress', progress);
+    expect(win.webContents.send).toHaveBeenCalledWith('update:download-progress', progress);
+  });
+
+  it('update-downloaded → sends UPDATE_READY_TO_INSTALL to renderer', async () => {
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+    autoUpdaterEmitter.emit('update-downloaded', { version: '2.0.0' });
+    expect(win.webContents.send).toHaveBeenCalledWith('update:ready-to-install', { version: '2.0.0' });
+  });
+});
+
+describe('checkForUpdateNow', () => {
+  let checkForUpdateNow: typeof import('./updateChecker').checkForUpdateNow;
+  let getCachedUpdateInfo: typeof import('./updateChecker').getCachedUpdateInfo;
+  let setupAutoUpdater: typeof import('./updateChecker').setupAutoUpdater;
+  let _resetForTests: typeof import('./updateChecker')._resetForTests;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    autoUpdaterEmitter.removeAllListeners();
+    mockCheckForUpdates.mockResolvedValue(null);
+    mockSetFeedURL.mockClear();
+
+    const userProfileMod = await import('../db/queries/userProfile');
+    vi.mocked(userProfileMod.getUpdatePreferences).mockReturnValue({ dismissedUpdateVersion: '', updateRemindAfter: 0 });
+
+    const mod = await import('./updateChecker');
+    checkForUpdateNow = mod.checkForUpdateNow;
+    getCachedUpdateInfo = mod.getCachedUpdateInfo;
+    setupAutoUpdater = mod.setupAutoUpdater;
+    _resetForTests = mod._resetForTests;
+    _resetForTests();
+
+    delete process.env.POLYPHON_E2E;
+  });
+
+  it('no update available → returns null', async () => {
+    mockCheckForUpdates.mockResolvedValue(null);
+    const result = await checkForUpdateNow();
+    expect(result).toBeNull();
+  });
+
+  it('checkForUpdates throws → returns null without crashing', async () => {
+    mockCheckForUpdates.mockRejectedValue(new Error('network error'));
+    const result = await checkForUpdateNow();
+    expect(result).toBeNull();
+  });
+
+  it('update-available fires during manual check → bypasses dismissal prefs and returns cached info', async () => {
+    const win = makeWin();
+    const userProfileMod = await import('../db/queries/userProfile');
+    vi.mocked(userProfileMod.getUpdatePreferences).mockReturnValue({ dismissedUpdateVersion: '2.0.0', updateRemindAfter: 0 });
+
+    setupAutoUpdater(makeDb(), win);
+
+    // Simulate checkForUpdates triggering update-available before resolving
+    mockCheckForUpdates.mockImplementation(async () => {
+      autoUpdaterEmitter.emit('update-available', { version: '2.0.0' });
+      return { updateInfo: { version: '2.0.0' } };
+    });
+
+    const result = await checkForUpdateNow();
+    expect(result).toEqual({ version: '2.0.0' });
+    // IPC should have been sent even though the version is in the dismissed list
+    expect(win.webContents.send).toHaveBeenCalledWith('update:available', { version: '2.0.0' });
+  });
+});
+
+describe('downloadUpdate and quitAndInstall', () => {
+  let downloadUpdate: typeof import('./updateChecker').downloadUpdate;
+  let quitAndInstall: typeof import('./updateChecker').quitAndInstall;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    autoUpdaterEmitter.removeAllListeners();
+    mockDownloadUpdate.mockResolvedValue(undefined);
+    mockQuitAndInstall.mockClear();
+
+    const mod = await import('./updateChecker');
+    downloadUpdate = mod.downloadUpdate;
+    quitAndInstall = mod.quitAndInstall;
+  });
+
+  it('downloadUpdate → delegates to autoUpdater.downloadUpdate', async () => {
+    await downloadUpdate();
+    expect(mockDownloadUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('quitAndInstall → delegates to autoUpdater.quitAndInstall with silent=false', () => {
+    quitAndInstall();
+    expect(mockQuitAndInstall).toHaveBeenCalledWith(false, false);
   });
 });

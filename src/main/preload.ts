@@ -14,6 +14,8 @@ import type {
   ToneDefinition,
   SystemPromptTemplate,
   UpdateInfo,
+  UpdateDownloadProgress,
+  UpdateChannel,
   EncryptionStatus,
 } from '../shared/types';
 import type { ProbeModelResult } from './ipc/settingsHandlers';
@@ -137,11 +139,29 @@ const api = {
       ipcRenderer.invoke(IPC.UPDATE_DISMISS, version, permanently),
     checkNow: (): Promise<UpdateInfo | null> =>
       ipcRenderer.invoke(IPC.UPDATE_CHECK_NOW),
+    download: (): Promise<void> =>
+      ipcRenderer.invoke(IPC.UPDATE_DOWNLOAD),
+    install: (): Promise<void> =>
+      ipcRenderer.invoke(IPC.UPDATE_INSTALL),
     onAvailable: (handler: (info: UpdateInfo) => void) => {
       const listener = (_: Electron.IpcRendererEvent, info: UpdateInfo) => handler(info);
       ipcRenderer.on(IPC.UPDATE_AVAILABLE, listener);
       return () => ipcRenderer.off(IPC.UPDATE_AVAILABLE, listener);
     },
+    onDownloadProgress: (handler: (progress: UpdateDownloadProgress) => void) => {
+      const listener = (_: Electron.IpcRendererEvent, progress: UpdateDownloadProgress) => handler(progress);
+      ipcRenderer.on(IPC.UPDATE_DOWNLOAD_PROGRESS, listener);
+      return () => ipcRenderer.off(IPC.UPDATE_DOWNLOAD_PROGRESS, listener);
+    },
+    onReadyToInstall: (handler: (info: UpdateInfo) => void) => {
+      const listener = (_: Electron.IpcRendererEvent, info: UpdateInfo) => handler(info);
+      ipcRenderer.on(IPC.UPDATE_READY_TO_INSTALL, listener);
+      return () => ipcRenderer.off(IPC.UPDATE_READY_TO_INSTALL, listener);
+    },
+    getChannel: (): Promise<UpdateChannel> =>
+      ipcRenderer.invoke(IPC.UPDATE_GET_CHANNEL),
+    setChannel: (channel: UpdateChannel): Promise<void> =>
+      ipcRenderer.invoke(IPC.UPDATE_SET_CHANNEL, channel),
   },
 
   encryption: {
@@ -237,4 +257,4 @@ contextBridge.exposeInMainWorld('polyphon', api);
 export type PolyphonAPI = typeof api;
 
 // Suppress unused import warning — these types are used in the api shape
-export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, UpdateInfo, EncryptionStatus, ProbeModelResult };
+export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, UpdateInfo, UpdateDownloadProgress, UpdateChannel, EncryptionStatus, ProbeModelResult };
