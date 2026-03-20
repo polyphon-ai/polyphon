@@ -10,7 +10,7 @@ describe('runMigrations (fresh install)', () => {
   beforeEach(() => { initFieldEncryption(TEST_KEY); });
   afterEach(() => { _resetForTests(); });
 
-  it('creates all tables and sets schema_version to 4', () => {
+  it('creates all tables and sets schema_version to current', () => {
     const db = new DatabaseSync(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
 
@@ -39,7 +39,7 @@ describe('runMigrations (fresh install)', () => {
     }
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(5);
+    expect(row.version).toBe(6);
   });
 
   it('seeds built-in tones', () => {
@@ -86,7 +86,7 @@ describe('runMigrations (fresh install)', () => {
     expect(templates).toHaveLength(5);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(5);
+    expect(row.version).toBe(6);
   });
 });
 

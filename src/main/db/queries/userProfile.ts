@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
-import type { UserProfile, TonePreset } from '../../../shared/types';
+import type { UserProfile, TonePreset, UpdateChannel } from '../../../shared/types';
 import { encryptField, decryptField, type EncryptedField } from '../encryption';
 
 interface UserProfileRow {
@@ -73,4 +73,15 @@ export function setDismissedUpdateVersion(db: DatabaseSync, version: string): vo
 
 export function setUpdateRemindAfter(db: DatabaseSync, remindAfter: number): void {
   db.prepare('UPDATE user_profile SET update_remind_after = ? WHERE id = 1').run(remindAfter);
+}
+
+export function getUpdateChannel(db: DatabaseSync): UpdateChannel {
+  const row = db
+    .prepare('SELECT update_channel FROM user_profile WHERE id = 1')
+    .get() as { update_channel: string } | undefined;
+  return row?.update_channel === 'preview' ? 'preview' : 'stable';
+}
+
+export function setUpdateChannel(db: DatabaseSync, channel: UpdateChannel): void {
+  db.prepare('UPDATE user_profile SET update_channel = ? WHERE id = 1').run(channel);
 }

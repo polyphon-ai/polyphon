@@ -6,6 +6,7 @@ import { up as migration002 } from './002_add_update_preferences';
 import { up as migration003 } from './003_encrypt_conductor_avatar';
 import { up as migration004 } from './004_encrypt_tones_metadata_cli_command';
 import { up as migration005 } from './005_add_yolo_mode';
+import { up as migration006 } from './006_add_update_channel';
 
 const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
   [
@@ -91,6 +92,10 @@ export function runMigrations(db: DatabaseSync): void {
 
   if (row !== undefined && currentVersion < 5) {
     migration005(db);
+  }
+
+  if (row !== undefined && currentVersion < 6) {
+    migration006(db);
   }
 
   if (row === undefined) {
