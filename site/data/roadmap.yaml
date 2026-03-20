@@ -8,6 +8,20 @@ items:
     discussion: https://github.com/polyphon-ai/releases/discussions/5
     feature_request:
 
+  - title: "Working Directory"
+    description: "Set a starting directory when you create a session. CLI voices spawn with that directory as their working directory, and all voices receive it as context in the ensemble system prompt — so API voices know what project they're working in too."
+    pricing: free
+    status: planned
+    discussion:
+    feature_request:
+
+  - title: "API Voice Filesystem Access"
+    description: "Give API voices (Claude, GPT, Gemini) the ability to read and write files, list directories, and run shell commands through a set of host-brokered tools. The model decides what to do; Polyphon executes it in the session working directory. The same sequential execution model already used for CLI voices keeps multiple voices from stepping on each other."
+    pricing: free
+    status: planned
+    discussion:
+    feature_request:
+
   - title: "Session Export"
     description: "Export full conversation transcripts in multiple formats — Markdown, JSON, or plain text."
     pricing: free
