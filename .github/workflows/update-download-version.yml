@@ -1,4 +1,4 @@
-name: Update Site Version
+name: Update Download Version
 
 on:
   workflow_dispatch:
@@ -64,3 +64,11 @@ jobs:
         run: gh workflow run deploy-site.yml --ref main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Promote release on GitHub
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          TAG="v${VERSION#v}"
+          gh release edit "$TAG" --repo polyphon-ai/releases --no-prerelease --latest
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
