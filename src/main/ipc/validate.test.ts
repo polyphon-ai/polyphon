@@ -667,17 +667,17 @@ describe('requireCompositionData', () => {
     expect(() => requireCompositionData(makeData())).not.toThrow();
   });
 
-  it('accepts continuationMaxRounds: 3 (boundary max)', () => {
-    expect(() => requireCompositionData(makeData({ continuationMaxRounds: 3 }))).not.toThrow();
+  it('accepts continuationMaxRounds: 10 (boundary max)', () => {
+    expect(() => requireCompositionData(makeData({ continuationMaxRounds: 10 }))).not.toThrow();
   });
 
   it('accepts continuationMaxRounds: 1 (boundary min)', () => {
     expect(() => requireCompositionData(makeData({ continuationMaxRounds: 1 }))).not.toThrow();
   });
 
-  it('throws for continuationMaxRounds: 4 (> 3)', () => {
-    expect(() => requireCompositionData(makeData({ continuationMaxRounds: 4 }))).toThrow(
-      'must be an integer between 1 and 3',
+  it('throws for continuationMaxRounds: 11 (> 10)', () => {
+    expect(() => requireCompositionData(makeData({ continuationMaxRounds: 11 }))).toThrow(
+      'must be an integer between 1 and 10',
     );
   });
 
@@ -751,10 +751,10 @@ describe('requirePartialCompositionData', () => {
   });
 
   it('applies the same continuationMaxRounds rule as requireCompositionData', () => {
-    expect(() => requirePartialCompositionData({ continuationMaxRounds: 4 })).toThrow(
-      'must be an integer between 1 and 3',
+    expect(() => requirePartialCompositionData({ continuationMaxRounds: 11 })).toThrow(
+      'must be an integer between 1 and 10',
     );
-    expect(() => requirePartialCompositionData({ continuationMaxRounds: 3 })).not.toThrow();
+    expect(() => requirePartialCompositionData({ continuationMaxRounds: 10 })).not.toThrow();
   });
 
   it('skips validation for fields not present in the object', () => {

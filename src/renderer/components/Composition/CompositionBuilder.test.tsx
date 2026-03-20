@@ -148,23 +148,19 @@ describe('CompositionBuilder', () => {
 
   // ── Mode selection ───────────────────────────────────────────────────────────
 
-  it('default mode is Conductor-Directed (continuation policy hidden)', () => {
+  it('default mode is Broadcast (continuation policy visible)', () => {
     render(<CompositionBuilder onSave={vi.fn()} />);
-    expect(screen.queryByText('Continuation Policy')).toBeNull();
-  });
-
-  it('clicking "Broadcast" activates broadcast mode and shows continuation policy buttons', async () => {
-    const user = userEvent.setup();
-    render(<CompositionBuilder onSave={vi.fn()} />);
-    await user.click(screen.getByRole('button', { name: /Broadcast/ }));
     expect(screen.getByText('Continuation Policy')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Prompt me/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Auto/ })).toBeTruthy();
   });
 
-  it('clicking "Conductor-Directed" switches back from broadcast and hides continuation policy', async () => {
+  it('default continuation policy is Prompt me', () => {
+    render(<CompositionBuilder onSave={vi.fn()} />);
+    expect(screen.getByRole('button', { name: /Prompt me/ })).toBeTruthy();
+  });
+
+  it('clicking "Conductor-Directed" hides continuation policy', async () => {
     const user = userEvent.setup();
-    render(<CompositionBuilder initial={{ mode: 'broadcast' }} onSave={vi.fn()} />);
+    render(<CompositionBuilder onSave={vi.fn()} />);
     await user.click(screen.getByRole('button', { name: /Conductor-Directed/ }));
     expect(screen.queryByText('Continuation Policy')).toBeNull();
   });
@@ -172,11 +168,11 @@ describe('CompositionBuilder', () => {
   it('broadcast → conductor → broadcast: continuation policy shows/hides correctly', async () => {
     const user = userEvent.setup();
     render(<CompositionBuilder onSave={vi.fn()} />);
-    expect(screen.queryByText('Continuation Policy')).toBeNull();
-    await user.click(screen.getByRole('button', { name: /Broadcast/ }));
     expect(screen.getByText('Continuation Policy')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: /Conductor-Directed/ }));
     expect(screen.queryByText('Continuation Policy')).toBeNull();
+    await user.click(screen.getByRole('button', { name: /Broadcast/ }));
+    expect(screen.getByText('Continuation Policy')).toBeTruthy();
   });
 
   it('onSave receives the selected mode (broadcast)', async () => {
@@ -184,7 +180,6 @@ describe('CompositionBuilder', () => {
     const onSave = vi.fn();
     render(<CompositionBuilder onSave={onSave} />);
     await user.type(screen.getByPlaceholderText('My Composition'), 'BC');
-    await user.click(screen.getByRole('button', { name: /Broadcast/ }));
     await user.click(screen.getByTestId('add-voice'));
     await user.click(screen.getByRole('button', { name: 'Save Composition' }));
     expect(onSave.mock.calls[0]![0].mode).toBe('broadcast');
@@ -195,6 +190,7 @@ describe('CompositionBuilder', () => {
     const onSave = vi.fn();
     render(<CompositionBuilder onSave={onSave} />);
     await user.type(screen.getByPlaceholderText('My Composition'), 'CD');
+    await user.click(screen.getByRole('button', { name: /Conductor-Directed/ }));
     await user.click(screen.getByTestId('add-voice'));
     await user.click(screen.getByRole('button', { name: 'Save Composition' }));
     expect(onSave.mock.calls[0]![0].mode).toBe('conductor');
@@ -307,8 +303,8 @@ describe('CompositionBuilder', () => {
     expect(onSave).toHaveBeenCalledOnce();
     const arg = onSave.mock.calls[0]![0];
     expect(arg.name).toBe('My Comp');
-    expect(arg.mode).toBe('conductor');
+    expect(arg.mode).toBe('broadcast');
     expect(arg.voices).toHaveLength(1);
-    expect(arg.continuationPolicy).toBe('none');
+    expect(arg.continuationPolicy).toBe('prompt');
   });
 });
