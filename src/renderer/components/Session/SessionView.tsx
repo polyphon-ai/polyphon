@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, PanelRightClose, PanelRightOpen, Square, X, Pencil, Check } from 'lucide-react';
+import { ArrowLeft, PanelRightClose, PanelRightOpen, Square, X, Pencil, Check, FolderOpen } from 'lucide-react';
 import type { Session, Message, VoiceDescriptor } from '../../../shared/types';
 import { PROVIDER_METADATA } from '../../../shared/constants';
 import { useSessionStore } from '../../store/sessionStore';
@@ -109,15 +109,10 @@ export default function SessionView({
       },
     );
 
-    const unsubDone = window.polyphon.voice.onDone(session.id, (voiceId) => {
+    const unsubDone = window.polyphon.voice.onDone(session.id, (voiceId, roundIndex) => {
       const state = useSessionStore.getState();
       const content = state.streamingContent[session.id]?.[voiceId] ?? '';
       const voice = ensembleRef.current.find((v) => v.id === voiceId);
-      const sessionMsgs = state.messages[session.id] ?? [];
-      const maxRound =
-        sessionMsgs.length > 0
-          ? Math.max(...sessionMsgs.map((m) => m.roundIndex))
-          : 0;
 
       const newMsg: Message = {
         id: `msg-${Date.now()}-${voiceId}`,
@@ -127,7 +122,7 @@ export default function SessionView({
         voiceName: voice?.name ?? null,
         content,
         timestamp: Date.now(),
-        roundIndex: maxRound,
+        roundIndex,
       };
 
       appendMessage(session.id, newMsg);
@@ -201,10 +196,11 @@ export default function SessionView({
       role: 'conductor',
       voiceId: null,
       voiceName: null,
-      content: '',
+      content: 'Please continue.',
       timestamp: Date.now(),
       roundIndex: continuationNudge.roundIndex,
     };
+    appendMessage(session.id, continueMsg);
     window.polyphon.voice.send(session.id, continueMsg).catch((err: unknown) => {
       const error = err instanceof Error ? err.message : String(err);
       setVoiceErrors((prev) => ({ ...prev, _ipc: error }));
@@ -280,6 +276,16 @@ export default function SessionView({
           </span>
         </div>
 
+        {session.workingDir && (
+          <span
+            title={session.workingDir}
+            className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 font-mono min-w-0 shrink truncate"
+          >
+            <FolderOpen size={12} strokeWidth={1.75} className="shrink-0" />
+            {session.workingDir}
+          </span>
+        )}
+
         {(isAnyStreaming || isAnyPending) && (
           <button
             onClick={() => window.polyphon.voice.abort(session.id)}
@@ -287,7 +293,7 @@ export default function SessionView({
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors font-medium shrink-0"
           >
             <Square size={16} strokeWidth={1.75} />
-            Abort
+            Stop
           </button>
         )}
       </header>
@@ -347,13 +353,13 @@ export default function SessionView({
         {continuationNudge && (
           <div className="flex items-center gap-3 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900 text-sm shrink-0">
             <span className="text-amber-700 dark:text-amber-400 flex-1 text-xs">
-              Agents have more to say — let them continue?
+              Let the voices go another round without your input?
             </span>
             <button
               onClick={handleContinue}
               className="text-xs px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/50 font-medium transition-colors"
             >
-              Allow
+              Yes
             </button>
             <button
               onClick={() => setContinuationNudge(null)}
