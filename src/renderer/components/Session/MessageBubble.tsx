@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Wand2 } from 'lucide-react';
+import React from 'react';
+import { Wand2 } from 'lucide-react';
 import type { Message } from '../../../shared/types';
 import ProviderLogo from '../Shared/ProviderLogo';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -18,8 +18,6 @@ export interface MessageBubbleProps {
   voiceSide?: 'left' | 'right';
 }
 
-const COLLAPSE_THRESHOLD = 800;
-const PREVIEW_LENGTH = 400;
 
 function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString([], {
@@ -39,7 +37,6 @@ export default function MessageBubble({
   voiceType,
   voiceSide = 'left',
 }: MessageBubbleProps): React.JSX.Element {
-  const [expanded, setExpanded] = useState(false);
   const conductorColor = useSettingsStore((s) => s.userProfile.conductorColor);
   const conductorName = useSettingsStore((s) => s.userProfile.conductorName);
   const conductorAvatar = useSettingsStore((s) => s.userProfile.conductorAvatar);
@@ -48,11 +45,7 @@ export default function MessageBubble({
   const isDecryptionFailed = rawContent === DECRYPTION_FAILED_SENTINEL;
   const content = isDecryptionFailed ? '[Message unavailable]' : rawContent;
   const isConductor = message.role === 'conductor';
-  const isLong = content.length > COLLAPSE_THRESHOLD;
-  const displayContent =
-    isLong && !expanded && !isStreaming && !isThinking
-      ? content.slice(0, PREVIEW_LENGTH) + '…'
-      : content;
+  const displayContent = content;
 
   if (message.role === 'system') {
     return (
@@ -102,24 +95,6 @@ export default function MessageBubble({
             style={{ borderRight: `3px solid ${color}`, backgroundColor: bgColor }}
           >
             {displayContent}
-            {isLong && !isStreaming && (
-              <button
-                onClick={() => setExpanded(!expanded)}
-                aria-expanded={expanded}
-                aria-label={expanded ? 'Collapse message' : 'Expand message'}
-                className="flex items-center gap-1 mt-2 text-xs text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300"
-              >
-                {expanded ? (
-                  <>
-                    Show less <ChevronUp size={14} strokeWidth={1.75} />
-                  </>
-                ) : (
-                  <>
-                    Show more <ChevronDown size={14} strokeWidth={1.75} />
-                  </>
-                )}
-              </button>
-            )}
           </div>
 
           <div className="text-xs text-gray-400 dark:text-gray-600 mt-1 text-right">
@@ -199,24 +174,6 @@ export default function MessageBubble({
               ))}
             </span>
           ) : displayContent}
-          {isLong && !isStreaming && !isThinking && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              aria-expanded={expanded}
-              aria-label={expanded ? 'Collapse message' : 'Expand message'}
-              className="flex items-center gap-1 mt-2 text-xs text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300"
-            >
-              {expanded ? (
-                <>
-                  Show less <ChevronUp size={14} strokeWidth={1.75} />
-                </>
-              ) : (
-                <>
-                  Show more <ChevronDown size={14} strokeWidth={1.75} />
-                </>
-              )}
-            </button>
-          )}
         </div>
 
         {!isThinking && (

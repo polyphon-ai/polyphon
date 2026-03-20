@@ -263,8 +263,8 @@ export default function CompositionBuilder({
         {/* Voice roster */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            Voices
-            <HelpTooltip text="The AI agents that participate in this composition. Each voice can have its own model, system prompt, and tone. Drag to reorder." />
+            Available Voices — click to add to Ensemble
+            <HelpTooltip text="Click a voice to add it to the ensemble. Each voice can have its own model, system prompt, and tone." />
           </label>
           <VoiceSelector onSelect={addVoice} voices={voices} />
           {voices.length > 0 ? (
