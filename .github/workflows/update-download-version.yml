@@ -69,6 +69,6 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version }}"
           TAG="v${VERSION#v}"
-          gh release edit "$TAG" --repo polyphon-ai/releases --no-prerelease --latest
+          gh release edit "$TAG" --repo polyphon-ai/releases --prerelease=false --latest
         env:
           GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
