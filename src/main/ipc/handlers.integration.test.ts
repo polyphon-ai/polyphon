@@ -374,16 +374,16 @@ describe('IPC handlers integration', () => {
       );
     });
 
-    it('throws for continuationMaxRounds = 4', async () => {
+    it('throws for continuationMaxRounds = 11', async () => {
       const data = {
         name: 'New Comp',
         mode: 'broadcast',
         continuationPolicy: 'none',
-        continuationMaxRounds: 4,
+        continuationMaxRounds: 11,
         voices: [],
       };
       await expect(handlers.get(IPC.COMPOSITION_CREATE)!({}, data)).rejects.toThrow(
-        'must be an integer between 1 and 3',
+        'must be an integer between 1 and 10',
       );
     });
   });

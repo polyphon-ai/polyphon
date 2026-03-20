@@ -27,14 +27,15 @@ export async function buildComposition(
 
   await window.getByPlaceholder('My Composition').fill(name);
 
-  if (mode === 'broadcast') {
-    await window.getByRole('button', { name: /broadcast/i }).first().click();
-    if (continuationPolicy !== 'none') {
-      const label = continuationPolicy === 'prompt' ? 'Prompt me' : 'Auto';
+  if (mode === 'conductor') {
+    await window.getByRole('button', { name: /Conductor-Directed/i }).first().click();
+  } else {
+    // broadcast is the default; select continuation policy if not the default (prompt)
+    if (continuationPolicy !== 'prompt') {
+      const label = continuationPolicy === 'auto' ? 'Auto' : 'None';
       await window.getByRole('button', { name: label }).click();
     }
   }
-  // else: default is Conductor-Directed
 
   for (const providerName of voiceProviderNames) {
     await window.getByRole('button', { name: providerName }).first().click();
