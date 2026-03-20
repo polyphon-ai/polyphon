@@ -196,7 +196,7 @@ export default function SessionView({
       role: 'conductor',
       voiceId: null,
       voiceName: null,
-      content: 'Please continue.',
+      content: '',
       timestamp: Date.now(),
       roundIndex: continuationNudge.roundIndex,
     };
@@ -353,13 +353,13 @@ export default function SessionView({
         {continuationNudge && (
           <div className="flex items-center gap-3 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900 text-sm shrink-0">
             <span className="text-amber-700 dark:text-amber-400 flex-1 text-xs">
-              Let the voices go another round without your input?
+              Agents have more to say — let them continue?
             </span>
             <button
               onClick={handleContinue}
               className="text-xs px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/50 font-medium transition-colors"
             >
-              Yes
+              Allow
             </button>
             <button
               onClick={() => setContinuationNudge(null)}
