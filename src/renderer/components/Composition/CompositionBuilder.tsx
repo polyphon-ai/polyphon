@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Music2, Radio, Check, X, Ban, MessageCircleQuestion, RefreshCw } from 'lucide-react';
+import { Music2, Radio, Check, X, Ban, MessageCircleQuestion, RefreshCw, TriangleAlert } from 'lucide-react';
 import type { Composition, CompositionVoice } from '../../../shared/types';
 import VoiceSelector from './VoiceSelector';
 import VoiceOrderList from './VoiceOrderList';
@@ -20,7 +20,7 @@ export default function CompositionBuilder({
 }: CompositionBuilderProps): React.JSX.Element {
   const [name, setName] = useState(initial?.name ?? '');
   const [mode, setMode] = useState<'conductor' | 'broadcast'>(
-    initial?.mode ?? 'conductor',
+    initial?.mode ?? 'broadcast',
   );
   const [voices, setVoices] = useState<CompositionVoice[]>(
     (initial?.voices ?? []).map((v, i) => ({
@@ -31,7 +31,7 @@ export default function CompositionBuilder({
   );
   const [continuationPolicy, setContinuationPolicy] = useState<
     'none' | 'prompt' | 'auto'
-  >(initial?.continuationPolicy ?? 'none');
+  >(initial?.continuationPolicy ?? 'prompt');
   const [continuationMaxRounds, setContinuationMaxRounds] = useState(
     initial?.continuationMaxRounds ?? 2,
   );
@@ -80,17 +80,17 @@ export default function CompositionBuilder({
 
   const modeOptions = [
     {
+      value: 'broadcast' as const,
+      title: 'Broadcast',
+      description: 'Your message is sent to all voices simultaneously.',
+      icon: <Radio size={18} strokeWidth={1.75} />,
+    },
+    {
       value: 'conductor' as const,
       title: 'Conductor-Directed',
       description:
         'You direct each voice individually with targeted messages.',
       icon: <Music2 size={18} strokeWidth={1.75} />,
-    },
-    {
-      value: 'broadcast' as const,
-      title: 'Broadcast',
-      description: 'Your message is sent to all voices simultaneously.',
-      icon: <Radio size={18} strokeWidth={1.75} />,
     },
   ];
 
@@ -230,23 +230,31 @@ export default function CompositionBuilder({
             </div>
 
             {continuationPolicy === 'auto' && (
-              <div className="flex items-center gap-3 mt-4">
-                <label className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
-                  Max rounds
-                </label>
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs text-gray-500 dark:text-gray-400">
+                    Max rounds
+                  </label>
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 tabular-nums">
+                    {continuationMaxRounds}
+                  </span>
+                </div>
                 <input
                   type="range"
                   min={1}
-                  max={3}
+                  max={10}
                   value={continuationMaxRounds}
                   onChange={(e) =>
                     setContinuationMaxRounds(Number(e.target.value))
                   }
-                  className="w-32 accent-indigo-600"
+                  className="w-full accent-indigo-600"
                 />
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 w-4 tabular-nums">
-                  {continuationMaxRounds}
-                </span>
+                {continuationMaxRounds > 3 && (
+                  <p className="flex items-center gap-1.5 mt-2 text-xs text-amber-600 dark:text-amber-400">
+                    <TriangleAlert size={12} strokeWidth={1.75} />
+                    High round counts can use a lot of tokens quickly.
+                  </p>
+                )}
               </div>
             )}
           </div>
