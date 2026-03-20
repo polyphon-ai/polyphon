@@ -12,6 +12,7 @@ interface UserProfileRow {
   conductor_avatar: EncryptedField;
   dismissed_update_version: string;
   update_remind_after: number;
+  prefer_markdown: number;
   updated_at: number;
 }
 
@@ -23,6 +24,7 @@ function rowToProfile(row: UserProfileRow): UserProfile {
     defaultTone: row.default_tone as TonePreset,
     conductorColor: row.conductor_color,
     conductorAvatar: decryptField(row.conductor_avatar) ?? '',
+    preferMarkdown: row.prefer_markdown !== 0,
     updatedAt: row.updated_at,
   };
 }
@@ -33,7 +35,7 @@ export function getUserProfile(db: DatabaseSync): UserProfile {
     .get() as UserProfileRow | undefined;
 
   if (!row) {
-    return { conductorName: '', pronouns: '', conductorContext: '', defaultTone: 'collaborative', conductorColor: '', conductorAvatar: '', updatedAt: 0 };
+    return { conductorName: '', pronouns: '', conductorContext: '', defaultTone: 'collaborative', conductorColor: '', conductorAvatar: '', preferMarkdown: true, updatedAt: 0 };
   }
 
   return rowToProfile(row);
@@ -45,8 +47,8 @@ export function upsertUserProfile(
 ): UserProfile {
   const now = Date.now();
   db.prepare(`
-    UPDATE user_profile SET conductor_name=?, pronouns=?, conductor_context=?, default_tone=?, conductor_color=?, conductor_avatar=?, updated_at=? WHERE id=1
-  `).run(encryptField(profile.conductorName), encryptField(profile.pronouns), encryptField(profile.conductorContext), profile.defaultTone, profile.conductorColor, encryptField(profile.conductorAvatar), now);
+    UPDATE user_profile SET conductor_name=?, pronouns=?, conductor_context=?, default_tone=?, conductor_color=?, conductor_avatar=?, prefer_markdown=?, updated_at=? WHERE id=1
+  `).run(encryptField(profile.conductorName), encryptField(profile.pronouns), encryptField(profile.conductorContext), profile.defaultTone, profile.conductorColor, encryptField(profile.conductorAvatar), profile.preferMarkdown ? 1 : 0, now);
 
   return getUserProfile(db);
 }

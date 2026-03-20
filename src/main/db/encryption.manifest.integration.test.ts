@@ -55,7 +55,7 @@ describe('Encryption manifest — all encrypted fields are stored as ciphertext'
   });
 
   it('user_profile.conductor_name, pronouns, conductor_context, conductor_avatar are stored as ENC:v1:…', () => {
-    upsertUserProfile(db, { conductorName: SENTINEL, pronouns: SENTINEL, conductorContext: SENTINEL, defaultTone: 'collaborative', conductorColor: '', conductorAvatar: SENTINEL });
+    upsertUserProfile(db, { conductorName: SENTINEL, pronouns: SENTINEL, conductorContext: SENTINEL, defaultTone: 'collaborative', conductorColor: '', conductorAvatar: SENTINEL, preferMarkdown: true });
     const row = db.prepare('SELECT conductor_name, pronouns, conductor_context, conductor_avatar FROM user_profile WHERE id = 1').get() as { conductor_name: string; pronouns: string; conductor_context: string; conductor_avatar: string };
     expect(row.conductor_name).toMatch(/^ENC:v1:/);
     expect(row.conductor_name).not.toContain(SENTINEL);

@@ -1183,6 +1183,7 @@ export default function App(): React.JSX.Element {
       defaultTone: userProfile.defaultTone,
       conductorColor: onboardingColor,
       conductorAvatar: onboardingAvatar,
+      preferMarkdown: userProfile.preferMarkdown,
     });
     localStorage.setItem('polyphon.onboardingComplete', '1');
     setShowOnboarding(false);

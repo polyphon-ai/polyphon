@@ -125,6 +125,7 @@ describe('VoiceManager.buildEnsembleSystemPrompt', () => {
       defaultTone: 'concise' as const,
       conductorColor: '',
       conductorAvatar: '',
+      preferMarkdown: false,
       updatedAt: 0,
     };
 

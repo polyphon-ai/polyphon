@@ -264,5 +264,6 @@ export function requireUserProfileShape(value: unknown): Omit<UserProfile, 'upda
   requireNonEmptyString(obj['defaultTone'], 'defaultTone', MAX_SHORT_NAME);
   requireString(obj['conductorColor'], 'conductorColor', 30);
   requireAvatarValue(obj['conductorAvatar'], 'conductorAvatar');
+  coerceBoolean(obj['preferMarkdown'], 'preferMarkdown');
   return value as Omit<UserProfile, 'updatedAt'>;
 }

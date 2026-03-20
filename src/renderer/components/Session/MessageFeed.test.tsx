@@ -216,6 +216,7 @@ describe('MessageFeed', () => {
         defaultTone: 'collaborative',
         conductorColor: '#6366f1',
         conductorAvatar: '',
+        preferMarkdown: true,
         updatedAt: 0,
       },
     });

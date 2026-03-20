@@ -30,6 +30,7 @@ describe('userProfile queries', () => {
       defaultTone: 'collaborative',
       conductorColor: '',
       conductorAvatar: '',
+      preferMarkdown: true,
       updatedAt: 0,
     });
   });
@@ -42,6 +43,7 @@ describe('userProfile queries', () => {
       defaultTone: 'professional',
       conductorColor: '',
       conductorAvatar: '',
+      preferMarkdown: true,
     });
     expect(result.conductorName).toBe('Ada');
     expect(result.pronouns).toBe('she/her');
@@ -57,6 +59,7 @@ describe('userProfile queries', () => {
       defaultTone: 'professional',
       conductorColor: '',
       conductorAvatar: '',
+      preferMarkdown: true,
     });
     const profile = getUserProfile(db);
     expect(profile.conductorName).toBe('Ada');
@@ -73,6 +76,7 @@ describe('userProfile queries', () => {
       defaultTone: 'professional',
       conductorColor: '',
       conductorAvatar: '',
+      preferMarkdown: true,
     });
     upsertUserProfile(db, {
       conductorName: 'Boaz',
@@ -81,6 +85,7 @@ describe('userProfile queries', () => {
       defaultTone: 'concise',
       conductorColor: '#6366f1',
       conductorAvatar: '',
+      preferMarkdown: false,
     });
     const profile = getUserProfile(db);
     expect(profile.conductorName).toBe('Boaz');
@@ -101,6 +106,7 @@ describe('userProfile queries', () => {
       defaultTone: 'collaborative',
       conductorColor: '',
       conductorAvatar: '',
+      preferMarkdown: true,
     });
     const after = Date.now();
     expect(result.updatedAt).toBeGreaterThan(0);
@@ -114,13 +120,13 @@ describe('userProfile queries', () => {
     'exploratory',
     'teaching',
   ] as const)('tone preset "%s" round-trips correctly', (tone) => {
-    upsertUserProfile(db, { conductorName: '', pronouns: '', conductorContext: '', defaultTone: tone, conductorColor: '', conductorAvatar: '' });
+    upsertUserProfile(db, { conductorName: '', pronouns: '', conductorContext: '', defaultTone: tone, conductorColor: '', conductorAvatar: '', preferMarkdown: true });
     const profile = getUserProfile(db);
     expect(profile.defaultTone).toBe(tone);
   });
 
   it('stores conductor_name as ENC:v1: ciphertext', () => {
-    upsertUserProfile(db, { conductorName: 'Ada', pronouns: 'she/her', conductorContext: 'Engineer', defaultTone: 'collaborative', conductorColor: '', conductorAvatar: '' });
+    upsertUserProfile(db, { conductorName: 'Ada', pronouns: 'she/her', conductorContext: 'Engineer', defaultTone: 'collaborative', conductorColor: '', conductorAvatar: '', preferMarkdown: true });
     const row = db.prepare('SELECT conductor_name, pronouns, conductor_context FROM user_profile WHERE id = 1').get() as { conductor_name: string; pronouns: string; conductor_context: string };
     expect(row.conductor_name).toMatch(/^ENC:v1:/);
     expect(row.pronouns).toMatch(/^ENC:v1:/);
@@ -128,7 +134,7 @@ describe('userProfile queries', () => {
   });
 
   it('decrypts profile fields back to original values', () => {
-    upsertUserProfile(db, { conductorName: 'Ada', pronouns: 'she/her', conductorContext: 'Engineer', defaultTone: 'collaborative', conductorColor: '', conductorAvatar: '' });
+    upsertUserProfile(db, { conductorName: 'Ada', pronouns: 'she/her', conductorContext: 'Engineer', defaultTone: 'collaborative', conductorColor: '', conductorAvatar: '', preferMarkdown: true });
     const profile = getUserProfile(db);
     expect(profile.conductorName).toBe('Ada');
     expect(profile.pronouns).toBe('she/her');

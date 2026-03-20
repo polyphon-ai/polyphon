@@ -207,6 +207,11 @@ export class VoiceManager {
       );
     }
 
+    if (profile?.preferMarkdown) {
+      parts.push('');
+      parts.push('Format your responses using Markdown when it adds clarity — headings, lists, code blocks, bold, and italics are all rendered. For short conversational replies, plain prose is fine.');
+    }
+
     return parts.join('\n');
   }
 

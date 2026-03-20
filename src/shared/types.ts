@@ -33,6 +33,7 @@ export interface UserProfile {
   defaultTone: string; // tone ID (preset key or UUID)
   conductorColor: string; // hex color shown in conversation (empty = default gray)
   conductorAvatar: string; // base64 data URL of resized avatar image (empty = use icon)
+  preferMarkdown: boolean; // inject "prefer markdown" instruction into ensemble system prompt
   updatedAt: number;
 }
 

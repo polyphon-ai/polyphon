@@ -71,6 +71,7 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
     defaultTone: 'collaborative',
     conductorColor: '',
     conductorAvatar: '',
+    preferMarkdown: true,
     updatedAt: 0,
     ...overrides,
   };

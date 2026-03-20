@@ -122,6 +122,7 @@ describe('tones queries', () => {
       defaultTone: tone.id,
       conductorColor: '',
       conductorAvatar: '',
+      preferMarkdown: true,
     });
     const firstRemaining = listTones(db).find((t) => t.id !== tone.id)!;
     deleteTone(db, tone.id);

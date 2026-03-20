@@ -466,16 +466,16 @@ function ConductorProfile() {
   }, [userProfile.conductorName, userProfile.pronouns, userProfile.conductorContext, userProfile.defaultTone, userProfile.conductorColor]);
 
   const handleSave = () => {
-    saveUserProfile({ conductorName: name, pronouns, conductorContext: context, defaultTone: tone, conductorColor, conductorAvatar: userProfile.conductorAvatar });
+    saveUserProfile({ conductorName: name, pronouns, conductorContext: context, defaultTone: tone, conductorColor, conductorAvatar: userProfile.conductorAvatar, preferMarkdown: userProfile.preferMarkdown });
   };
 
   const handleColorSelect = (c: string) => {
     setConductorColor(c);
-    saveUserProfile({ conductorName: name, pronouns, conductorContext: context, defaultTone: tone, conductorColor: c, conductorAvatar: userProfile.conductorAvatar });
+    saveUserProfile({ conductorName: name, pronouns, conductorContext: context, defaultTone: tone, conductorColor: c, conductorAvatar: userProfile.conductorAvatar, preferMarkdown: userProfile.preferMarkdown });
   };
 
   const handleRemoveAvatar = () => {
-    saveUserProfile({ conductorName: name, pronouns, conductorContext: context, defaultTone: tone, conductorColor, conductorAvatar: '' });
+    saveUserProfile({ conductorName: name, pronouns, conductorContext: context, defaultTone: tone, conductorColor, conductorAvatar: '', preferMarkdown: userProfile.preferMarkdown });
   };
 
   return (
@@ -1564,6 +1564,62 @@ function LogsSection() {
   );
 }
 
+// ── General ─────────────────────────────────────────────────────────────────
+
+function GeneralSection() {
+  const { userProfile, saveUserProfile } = useSettingsStore();
+
+  function togglePreferMarkdown() {
+    saveUserProfile({ ...userProfile, preferMarkdown: !userProfile.preferMarkdown });
+  }
+
+  return (
+    <div
+      role="tabpanel"
+      id="general-panel"
+      aria-labelledby="tab-general"
+      tabIndex={0}
+      className="max-w-2xl space-y-6"
+    >
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">General</h2>
+        <p className="text-sm text-gray-500 mt-1">App-wide preferences.</p>
+      </div>
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+        <div className="flex items-center justify-between p-5">
+          <div>
+            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Appearance</div>
+            <div className="text-xs text-gray-500 mt-0.5">Choose your preferred color theme.</div>
+          </div>
+          <ThemeSelector />
+        </div>
+        <div className="flex items-center justify-between p-5">
+          <div>
+            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Prefer markdown responses</div>
+            <div className="text-xs text-gray-500 mt-0.5">
+              Instructs voices to format responses with headings, lists, and code blocks when it adds clarity.
+            </div>
+          </div>
+          <button
+            role="switch"
+            aria-checked={userProfile.preferMarkdown}
+            onClick={togglePreferMarkdown}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+              userProfile.preferMarkdown ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                userProfile.preferMarkdown ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Section nav ─────────────────────────────────────────────────────────────
 
 type Section = 'conductor' | 'tones' | 'system-prompts' | 'providers' | 'encryption' | 'general' | 'logs' | 'about';
@@ -1787,27 +1843,7 @@ export default function SettingsPage() {
         )}
 
         {!loading && activeSection === 'general' && (
-          <div
-            role="tabpanel"
-            id="general-panel"
-            aria-labelledby="tab-general"
-            tabIndex={0}
-            className="max-w-2xl space-y-6"
-          >
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">General</h2>
-              <p className="text-sm text-gray-500 mt-1">App-wide preferences.</p>
-            </div>
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Appearance</div>
-                  <div className="text-xs text-gray-500 mt-0.5">Choose your preferred color theme.</div>
-                </div>
-                <ThemeSelector />
-              </div>
-            </div>
-          </div>
+          <GeneralSection />
         )}
 
         {!loading && activeSection === 'logs' && (

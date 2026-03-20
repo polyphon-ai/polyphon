@@ -95,6 +95,7 @@ const DEFAULT_PROFILE: UserProfile = {
   defaultTone: 'collaborative',
   conductorColor: '',
   conductorAvatar: '',
+  preferMarkdown: true,
   updatedAt: 0,
 };
 
