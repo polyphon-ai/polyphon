@@ -1382,11 +1382,11 @@ function classifyLogLine(line: string): 'error' | 'warn' | 'info' | 'debug' | 'd
 }
 
 const LOG_LINE_COLORS: Record<string, string> = {
-  error: 'text-red-500 dark:text-red-400',
-  warn:  'text-amber-500 dark:text-amber-400',
-  info:  'text-sky-600 dark:text-sky-400',
-  debug: 'text-gray-400 dark:text-gray-500',
-  default: 'text-gray-600 dark:text-gray-400',
+  error: 'text-red-400',
+  warn:  'text-amber-400',
+  info:  'text-sky-400',
+  debug: 'text-[#8b949e]',
+  default: 'text-[#e6edf3]',
 };
 
 function FilePathChip({ label, filePath }: { label: string; filePath: string }) {
@@ -1422,7 +1422,7 @@ function FilePathChip({ label, filePath }: { label: string; filePath: string }) 
 function LogsSection() {
   const [lines, setLines] = useState<string[]>([]);
   const [debugEnabled, setDebugEnabledState] = useState(false);
-  const [paths, setPaths] = useState<{ appLog: string; debugLog: string } | null>(null);
+  const [paths, setPaths] = useState<{ appLog: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -1468,13 +1468,6 @@ function LogsSection() {
 
   return (
     <div className="space-y-4">
-      {/* App log file path */}
-      {paths && (
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-          <FilePathChip label="Application log" filePath={paths.appLog} />
-        </div>
-      )}
-
       {/* Log viewer */}
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
         <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30">
@@ -1526,39 +1519,38 @@ function LogsSection() {
         </div>
       </div>
 
-      {/* Debug logging */}
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-        <div className="p-4 flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Debug logging</span>
-              {debugEnabled && (
-                <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Active
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-gray-500">Captures verbose output including all log levels.</p>
+      {/* File path + export */}
+      {paths && (
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 flex items-end justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <FilePathChip label="Log file location" filePath={paths.appLog} />
           </div>
-          <Toggle checked={debugEnabled} onChange={handleToggleDebug} />
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="shrink-0 flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Download size={14} strokeWidth={1.75} />
+            {exporting ? 'Exporting…' : 'Export log'}
+          </button>
         </div>
+      )}
 
-        {debugEnabled && paths && (
-          <div className="px-4 pb-4 space-y-3">
-            <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
-              <FilePathChip label="Debug log" filePath={paths.debugLog} />
-            </div>
-            <button
-              onClick={handleExport}
-              disabled={exporting}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <Download size={14} strokeWidth={1.75} />
-              {exporting ? 'Exporting…' : 'Export'}
-            </button>
+      {/* Debug logging */}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Debug logging</span>
+            {debugEnabled && (
+              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Active
+              </span>
+            )}
           </div>
-        )}
+          <p className="text-xs text-gray-500">Enables verbose debug-level output in the application log. The log file will grow faster while active.</p>
+        </div>
+        <Toggle checked={debugEnabled} onChange={handleToggleDebug} />
       </div>
     </div>
   );
