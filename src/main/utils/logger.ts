@@ -95,7 +95,8 @@ if (!_g[_MAIN_INIT]) {
 log.transports.file.level = process.env.POLYPHON_DEBUG === '1' ? 'debug' : 'info';
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'logs', 'polyphon.log');
 log.transports.file.maxSize = 25 * 1024 * 1024; // 25 MB per file
-log.transports.file.archiveLog = (oldPath: string) => {
+log.transports.file.archiveLogFn = (oldLogFile) => {
+  const oldPath = oldLogFile.path;
   const dir = path.dirname(oldPath);
   const ext = path.extname(oldPath);
   const base = path.basename(oldPath, ext);
