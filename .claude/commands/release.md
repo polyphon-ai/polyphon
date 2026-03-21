@@ -1,7 +1,8 @@
 # /release — Create and push a versioned release
 
 Determine the next semver version based on conventional commits since the last tag,
-update `package.json`, commit, tag, and push to trigger the GitHub release workflow.
+draft user-facing release notes for approval, update `package.json`, commit, tag,
+and push to trigger the GitHub release workflow.
 
 ## Steps
 
@@ -65,20 +66,71 @@ Wait for confirmation before continuing. If the user provides a version override
 `$ARGUMENTS` (e.g. `/release v1.0.0`), skip the calculation above and use that version
 instead (still show the plan and confirm).
 
-### 7. Update `package.json`
+### 7. Draft release notes
+
+Using the commit list from step 3, draft user-facing release notes. These are for
+end users, not developers — transform technical commit messages into plain language.
+
+**Rules for drafting:**
+- Include `feat` commits under **What's New**
+- Include `fix` commits under **Fixed**
+- Include significant `refactor` or `chore` commits (e.g. performance, security) under **Improved** — use judgement
+- Skip noise: `chore(release)`, `chore(deps)`, `test(`, `docs(`, `ci(`, version bump commits
+- Strip the conventional commit prefix (`feat(scope): `) — write a clean sentence instead
+- Write from the user's perspective: "Markdown is now rendered in message bubbles" not "add react-markdown renderer"
+- Keep each bullet to one line
+
+Present the draft in this format:
+
+```
+## Release Notes draft for <new-version>
+
+**What's New**
+- ...
+
+**Fixed**
+- ...
+
+**Improved** (omit section if empty)
+- ...
+
+---
+Approve these notes, or paste your edited version.
+```
+
+Wait for the user to approve or provide an edited version. Use the approved text
+exactly as the release notes going forward.
+
+### 8. Write RELEASE_NOTES.md
+
+Write the approved release notes to `RELEASE_NOTES.md` in the repo root. Use this
+exact format (no version header — the tag provides that context):
+
+```markdown
+**What's New**
+- ...
+
+**Fixed**
+- ...
+
+**Improved**
+- ...
+```
+
+### 9. Update `package.json`
 
 Use the Edit tool to update the `"version"` field in `package.json` to the new version (without the leading `v`).
 
-### 8. Commit the version bump
+### 10. Commit the version bump and release notes
 
 ```bash
-git add package.json
+git add package.json RELEASE_NOTES.md
 git commit -m "chore(release): bump version to <new-version>
 
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ```
 
-### 9. Pull remote changes with rebase
+### 11. Pull remote changes with rebase
 
 ```bash
 git pull --rebase
@@ -88,19 +140,18 @@ This picks up any commits pushed to the remote since the version bump (e.g. auto
 site-version updates from a previous CI run). If the rebase fails, stop and tell the
 user to resolve conflicts before continuing.
 
-### 10. Create an annotated tag
+### 12. Create an annotated tag
 
 ```bash
 git tag -a <new-version> -m "Release <new-version>"
 ```
 
-### 11. Push branch and tag
+### 13. Push branch and tag
 
 ```bash
 git push
 git push origin <new-version>
 ```
-
 
 After pushing, tell the user the tag has been pushed and that the GitHub Actions
 release workflow will now build and publish the macOS arm64 DMG installer.
