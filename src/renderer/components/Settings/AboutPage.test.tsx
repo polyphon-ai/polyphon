@@ -37,9 +37,9 @@ describe('AboutPage', () => {
     expect(images.length).toBeGreaterThan(0);
   });
 
-  it('renders the version badge', () => {
+  it('renders the version badge', async () => {
     render(<AboutPage />);
-    expect(screen.getByText('v0.0.0-test')).toBeTruthy();
+    expect(await screen.findByText('v0.0.0-test')).toBeTruthy();
   });
 
   it('renders community links', () => {
@@ -51,7 +51,7 @@ describe('AboutPage', () => {
   it('renders debug info once loaded', async () => {
     render(<AboutPage />);
     expect(await screen.findByText('v8')).toBeTruthy();
-    expect(screen.getByText('Database schema')).toBeTruthy();
+    expect(screen.getByText('db')).toBeTruthy();
     expect(screen.getByText('darwin')).toBeTruthy();
   });
 });

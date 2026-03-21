@@ -130,6 +130,10 @@ function stubPolyphon(compositions: Composition[] = [], sessions: Session[] = []
     shell: {
       openExternal: vi.fn(),
     },
+    logs: {
+      getDebugEnabled: vi.fn().mockResolvedValue(false),
+      setDebugEnabled: vi.fn().mockResolvedValue(undefined),
+    },
     encryption: {
       onKeyRegeneratedWarning: vi.fn().mockReturnValue(() => {}),
     },
