@@ -1,7 +1,7 @@
 ---
 title: "Polyphon v0.4.1 Released"
 description: "Polyphon v0.4.1 is now available for download."
-date: "2026-03-21T05:28:36Z"
+date: "2026-03-21T05:29:29Z"
 draft: false
 tags: ["release", "announcement"]
 categories: ["Announcements"]
