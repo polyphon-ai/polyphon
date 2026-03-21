@@ -24,6 +24,7 @@ const mockDismiss = vi.fn();
 const mockOnAvailable = vi.fn();
 const mockOnDownloadProgress = vi.fn();
 const mockOnReadyToInstall = vi.fn();
+const mockOnError = vi.fn();
 const mockDownload = vi.fn();
 const mockInstall = vi.fn();
 
@@ -33,6 +34,7 @@ beforeEach(() => {
   mockOnAvailable.mockClear().mockReturnValue(() => {});
   mockOnDownloadProgress.mockClear().mockReturnValue(() => {});
   mockOnReadyToInstall.mockClear().mockReturnValue(() => {});
+  mockOnError.mockClear().mockReturnValue(() => {});
   mockDownload.mockClear().mockResolvedValue(undefined);
   mockInstall.mockClear().mockResolvedValue(undefined);
 
@@ -46,6 +48,7 @@ beforeEach(() => {
       onAvailable: mockOnAvailable,
       onDownloadProgress: mockOnDownloadProgress,
       onReadyToInstall: mockOnReadyToInstall,
+      onError: mockOnError,
     },
     shell: { openExternal: vi.fn() },
   };

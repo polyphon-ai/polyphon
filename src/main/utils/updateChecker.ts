@@ -56,6 +56,7 @@ export function setupAutoUpdater(db: DatabaseSync, win: BrowserWindow): void {
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = resolveAllowPrerelease(channel);
   autoUpdater.forceDevUpdateConfig = !app.isPackaged;
+  autoUpdater.setFeedURL({ provider: 'github', owner: 'polyphon-ai', repo: 'releases' });
 
   autoUpdater.on('update-available', (info) => {
     const version = info.version;
