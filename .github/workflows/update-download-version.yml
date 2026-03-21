@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "App version (semver, e.g. 0.2.0 or 0.2.0-alpha.5)"
+        description: "Stable app version (semver, e.g. 0.4.0)"
         required: true
         type: string
 
@@ -75,13 +75,24 @@ jobs:
 
       - name: Promote release on GitHub
         run: |
-          VERSION="${{ github.event.inputs.version }}"
-          TAG="v${VERSION#v}"
-          # Keep pre-release flag for alpha/beta; only promote stable releases to latest
-          if echo "$VERSION" | grep -qE '\-(alpha|beta)'; then
-            gh release edit "$TAG" --repo polyphon-ai/releases --prerelease=true
-          else
-            gh release edit "$TAG" --repo polyphon-ai/releases --prerelease=false --latest
-          fi
+          TAG="v${{ github.event.inputs.version }}"
+          gh release edit "$TAG" --repo polyphon-ai/releases --prerelease=false --latest
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+
+      - name: Delete old releases
+        run: |
+          CURRENT_TAG="v${{ github.event.inputs.version }}"
+
+          # Delete every release except the one we just promoted
+          gh release list --repo polyphon-ai/releases --limit 100 --json tagName \
+            --jq '.[] | .tagName' | while read -r TAG; do
+            if [ "$TAG" = "$CURRENT_TAG" ]; then
+              echo "Keeping: $TAG"
+            else
+              echo "Deleting: $TAG"
+              gh release delete "$TAG" --repo polyphon-ai/releases --yes --cleanup-tag
+            fi
+          done
         env:
           GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
