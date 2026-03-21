@@ -21,9 +21,12 @@ const UNKNOWN_ID = '00000000-0000-0000-0000-000000000099';
 
 const handlers = new Map<string, Function>();
 
-const mockShellOpenExternal = vi.fn().mockResolvedValue(undefined);
+const { mockShellOpenExternal } = vi.hoisted(() => ({
+  mockShellOpenExternal: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('electron', () => ({
+  app: { getPath: () => '/tmp/test-userData' },
   ipcMain: {
     handle: (channel: string, fn: Function) => { handlers.set(channel, fn); },
   },

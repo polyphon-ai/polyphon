@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('electron', () => ({
+  app: { getPath: () => '/tmp/test-userData' },
+}));
+
 vi.mock('electron-log/main', () => ({
   default: {
     initialize: vi.fn(),

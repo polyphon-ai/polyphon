@@ -1,3 +1,6 @@
+import path from 'node:path';
+
+import { app } from 'electron';
 import log from 'electron-log/main';
 
 import { ENCRYPTED_FIELDS } from '../db/encryptionManifest';
@@ -90,7 +93,7 @@ if (!_g[_MAIN_INIT]) {
   log.initialize();
 }
 log.transports.file.level = 'info';
-log.transports.file.fileName = 'polyphon.log';
+log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'logs', 'polyphon.log');
 log.transports.console.level = process.env.NODE_ENV !== 'production' ? 'debug' : false;
 
 // Optional debug transport — independent logger that captures all levels ≥ debug
@@ -102,7 +105,8 @@ if (process.env.POLYPHON_DEBUG === '1') {
     debugLog.initialize();
   }
   debugLog.transports.file.level = 'debug';
-  debugLog.transports.file.fileName = 'polyphon-debug.log';
+  debugLog.transports.file.resolvePathFn = () =>
+    path.join(app.getPath('userData'), 'logs', 'polyphon-debug.log');
   debugLog.transports.console.level = false;
 }
 
@@ -115,7 +119,8 @@ export function setDebugEnabled(enabled: boolean): void {
     if (!debugLog) {
       debugLog = log.create({ logId: 'polyphon-debug' });
       debugLog.transports.file.level = 'debug';
-      debugLog.transports.file.fileName = 'polyphon-debug.log';
+      debugLog.transports.file.resolvePathFn = () =>
+        path.join(app.getPath('userData'), 'logs', 'polyphon-debug.log');
       debugLog.transports.console.level = false;
     } else {
       debugLog.transports.file.level = 'debug';
