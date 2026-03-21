@@ -157,6 +157,11 @@ const api = {
       ipcRenderer.on(IPC.UPDATE_DOWNLOAD_PROGRESS, listener);
       return () => ipcRenderer.off(IPC.UPDATE_DOWNLOAD_PROGRESS, listener);
     },
+    onError: (handler: (message: string) => void) => {
+      const listener = (_: Electron.IpcRendererEvent, payload: { message: string }) => handler(payload.message);
+      ipcRenderer.on(IPC.UPDATE_ERROR, listener);
+      return () => ipcRenderer.off(IPC.UPDATE_ERROR, listener);
+    },
     onReadyToInstall: (handler: (info: UpdateInfo) => void) => {
       const listener = (_: Electron.IpcRendererEvent, info: UpdateInfo) => handler(info);
       ipcRenderer.on(IPC.UPDATE_READY_TO_INSTALL, listener);

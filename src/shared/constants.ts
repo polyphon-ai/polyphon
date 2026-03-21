@@ -113,6 +113,7 @@ export const IPC = {
   UPDATE_CHECK_NOW: 'update:check-now',
   UPDATE_DOWNLOAD: 'update:download',
   UPDATE_DOWNLOAD_PROGRESS: 'update:download-progress',
+  UPDATE_ERROR: 'update:error',
   UPDATE_READY_TO_INSTALL: 'update:ready-to-install',
   UPDATE_INSTALL: 'update:install',
   UPDATE_GET_CHANNEL: 'update:get-channel',

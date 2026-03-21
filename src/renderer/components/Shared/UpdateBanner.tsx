@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { X, Download, RotateCcw } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Download, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useUIStore } from '../../store/uiStore';
 
 export default function UpdateBanner() {
@@ -10,6 +10,7 @@ export default function UpdateBanner() {
   const setUpdateDownloadProgress = useUIStore((s) => s.setUpdateDownloadProgress);
   const setUpdateReadyToInstall = useUIStore((s) => s.setUpdateReadyToInstall);
   const clearUpdate = useUIStore((s) => s.clearUpdate);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     // Handle the race: check finished before this component mounted
@@ -18,6 +19,7 @@ export default function UpdateBanner() {
     });
 
     const unsubAvailable = window.polyphon.update.onAvailable((info) => {
+      setDownloadError(null);
       setUpdateAvailable(info);
     });
 
@@ -29,10 +31,15 @@ export default function UpdateBanner() {
       setUpdateReadyToInstall(info);
     });
 
+    const unsubError = window.polyphon.update.onError((message) => {
+      setDownloadError(message);
+    });
+
     return () => {
       unsubAvailable();
       unsubProgress();
       unsubReady();
+      unsubError();
     };
   }, [setUpdateAvailable, setUpdateDownloadProgress, setUpdateReadyToInstall]);
 
@@ -85,6 +92,7 @@ export default function UpdateBanner() {
   const { version } = updateAvailable;
 
   function handleDownload() {
+    setDownloadError(null);
     window.polyphon.update.download();
   }
 
@@ -96,6 +104,33 @@ export default function UpdateBanner() {
   function handleDismissPermanently() {
     window.polyphon.update.dismiss(version, true);
     clearUpdate();
+  }
+
+  if (downloadError) {
+    return (
+      <div className="flex items-center justify-between gap-3 px-4 py-2 bg-red-700 text-white text-sm shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <AlertTriangle size={14} strokeWidth={1.75} className="shrink-0" />
+          <span className="font-medium truncate">Update failed: {downloadError}</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-1.5 px-3 py-1 rounded bg-white text-red-700 font-medium hover:bg-red-50 transition-colors"
+          >
+            <Download size={14} strokeWidth={1.75} />
+            Retry
+          </button>
+          <button
+            onClick={() => setDownloadError(null)}
+            aria-label="Dismiss error"
+            className="p-1 rounded hover:bg-red-600 transition-colors"
+          >
+            <X size={16} strokeWidth={1.75} />
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
