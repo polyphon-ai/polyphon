@@ -16,6 +16,7 @@ import { PROVIDER_METADATA, SETTINGS_PROVIDERS } from '../shared/constants';
 import { AvatarEditor } from './components/Settings/AvatarEditor';
 import { HelpTooltip, ColorPicker } from './components/Shared';
 import UpdateBanner from './components/Shared/UpdateBanner';
+import DebugBanner from './components/Shared/DebugBanner';
 import PasswordPromptView from './components/PasswordPrompt/PasswordPromptView';
 import { PasswordStrengthGauge, PasswordMatchIndicator } from './components/Settings/EncryptionSection';
 
@@ -1285,6 +1286,7 @@ export default function App(): React.JSX.Element {
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 overflow-hidden">
       <UpdateBanner />
+      <DebugBanner />
       {keyRegeneratedWarning && (
         <div className="flex items-center justify-between gap-3 px-4 py-2 bg-amber-500 text-white text-sm shrink-0">
           <span className="flex items-center gap-2">
