@@ -832,7 +832,7 @@ a:hover {
 .principles-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.875rem;
   padding: 0.9375rem 0;
   border-bottom: 1px solid var(--color-border);
@@ -859,6 +859,8 @@ a:hover {
 .principles-item:nth-child(6) svg { color: oklch(58% 0.18 58); }
 .principles-item:nth-child(7) svg { color: oklch(50% 0.22 340); }
 .principles-item:nth-child(8) svg { color: oklch(50% 0.14 212); }
+.principles-item:nth-child(9) svg { color: oklch(50% 0.22 340); }
+.principles-item:nth-child(10) svg { color: oklch(46% 0.26 298); }
 
 .dark .principles-item:nth-child(1) svg { color: oklch(70% 0.18 264); }
 .dark .principles-item:nth-child(2) svg { color: oklch(70% 0.14 212); }
@@ -868,6 +870,8 @@ a:hover {
 .dark .principles-item:nth-child(6) svg { color: oklch(78% 0.16 58); }
 .dark .principles-item:nth-child(7) svg { color: oklch(70% 0.18 340); }
 .dark .principles-item:nth-child(8) svg { color: oklch(70% 0.14 212); }
+.dark .principles-item:nth-child(9) svg { color: oklch(70% 0.18 340); }
+.dark .principles-item:nth-child(10) svg { color: oklch(70% 0.18 298); }
 
 @media (max-width: 640px) {
   .principles-inner {
