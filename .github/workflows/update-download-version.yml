@@ -84,11 +84,18 @@ jobs:
         run: |
           CURRENT_TAG="v${{ github.event.inputs.version }}"
 
-          # Delete every release except the one we just promoted
-          gh release list --repo polyphon-ai/releases --limit 100 --json tagName \
-            --jq '.[] | .tagName' | while read -r TAG; do
+          # Keep: the stable we just promoted + the single most recent pre-release.
+          # Delete: all older stables and all older pre-releases.
+          LATEST_PRERELEASE=$(gh release list --repo polyphon-ai/releases --limit 100 \
+            --json tagName,isPrerelease \
+            --jq '[.[] | select(.isPrerelease == true)] | first | .tagName // ""')
+
+          gh release list --repo polyphon-ai/releases --limit 100 --json tagName,isPrerelease \
+            --jq '.[] | "\(.isPrerelease) \(.tagName)"' | while read -r IS_PRE TAG; do
             if [ "$TAG" = "$CURRENT_TAG" ]; then
-              echo "Keeping: $TAG"
+              echo "Keeping stable: $TAG"
+            elif [ "$TAG" = "$LATEST_PRERELEASE" ]; then
+              echo "Keeping pre-release: $TAG"
             else
               echo "Deleting: $TAG"
               gh release delete "$TAG" --repo polyphon-ai/releases --yes --cleanup-tag
