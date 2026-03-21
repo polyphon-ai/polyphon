@@ -125,17 +125,17 @@ jobs:
     needs: [make-macos-arm64]
     runs-on: ubuntu-latest
     steps:
-      - name: Download macOS arm64 artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: installers-macos-arm64
-          path: dist/macos
-
       - name: Download source for release notes
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           sparse-checkout: RELEASE_NOTES.md
           sparse-checkout-cone-mode: false
+
+      - name: Download macOS arm64 artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: installers-macos-arm64
+          path: dist/macos
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
