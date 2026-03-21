@@ -12,6 +12,7 @@ import { initFieldEncryption } from './security/fieldEncryption';
 import { createUnlockWindow } from './security/unlockWindow';
 import { installCsp } from './security/csp';
 import { IPC } from '../shared/constants';
+import { SCHEMA_VERSION } from './db/schema';
 
 process.on('uncaughtException', (err) => {
   logger.error('Uncaught exception', err);
@@ -79,7 +80,7 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(async () => {
-  logger.info('Polyphon starting', { version: app.getVersion(), platform: process.platform });
+  logger.info('Polyphon starting', { version: app.getVersion(), platform: process.platform, schemaVersion: SCHEMA_VERSION });
 
   // Install CSP once, before any window is created, so the policy is in place
   // before the renderer loads any content.

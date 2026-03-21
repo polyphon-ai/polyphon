@@ -94,6 +94,7 @@ export const IPC = {
   SETTINGS_SYSTEM_PROMPT_TEMPLATE_DELETE: 'settings:systemPromptTemplate:delete',
 
   SETTINGS_PROBE_MODEL: 'settings:probeModel',
+  SETTINGS_GET_DEBUG_INFO: 'settings:getDebugInfo',
 
   SESSION_RENAME: 'session:rename',
   SESSION_ARCHIVE: 'session:archive',

@@ -178,6 +178,12 @@ export interface EncryptionStatus {
   passwordSet: boolean;
 }
 
+export interface DebugInfo {
+  appVersion: string;
+  schemaVersion: number;
+  platform: string;
+}
+
 // Serializable voice descriptor — sent over IPC, not the full Voice instance
 export interface VoiceDescriptor {
   id: string;

@@ -17,6 +17,7 @@ import type {
   UpdateDownloadProgress,
   UpdateChannel,
   EncryptionStatus,
+  DebugInfo,
 } from '../shared/types';
 import type { ProbeModelResult } from './ipc/settingsHandlers';
 import { IPC } from '../shared/constants';
@@ -206,6 +207,8 @@ const api = {
       ipcRenderer.invoke(IPC.SETTINGS_FETCH_MODELS, provider),
     probeModel: (provider: string, model: string): Promise<ProbeModelResult> =>
       ipcRenderer.invoke(IPC.SETTINGS_PROBE_MODEL, provider, model),
+    getDebugInfo: (): Promise<DebugInfo> =>
+      ipcRenderer.invoke(IPC.SETTINGS_GET_DEBUG_INFO),
     getUserProfile: (): Promise<UserProfile> =>
       ipcRenderer.invoke(IPC.SETTINGS_GET_USER_PROFILE),
     saveUserProfile: (profile: Omit<UserProfile, 'updatedAt'>): Promise<UserProfile> =>

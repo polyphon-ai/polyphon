@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { UpdateChannel } from '../../../shared/types';
+import type { UpdateChannel, DebugInfo } from '../../../shared/types';
 import { ExternalLink, Bug, Lightbulb, MessageSquare, ShieldAlert, RefreshCw, CheckCircle, Download, RotateCcw, ChevronDown } from 'lucide-react';
 import wordmarkLightUrl from '../../../../assets/wordmark-light.svg?url';
 import wordmarkDarkUrl from '../../../../assets/wordmark-dark.svg?url';
@@ -13,9 +13,11 @@ export default function AboutPage() {
   const [checkState, setCheckState] = useState<CheckState>('idle');
   const [availableVersion, setAvailableVersion] = useState<string | null>(null);
   const [channel, setChannel] = useState<UpdateChannel>('stable');
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
 
   useEffect(() => {
     window.polyphon.update.getChannel().then(setChannel);
+    window.polyphon.settings.getDebugInfo().then(setDebugInfo);
   }, []);
 
   async function handleChannelChange(next: UpdateChannel) {
@@ -323,6 +325,32 @@ export default function AboutPage() {
           <ExternalLink size={13} strokeWidth={1.75} />
         </button>
       </div>
+
+      {/* ── Debug info ───────────────────────────────────────────────── */}
+      {debugInfo && (
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{
+            background: 'var(--color-surface-raised)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          {[
+            { label: 'App version', value: `v${debugInfo.appVersion}` },
+            { label: 'Database schema', value: `v${debugInfo.schemaVersion}` },
+            { label: 'Platform', value: debugInfo.platform },
+          ].map(({ label, value }, i) => (
+            <div
+              key={label}
+              className="flex items-center justify-between px-4 py-2.5"
+              style={{ borderTop: i > 0 ? '1px solid var(--color-border)' : undefined }}
+            >
+              <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{label}</span>
+              <span className="text-xs font-mono" style={{ color: 'var(--color-text-secondary)' }}>{value}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Community ────────────────────────────────────────────────── */}
       <div>

@@ -14,6 +14,13 @@ beforeAll(() => {
       getChannel: vi.fn().mockResolvedValue('stable'),
       setChannel: vi.fn().mockResolvedValue(undefined),
     },
+    settings: {
+      getDebugInfo: vi.fn().mockResolvedValue({
+        appVersion: '0.0.0-test',
+        schemaVersion: 8,
+        platform: 'darwin',
+      }),
+    },
   };
 });
 
@@ -38,5 +45,12 @@ describe('AboutPage', () => {
     render(<AboutPage />);
     expect(screen.getByText('File a bug')).toBeTruthy();
     expect(screen.getByText('Request a feature')).toBeTruthy();
+  });
+
+  it('renders debug info once loaded', async () => {
+    render(<AboutPage />);
+    expect(await screen.findByText('v8')).toBeTruthy();
+    expect(screen.getByText('Database schema')).toBeTruthy();
+    expect(screen.getByText('darwin')).toBeTruthy();
   });
 });

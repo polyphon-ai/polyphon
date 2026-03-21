@@ -1,4 +1,4 @@
-import { ipcMain, dialog, nativeImage } from 'electron';
+import { ipcMain, dialog, nativeImage, app } from 'electron';
 import {
   requireId,
   requireString,
@@ -606,5 +606,16 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
     // Verify current password
     unwrapWithPassword(keyFile, currentPassword);
     updateKeyWrapping(userDataPath, { version: 1, wrapping: 'none', key: dbKey.toString('hex') });
+  });
+
+  ipcMain.handle(IPC.SETTINGS_GET_DEBUG_INFO, () => {
+    const row = db.prepare('SELECT version FROM schema_version LIMIT 1').get() as
+      | { version: number }
+      | undefined;
+    return {
+      appVersion: app.getVersion(),
+      schemaVersion: row?.version ?? 0,
+      platform: process.platform,
+    };
   });
 }
