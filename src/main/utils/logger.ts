@@ -1,4 +1,5 @@
 import path from 'node:path';
+import fs from 'node:fs';
 
 import { app } from 'electron';
 import log from 'electron-log/main';
@@ -45,7 +46,7 @@ export function sanitizeValue(value: unknown, visited?: WeakSet<object>, depth?:
         name: value.name,
         message: sanitizeString(value.message),
       };
-      if (process.env.POLYPHON_DEBUG === '1' && value.stack) {
+      if (isDebugEnabled() && value.stack) {
         result.stack = sanitizeString(value.stack);
       }
       return result;
@@ -86,77 +87,72 @@ export function sanitizeLogArgs(args: unknown[]): unknown[] {
 // across module re-evaluations within the same Vitest worker.
 const _g = globalThis as Record<symbol, boolean>;
 const _MAIN_INIT = Symbol.for('polyphon.log.main.initialized');
-const _DEBUG_INIT = Symbol.for('polyphon.log.debug.initialized');
 
 if (!_g[_MAIN_INIT]) {
   _g[_MAIN_INIT] = true;
   log.initialize();
 }
-log.transports.file.level = 'info';
+log.transports.file.level = process.env.POLYPHON_DEBUG === '1' ? 'debug' : 'info';
 log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'logs', 'polyphon.log');
+log.transports.file.maxSize = 25 * 1024 * 1024; // 25 MB per file
+log.transports.file.archiveLog = (oldPath: string) => {
+  const dir = path.dirname(oldPath);
+  const ext = path.extname(oldPath);
+  const base = path.basename(oldPath, ext);
+  const maxArchives = 4; // 4 archives + 1 active = 5 total
+  for (let i = maxArchives; i >= 1; i--) {
+    const src = path.join(dir, `${base}.${i}${ext}`);
+    if (fs.existsSync(src)) {
+      if (i === maxArchives) {
+        fs.rmSync(src, { force: true });
+      } else {
+        fs.renameSync(src, path.join(dir, `${base}.${i + 1}${ext}`));
+      }
+    }
+  }
+  fs.renameSync(oldPath, path.join(dir, `${base}.1${ext}`));
+};
 log.transports.console.level = process.env.NODE_ENV !== 'production' ? 'debug' : false;
 
-// Optional debug transport — independent logger that captures all levels ≥ debug
-let debugLog: typeof log | null = null;
-if (process.env.POLYPHON_DEBUG === '1') {
-  debugLog = log.create({ logId: 'polyphon-debug' });
-  if (!_g[_DEBUG_INIT]) {
-    _g[_DEBUG_INIT] = true;
-    debugLog.initialize();
-  }
-  debugLog.transports.file.level = 'debug';
-  debugLog.transports.file.resolvePathFn = () =>
-    path.join(app.getPath('userData'), 'logs', 'polyphon-debug.log');
-  debugLog.transports.console.level = false;
+function debugFlagPath(): string {
+  return path.join(app.getPath('userData'), 'debug.flag');
 }
 
 export function isDebugEnabled(): boolean {
-  return debugLog !== null && debugLog.transports.file.level !== false;
+  return log.transports.file.level === 'debug';
 }
 
 export function setDebugEnabled(enabled: boolean): void {
-  if (enabled) {
-    if (!debugLog) {
-      debugLog = log.create({ logId: 'polyphon-debug' });
-      debugLog.transports.file.level = 'debug';
-      debugLog.transports.file.resolvePathFn = () =>
-        path.join(app.getPath('userData'), 'logs', 'polyphon-debug.log');
-      debugLog.transports.console.level = false;
+  log.transports.file.level = enabled ? 'debug' : 'info';
+}
+
+export function writeDebugFlag(enabled: boolean): void {
+  try {
+    const flagPath = debugFlagPath();
+    if (enabled) {
+      fs.writeFileSync(flagPath, '', { mode: 0o600 });
     } else {
-      debugLog.transports.file.level = 'debug';
+      fs.rmSync(flagPath, { force: true });
     }
-  } else if (debugLog) {
-    debugLog.transports.file.level = false;
+  } catch {
+    // non-fatal
+  }
+}
+
+export function initDebugFromFlag(): void {
+  if (isDebugEnabled()) return; // already on via POLYPHON_DEBUG=1
+  try {
+    if (fs.existsSync(debugFlagPath())) {
+      setDebugEnabled(true);
+    }
+  } catch {
+    // non-fatal
   }
 }
 
 export const logger = {
-  error: (...args: unknown[]) => {
-    try {
-      const sanitized = sanitizeLogArgs(args);
-      log.error(...sanitized);
-      debugLog?.error(...sanitized);
-    } catch {}
-  },
-  warn: (...args: unknown[]) => {
-    try {
-      const sanitized = sanitizeLogArgs(args);
-      log.warn(...sanitized);
-      debugLog?.warn(...sanitized);
-    } catch {}
-  },
-  info: (...args: unknown[]) => {
-    try {
-      const sanitized = sanitizeLogArgs(args);
-      log.info(...sanitized);
-      debugLog?.info(...sanitized);
-    } catch {}
-  },
-  debug: (...args: unknown[]) => {
-    try {
-      const sanitized = sanitizeLogArgs(args);
-      log.debug(...sanitized);
-      debugLog?.debug(...sanitized);
-    } catch {}
-  },
+  error: (...args: unknown[]) => { try { log.error(...sanitizeLogArgs(args)); } catch {} },
+  warn:  (...args: unknown[]) => { try { log.warn(...sanitizeLogArgs(args));  } catch {} },
+  info:  (...args: unknown[]) => { try { log.info(...sanitizeLogArgs(args));  } catch {} },
+  debug: (...args: unknown[]) => { try { log.debug(...sanitizeLogArgs(args)); } catch {} },
 };
