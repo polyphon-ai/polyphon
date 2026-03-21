@@ -21,8 +21,10 @@ vi.mock('electron-updater', () => ({
   }),
 }));
 
+const mockGetVersion = vi.fn().mockReturnValue('1.0.0');
+
 vi.mock('electron', () => ({
-  app: { getVersion: () => '1.0.0' },
+  app: { getVersion: mockGetVersion, isPackaged: false },
   BrowserWindow: {},
 }));
 
@@ -184,6 +186,124 @@ describe('checkForUpdateNow', () => {
     expect(result).toEqual({ version: '2.0.0' });
     // IPC should have been sent even though the version is in the dismissed list
     expect(win.webContents.send).toHaveBeenCalledWith('update:available', { version: '2.0.0' });
+  });
+});
+
+describe('changeChannel', () => {
+  let changeChannel: typeof import('./updateChecker').changeChannel;
+  let getCachedUpdateInfo: typeof import('./updateChecker').getCachedUpdateInfo;
+  let setupAutoUpdater: typeof import('./updateChecker').setupAutoUpdater;
+  let _resetForTests: typeof import('./updateChecker')._resetForTests;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    autoUpdaterEmitter.removeAllListeners();
+    mockCheckForUpdates.mockResolvedValue(null);
+    mockSetFeedURL.mockClear();
+    mockGetVersion.mockReturnValue('1.0.0');
+
+    const userProfileMod = await import('../db/queries/userProfile');
+    vi.mocked(userProfileMod.getUpdatePreferences).mockReturnValue({ dismissedUpdateVersion: '', updateRemindAfter: 0 });
+    vi.mocked(userProfileMod.getUpdateChannel).mockReturnValue('stable');
+
+    const mod = await import('./updateChecker');
+    changeChannel = mod.changeChannel;
+    getCachedUpdateInfo = mod.getCachedUpdateInfo;
+    setupAutoUpdater = mod.setupAutoUpdater;
+    _resetForTests = mod._resetForTests;
+    _resetForTests();
+
+    delete process.env.POLYPHON_E2E;
+  });
+
+  it('switching to preview sets allowPrerelease and re-checks via autoUpdater', async () => {
+    const { autoUpdater } = await import('electron-updater');
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+    mockCheckForUpdates.mockClear();
+
+    changeChannel('preview');
+
+    expect((autoUpdater as any).allowPrerelease).toBe(true);
+    expect(mockCheckForUpdates).toHaveBeenCalledTimes(1);
+  });
+
+  it('switching to stable on a stable build clears allowPrerelease and re-checks via autoUpdater', async () => {
+    const { autoUpdater } = await import('electron-updater');
+    mockGetVersion.mockReturnValue('1.0.0');
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+    mockCheckForUpdates.mockClear();
+
+    changeChannel('stable');
+
+    expect((autoUpdater as any).allowPrerelease).toBe(false);
+    expect(mockCheckForUpdates).toHaveBeenCalledTimes(1);
+  });
+
+  it('switching to stable while on a pre-release fetches GitHub API instead of using autoUpdater', async () => {
+    mockGetVersion.mockReturnValue('1.1.0-alpha.1');
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ tag_name: 'v1.0.0', prerelease: false }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+    mockCheckForUpdates.mockClear();
+
+    changeChannel('stable');
+
+    await vi.waitFor(() =>
+      expect(win.webContents.send).toHaveBeenCalledWith('update:available', { version: '1.0.0' })
+    );
+
+    expect(mockCheckForUpdates).not.toHaveBeenCalled();
+    expect(mockFetch).toHaveBeenCalledWith('https://api.github.com/repos/polyphon-ai/releases/releases/latest');
+    expect(getCachedUpdateInfo()).toEqual({ version: '1.0.0' });
+
+    vi.unstubAllGlobals();
+  });
+
+  it('switching to stable while on a pre-release: API failure → no crash, no banner', async () => {
+    mockGetVersion.mockReturnValue('1.1.0-alpha.1');
+    const mockFetch = vi.fn().mockRejectedValue(new Error('network error'));
+    vi.stubGlobal('fetch', mockFetch);
+
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+
+    changeChannel('stable');
+    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalled());
+    // Let the async chain settle — no send should follow
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(win.webContents.send).not.toHaveBeenCalled();
+    expect(getCachedUpdateInfo()).toBeNull();
+
+    vi.unstubAllGlobals();
+  });
+
+  it('switching to stable while on a pre-release: API returns non-ok → no banner', async () => {
+    mockGetVersion.mockReturnValue('1.1.0-alpha.1');
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({}),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const win = makeWin();
+    setupAutoUpdater(makeDb(), win);
+
+    changeChannel('stable');
+    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(win.webContents.send).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
   });
 });
 

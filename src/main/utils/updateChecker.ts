@@ -30,15 +30,6 @@ let manualCheck = false;
 // Tracks whether a download is in progress so errors can be surfaced to the renderer.
 let downloading = false;
 
-// If the running app is itself a prerelease, always allow prerelease updates
-// regardless of the user's channel preference. The stable/preview distinction
-// is only meaningful once stable releases exist.
-function resolveAllowPrerelease(channel: UpdateChannel): boolean {
-  const installedVersion = app.getVersion();
-  if (semver.prerelease(installedVersion)) return true;
-  return channel === 'preview';
-}
-
 // Stored reference to the active window so changeChannel can use it.
 let activeWin: BrowserWindow | null = null;
 let activeDb: DatabaseSync | null = null;
@@ -54,7 +45,7 @@ export function setupAutoUpdater(db: DatabaseSync, win: BrowserWindow): void {
   autoUpdater.logger = null;
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.allowPrerelease = resolveAllowPrerelease(channel);
+  autoUpdater.allowPrerelease = channel === 'preview';
   autoUpdater.forceDevUpdateConfig = !app.isPackaged;
   autoUpdater.setFeedURL({ provider: 'github', owner: 'polyphon-ai', repo: 'releases' });
 
@@ -108,12 +99,37 @@ export function setupAutoUpdater(db: DatabaseSync, win: BrowserWindow): void {
 // Called when the user changes their update channel preference.
 // Clears any stale update notification and re-checks with the new setting.
 export function changeChannel(channel: UpdateChannel): void {
-  autoUpdater.allowPrerelease = resolveAllowPrerelease(channel);
+  autoUpdater.allowPrerelease = channel === 'preview';
   cachedUpdateInfo = null;
+
+  // When switching to stable while running a pre-release, electron-updater's
+  // semver comparison won't offer a stable release that is lower in version
+  // than the current pre-release (e.g. v0.5.0-alpha.1 → stable v0.4.0).
+  // Check the GitHub releases API directly so the user always gets a path back.
+  if (channel === 'stable' && semver.prerelease(app.getVersion())) {
+    checkForStableRelease();
+    return;
+  }
 
   autoUpdater.checkForUpdates().catch((err) => {
     logger.debug('[autoUpdater] channel-change check failed', err);
   });
+}
+
+async function checkForStableRelease(): Promise<void> {
+  try {
+    const res = await fetch('https://api.github.com/repos/polyphon-ai/releases/releases/latest');
+    if (!res.ok) return;
+    const data = await res.json() as { tag_name?: string; prerelease?: boolean };
+    if (!data.tag_name || data.prerelease) return;
+    const version = (data.tag_name as string).replace(/^v/, '');
+    if (version !== app.getVersion()) {
+      cachedUpdateInfo = { version };
+      activeWin?.webContents.send(IPC.UPDATE_AVAILABLE, { version });
+    }
+  } catch (err) {
+    logger.debug('[autoUpdater] stable channel check failed', err);
+  }
 }
 
 // Manual on-demand check — bypasses dismissal preferences.
