@@ -1,5 +1,12 @@
+**What's New**
+- Log files are now automatically rotated at 25 MB, keeping up to 5 files on disk
+- The About page now shows app version, database schema version, platform, and architecture at a glance
+- A banner now appears at the top of the app when debug logging is active, with a one-click turn-off button
+
 **Fixed**
-- App failed to launch after updating if a previous run had partially applied database migrations
+- Log files were being written to the wrong location; they now correctly land in the app data directory
+- Log entries in the Logs viewer are now much easier to read against the dark background
 
 **Improved**
-- Database migrations are now atomic — if the app crashes mid-startup, the database is left in a clean state that recovers automatically on the next launch
+- The About page no longer duplicates the Documentation link already present in the sidebar
+- Verbose debug instrumentation added throughout the main process for easier troubleshooting
