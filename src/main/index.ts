@@ -1,9 +1,10 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
+import os from 'node:os';
 import { registerIpcHandlers } from './ipc';
 import type { EncryptionContext } from './ipc/settingsHandlers';
 import { getDb, closeDb } from './db';
-import { logger } from './utils/logger';
+import { logger, initDebugFromFlag } from './utils/logger';
 import { VoiceManager } from './managers/VoiceManager';
 import { SessionManager } from './managers/SessionManager';
 import { setupAutoUpdater } from './utils/updateChecker';
@@ -80,7 +81,13 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(async () => {
-  logger.info('Polyphon starting', { version: app.getVersion(), platform: process.platform, schemaVersion: SCHEMA_VERSION });
+  initDebugFromFlag();
+  const cpus = os.cpus();
+  logger.info('Polyphon starting', {
+  app: { version: app.getVersion(), schemaVersion: SCHEMA_VERSION },
+  system: { os: `${os.type()} ${process.getSystemVersion()}`, platform: process.platform, arch: process.arch, electron: process.versions.electron },
+  hardware: { cpu: `${cpus[0]?.model ?? 'unknown'} (${cpus.length} cores)`, memoryGb: (os.totalmem() / 1024 ** 3).toFixed(1) },
+});
 
   // Install CSP once, before any window is created, so the policy is in place
   // before the renderer loads any content.

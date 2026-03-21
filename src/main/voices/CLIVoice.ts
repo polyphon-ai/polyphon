@@ -2,6 +2,7 @@ import { spawn, spawnSync, type ChildProcess } from 'child_process';
 import type { Message } from '../../shared/types';
 import type { Voice, VoiceConfig } from './Voice';
 import { requireCliCommand } from '../ipc/validate';
+import { logger } from '../utils/logger';
 
 // Base class for all CLI-backed voices (claude, codex, gemini, etc.).
 // Spawns a subprocess and streams stdout back as tokens.
@@ -48,6 +49,7 @@ export abstract class CLIVoice implements Voice {
 
   abort(): void {
     if (this.activeProcess) {
+      logger.debug('CLI voice aborting', { command: this.cliCommand, voiceId: this.id });
       this.activeProcess.kill();
       this.activeProcess = null;
     }
@@ -80,6 +82,7 @@ export abstract class CLIVoice implements Voice {
   }
 
   protected async *spawnAndStream(prompt: string, extraArgs: string[]): AsyncIterable<string> {
+    logger.debug('CLI voice spawning', { command: this.cliCommand, voiceId: this.id, workingDir: this.workingDir });
     const proc = spawn(this.cliCommand, [...this.cliArgs, ...extraArgs], {
       stdio: ['pipe', 'pipe', 'pipe'],
       ...(this.workingDir ? { cwd: this.workingDir } : {}),
@@ -96,6 +99,7 @@ export abstract class CLIVoice implements Voice {
         for (const line of lines) { if (line) yield line + '\n'; }
       }
       if (buffer) yield buffer;
+      logger.debug('CLI voice process exited', { command: this.cliCommand, voiceId: this.id });
     } finally {
       this.clearActiveProcess();
     }

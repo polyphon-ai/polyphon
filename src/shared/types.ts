@@ -182,6 +182,7 @@ export interface DebugInfo {
   appVersion: string;
   schemaVersion: number;
   platform: string;
+  arch: string;
 }
 
 // Serializable voice descriptor — sent over IPC, not the full Voice instance

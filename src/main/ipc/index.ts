@@ -5,7 +5,7 @@ import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import type { Message, Composition } from '../../shared/types';
 import { IPC } from '../../shared/constants';
-import { logger, isDebugEnabled, setDebugEnabled } from '../utils/logger';
+import { logger, isDebugEnabled, setDebugEnabled, writeDebugFlag } from '../utils/logger';
 import { registerSettingsHandlers } from './settingsHandlers';
 import type { EncryptionContext } from './settingsHandlers';
 import {
@@ -81,6 +81,7 @@ export function registerIpcHandlers(
     const profile = getUserProfile(db);
     voiceManager.initSession(session.id, voices, session.mode, profile, validWorkingDir);
     insertSession(db, session);
+    logger.debug('session:create', { sessionId: session.id, compositionId: validCompositionId, mode: session.mode, voiceCount: voices.length, hasWorkingDir: validWorkingDir !== null });
     return session;
   });
 
@@ -157,12 +158,15 @@ export function registerIpcHandlers(
         const profile = getUserProfile(db);
         voiceManager.initSession(validSessionId, voices, session.mode, profile);
         ensemble = voiceManager.getEnsemble(validSessionId);
+        logger.debug('voice:send re-initialized session from DB', { sessionId: validSessionId, voiceCount: voices.length });
       }
     }
 
     const voiceNames = ensemble.map((v) => v.name);
     const mentionedName = sessionManager.parseMention(validMessage.content, voiceNames);
     const targetVoice = mentionedName ? ensemble.find((v) => v.name === mentionedName) : null;
+
+    logger.debug('voice:send routing', { sessionId: validSessionId, mode: session.mode, mentioned: mentionedName ?? null, targetVoiceId: targetVoice?.id ?? null });
 
     if (session.mode === 'broadcast') {
       if (targetVoice) {
@@ -185,6 +189,7 @@ export function registerIpcHandlers(
 
   ipcMain.handle(IPC.VOICE_ABORT, async (_event, sessionId: unknown) => {
     requireId(sessionId, 'sessionId');
+    logger.debug('voice:abort', { sessionId });
     voiceManager.disposeSession(sessionId as string);
   });
 
@@ -350,11 +355,7 @@ export function registerIpcHandlers(
   // --- Log handlers ---
 
   ipcMain.handle(IPC.LOGS_GET_PATHS, () => {
-    const logDir = path.join(app.getPath('userData'), 'logs');
-    return {
-      appLog: path.join(logDir, 'polyphon.log'),
-      debugLog: path.join(logDir, 'polyphon-debug.log'),
-    };
+    return { appLog: path.join(app.getPath('userData'), 'logs', 'polyphon.log') };
   });
 
   ipcMain.handle(IPC.LOGS_GET_RECENT, async () => {
@@ -371,13 +372,14 @@ export function registerIpcHandlers(
   ipcMain.handle(IPC.LOGS_GET_DEBUG_ENABLED, () => isDebugEnabled());
 
   ipcMain.handle(IPC.LOGS_SET_DEBUG_ENABLED, (_event, enabled: unknown) => {
-    setDebugEnabled(enabled === true);
+    const on = enabled === true;
+    setDebugEnabled(on);
+    writeDebugFlag(on);
   });
 
   ipcMain.handle(IPC.LOGS_EXPORT, async () => {
-    const logDir = path.join(app.getPath('userData'), 'logs');
-    const fileName = isDebugEnabled() ? 'polyphon-debug.log' : 'polyphon.log';
-    const sourceFile = path.join(logDir, fileName);
+    const fileName = 'polyphon.log';
+    const sourceFile = path.join(app.getPath('userData'), 'logs', fileName);
 
     try {
       await fs.promises.access(sourceFile);

@@ -52,15 +52,18 @@ export class SessionManager {
     }
 
     let accumulated = '';
+    logger.debug('Voice stream starting', { sessionId, voiceId, roundIndex });
     win.webContents.send(`${IPC.VOICE_PENDING}:${sessionId}`, { voiceId });
     try {
       for await (const token of voice.send(message, context)) {
         accumulated += token;
         win.webContents.send(`${IPC.VOICE_TOKEN}:${sessionId}`, { voiceId, token });
       }
+      logger.debug('Voice stream complete', { sessionId, voiceId, roundIndex, chars: accumulated.length });
       win.webContents.send(`${IPC.VOICE_DONE}:${sessionId}`, { voiceId, roundIndex });
     } catch (err) {
       if (isAbortError(err)) {
+        logger.debug('Voice stream aborted', { sessionId, voiceId, roundIndex });
         win.webContents.send(`${IPC.VOICE_DONE}:${sessionId}`, { voiceId, roundIndex });
         return accumulated;
       }
@@ -111,6 +114,7 @@ export class SessionManager {
     if (session.continuationPolicy === 'none') return;
 
     if (session.continuationPolicy === 'prompt') {
+      logger.debug('Continuation prompt sent', { sessionId: session.id, roundIndex });
       win.webContents.send(`${IPC.SESSION_CONTINUATION_PROMPT}:${session.id}`, {
         roundIndex: this.roundCounters.get(session.id) ?? 0,
         voiceResponses: roundResponses,
@@ -145,14 +149,16 @@ export class SessionManager {
         };
 
         if (mentionedVoiceIds.size > 0) {
-          // Only the specifically @mentioned voices respond
+          logger.debug('Auto-continuation: directed to mentioned voices', { sessionId: session.id, depth, maxDepth, mentionedVoiceCount: mentionedVoiceIds.size });
           for (const voiceId of mentionedVoiceIds) {
             await this.runDirectedRound(win, session, continuationMessage, voiceId, db);
           }
         } else {
-          // No specific @mentions — broadcast to all voices
+          logger.debug('Auto-continuation: broadcast (no mentions)', { sessionId: session.id, depth, maxDepth });
           await this.runBroadcastRound(win, session, continuationMessage, db, depth + 1);
         }
+      } else {
+        logger.debug('Auto-continuation: max depth reached', { sessionId: session.id, depth, maxDepth });
       }
     }
   }

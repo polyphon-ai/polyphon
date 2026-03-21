@@ -100,6 +100,7 @@ export function loadShellEnv(): void {
     if (seen.has(shell)) continue;
     seen.add(shell);
 
+    logger.debug('[loadShellEnv] trying shell', { shell });
     const result = spawnSync(shell, args, {
       env: spawnEnv,
       // Use 'buffer' encoding so NUL bytes from `env -0` are preserved intact.
@@ -107,11 +108,15 @@ export function loadShellEnv(): void {
       timeout: 5000,
     });
 
-    if (result.status !== 0 || !result.stdout) continue;
+    if (result.status !== 0 || !result.stdout) {
+      logger.debug('[loadShellEnv] shell failed', { shell, status: result.status });
+      continue;
+    }
 
     // Decode as latin1 (binary-safe) so NUL bytes pass through as '\0'.
     const block = (result.stdout as unknown as Buffer).toString('latin1');
     if (!parseNulEnvBlock(block)) continue;
+    logger.debug('[loadShellEnv] shell env loaded', { shell });
     return;
   }
 }
@@ -130,11 +135,16 @@ export function resolveApiKey(provider: string): string {
   const polyphonKey = `POLYPHON_${prefix}_API_KEY`;
   const providerKey = `${prefix}_API_KEY`;
 
-  const value =
-    process.env[polyphonKey]?.trim() || process.env[providerKey]?.trim();
+  if (process.env[polyphonKey]?.trim()) {
+    logger.debug('[resolveApiKey] resolved', { provider, varName: polyphonKey });
+    return process.env[polyphonKey]!.trim();
+  }
+  if (process.env[providerKey]?.trim()) {
+    logger.debug('[resolveApiKey] resolved', { provider, varName: providerKey });
+    return process.env[providerKey]!.trim();
+  }
 
-  if (value) return value;
-
+  logger.debug('[resolveApiKey] not found', { provider, tried: [polyphonKey, providerKey] });
   throw new Error(
     `No API key found for provider "${provider}". ` +
       `Set ${polyphonKey} (Polyphon-specific) or ${providerKey} (shared) ` +

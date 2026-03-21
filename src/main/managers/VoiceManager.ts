@@ -109,6 +109,7 @@ export class VoiceManager {
     };
 
     if (process.env.POLYPHON_MOCK_VOICES === '1') {
+      logger.debug('Voice created', { voiceId: config.id, provider: compositionVoice.provider, type: 'mock' });
       return new MockVoice(config, compositionVoice.provider);
     }
 
@@ -123,6 +124,7 @@ export class VoiceManager {
           `Reload the app or re-configure this voice in the composition.`,
         );
       }
+      logger.debug('Voice created', { voiceId: config.id, provider: compositionVoice.provider, type: 'api', model: compositionVoice.model });
       return new OpenAICompatVoice({
         ...config,
         baseUrl: customProvider.baseUrl,
@@ -136,6 +138,7 @@ export class VoiceManager {
       throw new Error(`Unknown voice provider: "${compositionVoice.provider}"`);
     }
 
+    logger.debug('Voice created', { voiceId: config.id, provider: compositionVoice.provider, type: registration.type, model: compositionVoice.model });
     return registration.create(config);
   }
 
@@ -236,6 +239,7 @@ export class VoiceManager {
   disposeSession(sessionId: string): void {
     const ensemble = this.sessions.get(sessionId);
     if (ensemble) {
+      logger.debug('Session voices disposed', { sessionId, voiceCount: ensemble.size });
       for (const voice of ensemble.values()) voice.abort();
       this.sessions.delete(sessionId);
     }

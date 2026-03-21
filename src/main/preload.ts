@@ -250,7 +250,7 @@ const api = {
       ipcRenderer.invoke(IPC.SETTINGS_SYSTEM_PROMPT_TEMPLATE_DELETE, id),
   },
   logs: {
-    getPaths: (): Promise<{ appLog: string; debugLog: string }> =>
+    getPaths: (): Promise<{ appLog: string }> =>
       ipcRenderer.invoke(IPC.LOGS_GET_PATHS),
     getRecent: (): Promise<string[]> =>
       ipcRenderer.invoke(IPC.LOGS_GET_RECENT),

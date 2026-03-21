@@ -616,6 +616,7 @@ export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceMa
       appVersion: app.getVersion(),
       schemaVersion: row?.version ?? 0,
       platform: process.platform,
+      arch: process.arch,
     };
   });
 }
