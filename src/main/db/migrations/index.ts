@@ -38,6 +38,18 @@ const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
   ],
 ];
 
+// Wraps a migration's up() so that "duplicate column name" errors are
+// silently ignored. This handles the crash-recovery case where a migration
+// applied its DDL but the process exited before schema_version was updated.
+function runMigration(up: (db: DatabaseSync) => void, db: DatabaseSync): void {
+  try {
+    up(db);
+  } catch (err: any) {
+    if (typeof err?.message === 'string' && err.message.includes('duplicate column name')) return;
+    throw err;
+  }
+}
+
 export function runMigrations(db: DatabaseSync): void {
   db.exec(CREATE_TABLES_SQL);
 
@@ -101,11 +113,11 @@ export function runMigrations(db: DatabaseSync): void {
   }
 
   if (row !== undefined && currentVersion < 7) {
-    migration007(db);
+    runMigration(migration007, db);
   }
 
   if (row !== undefined && currentVersion < 8) {
-    migration008(db);
+    runMigration(migration008, db);
   }
 
   if (row === undefined) {
