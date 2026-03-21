@@ -615,8 +615,8 @@ test.describe.serial('built-in providers', () => {
       await waitForRoundIdle(win);
 
       // Continuation nudge must appear
-      await expect(win.getByText(/agents have more to say/i)).toBeVisible({ timeout: 10_000 });
-      await win.getByRole('button', { name: 'Allow' }).click();
+      await expect(win.getByText(/let the voices go another round/i)).toBeVisible({ timeout: 10_000 });
+      await win.getByRole('button', { name: 'Yes' }).click();
       await longPause();
 
       // Round 2 fires

@@ -167,22 +167,22 @@ test.describe('two custom voices — live conversations', () => {
     await expect(win.getByRole('article', { name: /Message from Beta/i })).toBeVisible({ timeout: 60_000 });
     await longPause();
 
-    // Nudge banner appears with Allow and Dismiss buttons
-    await expect(win.getByText(/agents have more to say/i)).toBeVisible({ timeout: 10_000 });
-    await expect(win.getByRole('button', { name: /allow/i })).toBeVisible();
+    // Nudge banner appears with Yes and Dismiss buttons
+    await expect(win.getByText(/let the voices go another round/i)).toBeVisible({ timeout: 10_000 });
+    await expect(win.getByRole('button', { name: /yes/i })).toBeVisible();
     await expect(win.getByRole('button', { name: /dismiss/i })).toBeVisible();
 
-    // Allow path — round 2 fires
-    await win.getByRole('button', { name: /allow/i }).click();
+    // Yes path — round 2 fires
+    await win.getByRole('button', { name: /yes/i }).click();
     await expect(win.getByRole('article', { name: /Message from Alpha/i })).toHaveCount(2, { timeout: 60_000 });
     await expect(win.getByRole('article', { name: /Message from Beta/i })).toHaveCount(2, { timeout: 60_000 });
     await longPause();
 
     // Nudge reappears after round 2 — dismiss it
-    await expect(win.getByText(/agents have more to say/i)).toBeVisible({ timeout: 10_000 });
+    await expect(win.getByText(/let the voices go another round/i)).toBeVisible({ timeout: 10_000 });
     await win.getByRole('button', { name: /dismiss/i }).click();
     await pause();
-    await expect(win.getByText(/agents have more to say/i)).not.toBeVisible();
+    await expect(win.getByText(/let the voices go another round/i)).not.toBeVisible();
     await expect(win.getByPlaceholder('Message the ensemble\u2026')).toBeVisible();
   });
 
