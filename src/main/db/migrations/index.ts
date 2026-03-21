@@ -47,7 +47,7 @@ const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
 // error), the column exists but the version was never bumped. In that case we
 // treat the migration as applied and commit the version bump anyway.
 // Any other error rolls back and re-throws.
-function applyMigration(
+export function applyMigration(
   db: DatabaseSync,
   targetVersion: number,
   currentVersion: number,
