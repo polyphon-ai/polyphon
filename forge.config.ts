@@ -9,6 +9,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: 'assets/icons/icon',
+    extraResource: ['app-update.yml'],
     appBundleId: 'ai.polyphon.app',
     appCategoryType: 'public.app-category.productivity',
     darwinDarkModeSupport: true,
