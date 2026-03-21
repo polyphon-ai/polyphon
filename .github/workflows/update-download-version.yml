@@ -37,6 +37,12 @@ jobs:
           SLUG="polyphon-v${VERSION}-released"
           POST_DIR="site/content/blog/${SLUG}"
           mkdir -p "$POST_DIR"
+
+          NOTES=""
+          if [ -f RELEASE_NOTES.md ]; then
+            NOTES="$(cat RELEASE_NOTES.md)"
+          fi
+
           cat > "$POST_DIR/index.md" <<EOF
           ---
           title: "Polyphon v${VERSION} Released"
@@ -49,7 +55,9 @@ jobs:
 
           Polyphon v${VERSION} is now available.
 
-          [Download the latest release](https://polyphon.ai/#download) and see what's new.
+          ${NOTES}
+
+          [Download the latest release](https://polyphon.ai/#download)
           EOF
 
       - name: Commit and push
