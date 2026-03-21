@@ -19,6 +19,7 @@ beforeAll(() => {
         appVersion: '0.0.0-test',
         schemaVersion: 8,
         platform: 'darwin',
+        arch: 'arm64',
       }),
     },
   };

@@ -28,10 +28,6 @@ export default function AboutPage() {
     await window.polyphon.update.setChannel(next);
   }
 
-  function handleDocs() {
-    window.polyphon.shell.openExternal('https://polyphon.ai/docs');
-  }
-
   async function handleCheckNow() {
     setCheckState('checking');
     try {
@@ -52,48 +48,17 @@ export default function AboutPage() {
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <div
-        className="rounded-xl p-5 relative overflow-hidden"
+        className="rounded-xl p-5"
         style={{
           background: 'var(--color-surface-raised)',
           border: '1px solid var(--color-border)',
         }}
       >
-        {/* Decorative staff lines */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden
-          style={{ opacity: 0.04 }}
-        >
-          {[20, 32, 44, 56, 68].map((pct) => (
-            <div
-              key={pct}
-              style={{
-                position: 'absolute',
-                top: `${pct}%`,
-                left: 0,
-                right: 0,
-                height: 1,
-                background: 'var(--color-text-primary)',
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative flex items-start gap-4">
+        <div className="flex items-start gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <img src={wordmarkLightUrl} alt="Polyphon" className="h-14 dark:hidden" />
               <img src={wordmarkDarkUrl} alt="Polyphon" className="h-14 hidden dark:block" />
-              <span
-                className="text-xs font-mono px-2 py-0.5 rounded-full"
-                style={{
-                  background: 'var(--color-brand-light)',
-                  color: 'var(--color-brand)',
-                  border: '1px solid color-mix(in oklch, var(--color-brand) 20%, transparent)',
-                }}
-              >
-                v{version}
-              </span>
             </div>
 
             <p
@@ -280,78 +245,6 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* ── Resources ────────────────────────────────────────────────── */}
-      <div
-        className="rounded-xl p-4 flex items-center justify-between gap-4"
-        style={{
-          background: 'var(--color-surface-raised)',
-          border: '1px solid var(--color-border)',
-        }}
-      >
-        <div>
-          <p
-            className="text-sm font-medium"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            Documentation
-          </p>
-          <p
-            className="text-xs mt-0.5"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            Guides, provider setup, and configuration reference
-          </p>
-        </div>
-        <button
-          onClick={handleDocs}
-          className="shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-ring"
-          style={{
-            background: 'var(--color-surface-overlay)',
-            border: '1px solid var(--color-border-strong)',
-            color: 'var(--color-text-primary)',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-brand-light)';
-            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-brand)';
-            (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-brand)';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface-overlay)';
-            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border-strong)';
-            (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-primary)';
-          }}
-        >
-          polyphon.ai
-          <ExternalLink size={13} strokeWidth={1.75} />
-        </button>
-      </div>
-
-      {/* ── Debug info ───────────────────────────────────────────────── */}
-      {debugInfo && (
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{
-            background: 'var(--color-surface-raised)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          {[
-            { label: 'App version', value: `v${debugInfo.appVersion}` },
-            { label: 'Database schema', value: `v${debugInfo.schemaVersion}` },
-            { label: 'Platform', value: debugInfo.platform },
-          ].map(({ label, value }, i) => (
-            <div
-              key={label}
-              className="flex items-center justify-between px-4 py-2.5"
-              style={{ borderTop: i > 0 ? '1px solid var(--color-border)' : undefined }}
-            >
-              <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{label}</span>
-              <span className="text-xs font-mono" style={{ color: 'var(--color-text-secondary)' }}>{value}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* ── Community ────────────────────────────────────────────────── */}
       <div>
         <div
@@ -449,6 +342,31 @@ export default function AboutPage() {
         </div>
         <ExternalLink size={12} strokeWidth={1.75} style={{ color: 'var(--color-text-muted)', marginLeft: 'auto', flexShrink: 0 }} />
       </button>
+
+      {/* ── Build metadata ───────────────────────────────────────────── */}
+      {debugInfo && (
+        <div
+          className="flex items-center justify-center gap-3 pt-1 pb-2 flex-wrap"
+        >
+          {[
+            { label: 'app', value: `v${debugInfo.appVersion}` },
+            { label: 'db', value: `v${debugInfo.schemaVersion}` },
+            { label: 'platform', value: debugInfo.platform },
+            { label: 'arch', value: debugInfo.arch },
+          ].map(({ label, value }, i) => (
+            <React.Fragment key={label}>
+              {i > 0 && (
+                <span style={{ color: 'var(--color-border-strong)', fontSize: '10px' }}>·</span>
+              )}
+              <span style={{ fontSize: '10px', color: 'var(--color-text-muted)', letterSpacing: '0.01em' }}>
+                <span style={{ opacity: 0.6 }}>{label}</span>
+                {' '}
+                <span className="font-mono" style={{ color: 'var(--color-text-secondary)' }}>{value}</span>
+              </span>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
 
     </div>
   );
