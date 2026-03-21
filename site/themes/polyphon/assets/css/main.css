@@ -3177,6 +3177,24 @@ a:hover {
   opacity: 0.75;
 }
 
+.download-platform-sub {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3125rem;
+}
+
+.download-platform-sub-sep {
+  opacity: 0.35;
+}
+
+.download-notarized {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-success);
+}
+
 .download-alt-formats {
   border-top: 1px solid var(--color-border);
   padding-top: 0.75rem;
