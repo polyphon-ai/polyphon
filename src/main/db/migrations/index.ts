@@ -38,16 +38,36 @@ const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
   ],
 ];
 
-// Wraps a migration's up() so that "duplicate column name" errors are
-// silently ignored. This handles the crash-recovery case where a migration
-// applied its DDL but the process exited before schema_version was updated.
-function runMigration(up: (db: DatabaseSync) => void, db: DatabaseSync): void {
+// Runs a single migration atomically: the migration's DDL and the schema_version
+// bump commit together. If the process crashes after DDL but before a prior
+// COMMIT, the transaction is rolled back by SQLite and the migration re-runs
+// cleanly on next startup.
+//
+// Crash-recovery exception: if the DDL already ran (a "duplicate column name"
+// error), the column exists but the version was never bumped. In that case we
+// treat the migration as applied and commit the version bump anyway.
+// Any other error rolls back and re-throws.
+function applyMigration(
+  db: DatabaseSync,
+  targetVersion: number,
+  currentVersion: number,
+  up: (db: DatabaseSync) => void,
+): void {
+  if (currentVersion >= targetVersion) return;
+
+  db.exec('BEGIN');
   try {
     up(db);
   } catch (err: any) {
-    if (typeof err?.message === 'string' && err.message.includes('duplicate column name')) return;
-    throw err;
+    if (typeof err?.message === 'string' && err.message.includes('duplicate column name')) {
+      // DDL already applied from a partial run — fall through to commit the version bump.
+    } else {
+      db.exec('ROLLBACK');
+      throw err;
+    }
   }
+  db.prepare('UPDATE schema_version SET version = ?').run(targetVersion);
+  db.exec('COMMIT');
 }
 
 export function runMigrations(db: DatabaseSync): void {
@@ -55,6 +75,7 @@ export function runMigrations(db: DatabaseSync): void {
 
   const now = Date.now();
 
+  // Seed data — INSERT OR IGNORE so safe to re-run on every startup.
   const tonePresets: Array<[string, string, string, number]> = [
     ['professional', TONE_PRESETS.professional.label, TONE_PRESETS.professional.description, 1],
     ['collaborative', TONE_PRESETS.collaborative.label, TONE_PRESETS.collaborative.description, 2],
@@ -88,41 +109,21 @@ export function runMigrations(db: DatabaseSync): void {
     | { version: number }
     | undefined;
 
-  const currentVersion = row?.version ?? 0;
-
-  // Only run migrations on existing databases (row === undefined means fresh install;
-  // CREATE_TABLES_SQL already includes the latest schema for new databases).
-  if (row !== undefined && currentVersion < 2) {
-    migration002(db);
-  }
-
-  if (row !== undefined && currentVersion < 3) {
-    migration003(db);
-  }
-
-  if (row !== undefined && currentVersion < 4) {
-    migration004(db);
-  }
-
-  if (row !== undefined && currentVersion < 5) {
-    migration005(db);
-  }
-
-  if (row !== undefined && currentVersion < 6) {
-    migration006(db);
-  }
-
-  if (row !== undefined && currentVersion < 7) {
-    runMigration(migration007, db);
-  }
-
-  if (row !== undefined && currentVersion < 8) {
-    runMigration(migration008, db);
-  }
-
   if (row === undefined) {
+    // Fresh install — CREATE_TABLES_SQL already reflects the complete schema.
     db.prepare('INSERT INTO schema_version (version) VALUES (?)').run(SCHEMA_VERSION);
-  } else if (row.version !== SCHEMA_VERSION) {
-    db.prepare('UPDATE schema_version SET version = ?').run(SCHEMA_VERSION);
+    return;
   }
+
+  // Existing database — apply any pending migrations, each atomically.
+  const currentVersion = row.version;
+  const apply = (v: number, up: (db: DatabaseSync) => void) => applyMigration(db, v, currentVersion, up);
+
+  apply(2, migration002);
+  apply(3, migration003);
+  apply(4, migration004);
+  apply(5, migration005);
+  apply(6, migration006);
+  apply(7, migration007);
+  apply(8, migration008);
 }

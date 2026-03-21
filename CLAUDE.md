@@ -138,10 +138,14 @@ src/main/db/
 then seeds built-in tones and sample system prompt templates using `INSERT OR IGNORE`. It is
 idempotent and safe to call on every startup.
 
+Each migration is applied via `applyMigration()`, which wraps the `up()` call and the
+`schema_version` bump in a single `BEGIN`/`COMMIT` transaction. Either both commit or
+neither does — so a crash mid-migration leaves the DB in a clean, re-runnable state.
+
 **Schema change rules:**
 
 1. Every schema change after the initial release requires a new numbered migration file (e.g. `002_add_foo.ts`) that exports `up(db: DatabaseSync): void`.
-2. Register the new migration in `migrations/index.ts` — call it conditionally based on `currentVersion` and bump `SCHEMA_VERSION` in `schema.ts`.
+2. Register the new migration in `migrations/index.ts` using `apply(N, migrationNNN)` and bump `SCHEMA_VERSION` in `schema.ts`.
 3. Also update `CREATE_TABLES_SQL` in `schema.ts` to reflect the final schema for fresh installs.
 4. Migrations are append-only. Never edit a migration file after it has been committed.
 5. Never run migrations from the renderer.
