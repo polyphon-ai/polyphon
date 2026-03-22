@@ -190,9 +190,8 @@ describe('OpenAIVoice.send()', () => {
     mockCompletionsStream.mockReturnValue(throwingStream());
 
     const voice = openaiProvider.create(makeConfig());
-    await expect(async () => {
-      for await (const _ of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) { /* drain */ }
-    }).not.toThrow();
+    // Must await properly — expect(asyncFn).not.toThrow() does not await the Promise
+    for await (const _ of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) { /* drain */ }
   });
 
   it('swallows APIUserAbortError without rethrowing', async () => {
@@ -206,9 +205,8 @@ describe('OpenAIVoice.send()', () => {
     mockCompletionsStream.mockReturnValue(throwingStream());
 
     const voice = openaiProvider.create(makeConfig());
-    await expect(async () => {
-      for await (const _ of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) { /* drain */ }
-    }).not.toThrow();
+    // Must await properly — expect(asyncFn).not.toThrow() does not await the Promise
+    for await (const _ of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) { /* drain */ }
   });
 });
 
@@ -269,6 +267,70 @@ function makeMockProcess() {
 
   return { proc, emitData, emitEnd };
 }
+
+describe('OpenAIVoice tool serialization', () => {
+  it('sends tools array in correct OpenAI format when enabledTools is set', async () => {
+    mockResolveApiKey.mockReturnValue('sk-openai-test');
+    // First response: single tool call that yields [tool: read_file]
+    // Second response: final text confirming the API was called with tool format
+    mockCompletionsStream
+      .mockReturnValueOnce(makeAsyncIterable([
+        { choices: [{ delta: { tool_calls: [{ index: 0, id: 'call1', function: { name: 'read_file', arguments: '{"path":"/tmp/f"}' } }] }, finish_reason: null }] },
+        { choices: [{ delta: {}, finish_reason: 'tool_calls' }] },
+      ]))
+      .mockReturnValueOnce(makeAsyncIterable([]));
+
+    const voice = openaiProvider.create(makeConfig({ enabledTools: ['read_file'] }));
+    for await (const _ of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) { /* drain */ }
+
+    // Verify first call had tools in correct OpenAI format
+    expect(mockCompletionsStream.mock.calls.length).toBeGreaterThanOrEqual(1);
+    const callArgs = mockCompletionsStream.mock.calls[0]![0];
+    expect(Array.isArray(callArgs.tools)).toBe(true);
+    expect(callArgs.tools).toHaveLength(1);
+    const tool = callArgs.tools[0];
+    expect(tool.type).toBe('function');
+    expect(tool.function.name).toBe('read_file');
+    expect(tool.function.parameters).toBeDefined();
+    expect(tool.function.parameters.type).toBe('object');
+  });
+
+  it('does not send tools when enabledTools is empty', async () => {
+    mockResolveApiKey.mockReturnValue('sk-openai-test');
+    mockCompletionsStream.mockReturnValue(makeAsyncIterable([]));
+
+    const voice = openaiProvider.create(makeConfig());
+    for await (const _ of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) { /* drain */ }
+
+    const callArgs = mockCompletionsStream.mock.calls[0]![0];
+    expect(callArgs.tools).toBeUndefined();
+  });
+
+  it('yields [tool: name] token when tool_calls detected in stream', async () => {
+    mockResolveApiKey.mockReturnValue('sk-openai-test');
+    // First response: tool call
+    mockCompletionsStream
+      .mockReturnValueOnce(makeAsyncIterable([
+        { choices: [{ delta: { tool_calls: [{ index: 0, id: 'call1', function: { name: 'read_file', arguments: '' } }] }, finish_reason: null }] },
+        { choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: '{"path":"/tmp/f"}' } }] }, finish_reason: null }] },
+        { choices: [{ delta: {}, finish_reason: 'tool_calls' }] },
+      ]))
+      // Follow-up response: final text
+      .mockReturnValueOnce(makeAsyncIterable([
+        { choices: [{ delta: { content: 'Done.' }, finish_reason: null }] },
+        { choices: [{ delta: {}, finish_reason: 'stop' }] },
+      ]));
+
+    const voice = openaiProvider.create(makeConfig({ enabledTools: ['read_file'] }));
+    const tokens: string[] = [];
+    for await (const t of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) {
+      tokens.push(t);
+    }
+
+    expect(tokens).toContain('[tool: read_file]');
+    expect(tokens).toContain('Done.');
+  });
+});
 
 describe('CodexVoice.send()', () => {
   it('spawns "codex exec -" and writes prompt to stdin', async () => {

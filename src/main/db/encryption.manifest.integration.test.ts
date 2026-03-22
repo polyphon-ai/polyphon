@@ -42,7 +42,7 @@ describe('Encryption manifest — all encrypted fields are stored as ciphertext'
   });
 
   it('messages.content is stored as ENC:v1:…', () => {
-    const session: Session = { id: 's1', compositionId: 'c1', name: 'S', mode: 'broadcast', continuationPolicy: 'none', continuationMaxRounds: 1, createdAt: 0, updatedAt: 0, archived: false, workingDir: null };
+    const session: Session = { id: 's1', compositionId: 'c1', name: 'S', mode: 'broadcast', continuationPolicy: 'none', continuationMaxRounds: 1, createdAt: 0, updatedAt: 0, archived: false, workingDir: null, sandboxedToWorkingDir: false };
     insertSession(db, session);
     const msg: Message = { id: 'm1', sessionId: 's1', role: 'conductor', voiceId: null, voiceName: null, content: SENTINEL, timestamp: 0, roundIndex: 0 };
     insertMessage(db, msg);
@@ -108,7 +108,7 @@ describe('Encryption manifest — all encrypted fields are stored as ciphertext'
   });
 
   it('sessions.working_dir is stored as ENC:v1:… when present', () => {
-    const session: Session = { id: 's-wd', compositionId: 'c1', name: 'S', mode: 'broadcast', continuationPolicy: 'none', continuationMaxRounds: 1, createdAt: 0, updatedAt: 0, archived: false, workingDir: SENTINEL };
+    const session: Session = { id: 's-wd', compositionId: 'c1', name: 'S', mode: 'broadcast', continuationPolicy: 'none', continuationMaxRounds: 1, createdAt: 0, updatedAt: 0, archived: false, workingDir: SENTINEL, sandboxedToWorkingDir: false };
     insertSession(db, session);
     const row = db.prepare('SELECT working_dir FROM sessions WHERE id = ?').get('s-wd') as { working_dir: string };
     expect(row.working_dir).toMatch(/^ENC:v1:/);
@@ -128,7 +128,7 @@ describe('Encryption manifest — all encrypted fields are stored as ciphertext'
   });
 
   it('messages.metadata is stored as ENC:v1:… when present', () => {
-    const session: Session = { id: 's1', compositionId: 'c1', name: 'S', mode: 'broadcast', continuationPolicy: 'none', continuationMaxRounds: 1, createdAt: 0, updatedAt: 0, archived: false, workingDir: null };
+    const session: Session = { id: 's1', compositionId: 'c1', name: 'S', mode: 'broadcast', continuationPolicy: 'none', continuationMaxRounds: 1, createdAt: 0, updatedAt: 0, archived: false, workingDir: null, sandboxedToWorkingDir: false };
     insertSession(db, session);
     const msg: Message = { id: 'm1', sessionId: 's1', role: 'voice', voiceId: 'v1', voiceName: 'Alice', content: 'hi', timestamp: 0, roundIndex: 0, metadata: { provider: SENTINEL, tokens: 42 } };
     insertMessage(db, msg);

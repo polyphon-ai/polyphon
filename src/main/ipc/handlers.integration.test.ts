@@ -173,7 +173,7 @@ describe('IPC handlers integration', () => {
       });
       expect(typeof result.id).toBe('string');
       expect(result.id.length).toBeGreaterThan(0);
-      expect(voiceManager.initSession).toHaveBeenCalledWith(result.id, expect.any(Array), 'broadcast', expect.any(Object), null);
+      expect(voiceManager.initSession).toHaveBeenCalledWith(result.id, expect.any(Array), 'broadcast', expect.any(Object), null, false);
     });
 
     it('throws when composition not found', async () => {

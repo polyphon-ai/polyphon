@@ -237,6 +237,60 @@ describe('AnthropicVoice.send()', () => {
 });
 
 
+describe('AnthropicVoice tool serialization', () => {
+  it('sends tools array in correct Anthropic format when enabledTools is set', async () => {
+    mockResolveApiKey.mockReturnValue('sk-ant-test');
+    mockMessagesStream.mockReturnValue(makeAsyncIterable([]));
+
+    const voice = anthropicProvider.create(makeConfig({ enabledTools: ['read_file'] }));
+    for await (const _ of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) { /* drain */ }
+
+    const callArgs = mockMessagesStream.mock.calls[0]![0];
+    expect(Array.isArray(callArgs.tools)).toBe(true);
+    expect(callArgs.tools).toHaveLength(1);
+    const tool = callArgs.tools[0];
+    expect(tool.name).toBe('read_file');
+    expect(tool.input_schema).toBeDefined();
+    expect(tool.input_schema.type).toBe('object');
+  });
+
+  it('does not send tools array when enabledTools is empty', async () => {
+    mockResolveApiKey.mockReturnValue('sk-ant-test');
+    mockMessagesStream.mockReturnValue(makeAsyncIterable([]));
+
+    const voice = anthropicProvider.create(makeConfig());
+    for await (const _ of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) { /* drain */ }
+
+    const callArgs = mockMessagesStream.mock.calls[0]![0];
+    expect(callArgs.tools).toBeUndefined();
+  });
+
+  it('yields [tool: name] token when tool_use block is detected in stream', async () => {
+    mockResolveApiKey.mockReturnValue('sk-ant-test');
+    // Simulate: text response → tool_use block → stop
+    mockMessagesStream
+      .mockReturnValueOnce(
+        makeAsyncIterable([
+          { type: 'content_block_start', content_block: { type: 'tool_use', id: 'tu1', name: 'read_file' } },
+          { type: 'content_block_delta', delta: { type: 'input_json_delta', partial_json: '{"path":"/tmp/f"}' } },
+          { type: 'content_block_stop' },
+        ]),
+      )
+      // Follow-up response: final text
+      .mockReturnValueOnce(makeAsyncIterable([
+        { type: 'content_block_delta', delta: { type: 'text_delta', text: 'Done.' } },
+      ]));
+
+    const voice = anthropicProvider.create(makeConfig({ enabledTools: ['read_file'] }));
+    const tokens: string[] = [];
+    for await (const t of voice.send(makeMsg(), [makeMsg({ content: 'Hi' })])) {
+      tokens.push(t);
+    }
+
+    expect(tokens).toContain('[tool: read_file]');
+  });
+});
+
 describe('AnthropicCLIVoice constructor validation (base-class guard via AnthropicCLIVoice)', () => {
   it('throws for cliCommand with path separator', () => {
     expect(() => anthropicProvider.create(makeConfig({ cliCommand: '../../evil' }))).toThrow();

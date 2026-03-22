@@ -27,6 +27,7 @@ function makeSession(): Session {
     updatedAt: 1000,
     archived: false,
     workingDir: null,
+    sandboxedToWorkingDir: false,
   };
 }
 

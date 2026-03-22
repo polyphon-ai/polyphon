@@ -118,7 +118,7 @@ describe('runMigrations (fresh install)', () => {
     }
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(8);
+    expect(row.version).toBe(10);
   });
 
   it('seeds built-in tones', () => {
@@ -165,7 +165,7 @@ describe('runMigrations (fresh install)', () => {
     expect(templates).toHaveLength(5);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(8);
+    expect(row.version).toBe(10);
   });
 });
 
@@ -173,11 +173,11 @@ describe('incremental migration from v6', () => {
   beforeEach(() => { initFieldEncryption(TEST_KEY); });
   afterEach(() => { _resetForTests(); });
 
-  it('applies migrations 007 and 008, advancing schema_version to 8', () => {
+  it('applies migrations 007, 008, 009, and 010, advancing schema_version to 10', () => {
     const db = makeV6Database();
     runMigrations(db);
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(8);
+    expect(row.version).toBe(10);
   });
 
   it('adds working_dir column to sessions', () => {
@@ -193,23 +193,39 @@ describe('incremental migration from v6', () => {
     const cols = db.prepare('PRAGMA table_info(user_profile)').all() as { name: string }[];
     expect(cols.map((c) => c.name)).toContain('prefer_markdown');
   });
+
+  it('adds enabled_tools column to composition_voices', () => {
+    const db = makeV6Database();
+    runMigrations(db);
+    const cols = db.prepare('PRAGMA table_info(composition_voices)').all() as { name: string }[];
+    expect(cols.map((c) => c.name)).toContain('enabled_tools');
+  });
+
+  it('adds sandboxed_to_working_dir column to sessions', () => {
+    const db = makeV6Database();
+    runMigrations(db);
+    const cols = db.prepare('PRAGMA table_info(sessions)').all() as { name: string }[];
+    expect(cols.map((c) => c.name)).toContain('sandboxed_to_working_dir');
+  });
 });
 
 describe('crash-recovery: DDL already applied but schema_version not updated', () => {
   beforeEach(() => { initFieldEncryption(TEST_KEY); });
   afterEach(() => { _resetForTests(); });
 
-  it('recovers when both v7 and v8 columns exist but schema_version is still 6', () => {
+  it('recovers when v7, v8, v9, and v10 columns exist but schema_version is still 6', () => {
     const db = makeV6Database();
-    // Simulate a crash after migrations 007 and 008 applied their DDL but before
+    // Simulate a crash after migrations 007–010 applied their DDL but before
     // schema_version was updated — exactly the state of the user's production DB.
     db.exec('ALTER TABLE sessions ADD COLUMN working_dir TEXT');
     db.exec('ALTER TABLE user_profile ADD COLUMN prefer_markdown INTEGER NOT NULL DEFAULT 1');
+    db.exec(`ALTER TABLE composition_voices ADD COLUMN enabled_tools TEXT NOT NULL DEFAULT '[]'`);
+    db.exec('ALTER TABLE sessions ADD COLUMN sandboxed_to_working_dir INTEGER NOT NULL DEFAULT 0');
 
     runMigrations(db);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(8);
+    expect(row.version).toBe(10);
   });
 
   it('does not throw and leaves data intact during recovery', () => {

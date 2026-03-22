@@ -3,7 +3,7 @@ import { useSessionStore } from './sessionStore';
 import type { Session, Message } from './sessionStore';
 
 function makeSession(id: string): Session {
-  return { id, compositionId: 'c-1', name: 'Test', mode: 'conductor', continuationPolicy: 'none', continuationMaxRounds: 2, createdAt: 1000, updatedAt: 1000, archived: false, workingDir: null };
+  return { id, compositionId: 'c-1', name: 'Test', mode: 'conductor', continuationPolicy: 'none', continuationMaxRounds: 2, createdAt: 1000, updatedAt: 1000, archived: false, workingDir: null, sandboxedToWorkingDir: false };
 }
 
 function makeMessage(id: string, sessionId: string): Message {

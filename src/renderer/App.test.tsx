@@ -78,6 +78,7 @@ const baseSession: Session = {
   updatedAt: Date.now(),
   archived: false,
   workingDir: null,
+  sandboxedToWorkingDir: false,
 };
 
 function stubPolyphon(compositions: Composition[] = [], sessions: Session[] = []) {
