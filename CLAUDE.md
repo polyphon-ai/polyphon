@@ -86,6 +86,11 @@ There are three distinct kinds of voice providers:
 All types conform to the same internal `Voice` interface so the rest of the application
 treats them identically.
 
+**Tool use:** Filesystem tools (`read_file`, `write_file`, `list_directory`) are supported
+only by **API voices** (Anthropic, OpenAI, OpenAI-compatible). CLI voices use a subprocess
+protocol incompatible with the tool-use request/response loop and never receive tools.
+`VoiceManager.createVoice()` explicitly sets `enabledTools = undefined` for CLI voices.
+
 ---
 
 ## Database
@@ -107,7 +112,7 @@ const db = new DatabaseSync(dbPath)
 db.exec('PRAGMA journal_mode = WAL')
 ```
 
-### Schema (SCHEMA_VERSION = 2)
+### Schema (SCHEMA_VERSION = 9)
 
 Tables: `schema_version`, `compositions`, `composition_voices`, `sessions`, `messages`,
 `provider_configs`, `custom_providers`, `tones`, `system_prompt_templates`, `user_profile`
@@ -119,6 +124,7 @@ Key constraints:
 - `compositions` and `sessions` both have an `archived INTEGER NOT NULL DEFAULT 0` column
 - `composition_voices` has a nullable `custom_provider_id TEXT` column (UUID into `custom_providers`) used when `provider = 'openai-compat'`
 - `composition_voices` has a nullable `system_prompt_template_id TEXT` column (UUID into `system_prompt_templates`)
+- `composition_voices` has `enabled_tools TEXT NOT NULL DEFAULT '[]'` — JSON-serialized `string[]` of tool names (e.g. `["read_file","write_file"]`). Not encrypted.
 - `custom_providers.slug` has a UNIQUE constraint; `deleted INTEGER NOT NULL DEFAULT 0` enables soft-delete
 - `tones.name` has a UNIQUE constraint; `is_builtin = 1` rows (seeded at startup) cannot be deleted or updated
 - `tones` built-in rows use the preset key as ID (`professional`, `collaborative`, etc.); custom tones use UUIDs
@@ -184,9 +190,16 @@ polyphon/
 │   │   │   ├── schema.ts            # Raw SQL + SCHEMA_VERSION
 │   │   │   ├── migrations/          # runMigrations: schema apply + seed
 │   │   │   └── queries/             # One file per domain
+│   │   ├── tools/
+│   │   │   ├── types.ts             # ToolDefinition interface
+│   │   │   ├── readFile.ts          # read_file executor (UTF-8, 50 KB cap)
+│   │   │   ├── writeFile.ts         # write_file executor (atomic via temp+rename)
+│   │   │   ├── listDirectory.ts     # list_directory executor (depth 3, 500 entries)
+│   │   │   ├── index.ts             # TOOL_REGISTRY, resolveTools()
+│   │   │   └── *.test.ts            # Unit tests per executor + registry
 │   │   ├── voices/
 │   │   │   ├── Voice.ts             # Voice interface + VoiceProviderRegistration
-│   │   │   ├── APIVoice.ts          # Base class for API-key providers
+│   │   │   ├── APIVoice.ts          # Base class for API-key providers (+ executeToolLoop)
 │   │   │   ├── CLIVoice.ts          # Base class for subprocess providers
 │   │   │   ├── MockVoice.ts         # Test double used in unit/e2e tests
 │   │   │   └── providers/           # One file per provider + co-located tests
@@ -420,6 +433,10 @@ ENCRYPTED_FIELDS = {
   tones:                   ['description'],
 }
 ```
+
+> **Note:** `composition_voices.enabled_tools` is intentionally **not** in the encryption manifest.
+> It stores only tool names (e.g. `["read_file","write_file"]`) — no paths, credentials, or user
+> content. The names are validated against `AVAILABLE_TOOLS` before being stored.
 
 ### Branded type enforcement
 
