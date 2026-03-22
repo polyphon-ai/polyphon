@@ -132,6 +132,8 @@ export const IPC = {
   LOGS_SET_DEBUG_ENABLED: 'logs:setDebugEnabled',
   LOGS_EXPORT: 'logs:export',
   LOGS_GET_PATHS: 'logs:getPaths',
+
+  SESSION_EXPORT: 'session:export',
 } as const;
 
 export const CONTINUATION_MAX_ROUNDS_LIMIT = 10;

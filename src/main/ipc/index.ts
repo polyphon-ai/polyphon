@@ -404,4 +404,90 @@ export function registerIpcHandlers(
       return { ok: false, error: String(err) };
     }
   });
+
+  ipcMain.handle(IPC.SESSION_EXPORT, async (_event, sessionId: unknown, format: unknown) => {
+    requireId(sessionId, 'sessionId');
+    if (format !== 'markdown' && format !== 'json' && format !== 'plaintext') {
+      return { ok: false, error: 'Invalid format' };
+    }
+
+    const session = getSession(db, sessionId as string);
+    if (!session) return { ok: false, error: 'Session not found' };
+
+    const messages = listMessages(db, sessionId as string);
+    const exportedAt = new Date().toISOString();
+    const safeSessionName = session.name.replace(/[/\\:*?"<>|]/g, '_').slice(0, 60);
+
+    let content: string;
+    let ext: string;
+    let filterName: string;
+
+    if (format === 'json') {
+      ext = 'json';
+      filterName = 'JSON Files';
+      content = JSON.stringify({ session, exportedAt, messages }, null, 2);
+    } else if (format === 'markdown') {
+      ext = 'md';
+      filterName = 'Markdown Files';
+      const modeLabel = session.mode === 'conductor' ? 'Directed' : 'Broadcast';
+      const lines: string[] = [
+        `# ${session.name}`,
+        '',
+        `- **Mode:** ${modeLabel}`,
+        `- **Exported:** ${exportedAt}`,
+        '',
+        '---',
+        '',
+      ];
+      for (const msg of messages) {
+        if (msg.role === 'system') {
+          lines.push(`> _${msg.content}_`, '');
+          continue;
+        }
+        const speaker = msg.role === 'conductor' ? 'You' : (msg.voiceName ?? msg.voiceId ?? 'Voice');
+        const ts = new Date(msg.timestamp).toISOString();
+        lines.push(`**${speaker}** · ${ts}`, '', msg.content, '', '---', '');
+      }
+      content = lines.join('\n');
+    } else {
+      ext = 'txt';
+      filterName = 'Text Files';
+      const modeLabel = session.mode === 'conductor' ? 'Directed' : 'Broadcast';
+      const divider = '='.repeat(72);
+      const lines: string[] = [
+        `Session: ${session.name}`,
+        `Mode: ${modeLabel}`,
+        `Exported: ${exportedAt}`,
+        divider,
+        '',
+      ];
+      for (const msg of messages) {
+        if (msg.role === 'system') {
+          lines.push(`[system] ${msg.content}`, '');
+          continue;
+        }
+        const speaker = msg.role === 'conductor' ? 'You' : (msg.voiceName ?? msg.voiceId ?? 'Voice');
+        const ts = new Date(msg.timestamp).toISOString();
+        lines.push(`[${ts}] ${speaker}:`, msg.content, '');
+      }
+      content = lines.join('\n');
+    }
+
+    const defaultPath = `${safeSessionName}.${ext}`;
+    const saveResult = await dialog.showSaveDialog({
+      defaultPath,
+      filters: [{ name: filterName, extensions: [ext] }],
+    });
+
+    if (saveResult.canceled || !saveResult.filePath) return { ok: false, error: 'Cancelled' };
+
+    try {
+      await fs.promises.writeFile(saveResult.filePath, content, 'utf-8');
+      logger.debug('session:export', { sessionId, format, path: saveResult.filePath });
+      return { ok: true };
+    } catch (err) {
+      logger.warn('Session export failed', err);
+      return { ok: false, error: String(err) };
+    }
+  });
 }

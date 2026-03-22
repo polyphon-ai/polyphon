@@ -57,6 +57,8 @@ const api = {
       ipcRenderer.invoke(IPC.SESSION_ARCHIVE, id, archived),
     listMessages: (sessionId: string): Promise<Message[]> =>
       ipcRenderer.invoke(IPC.SESSION_MESSAGES_LIST, sessionId),
+    export: (sessionId: string, format: 'markdown' | 'json' | 'plaintext'): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC.SESSION_EXPORT, sessionId, format),
     onContinuationPrompt: (
       sessionId: string,
       handler: (payload: { roundIndex: number; voiceResponses: Message[] }) => void,
