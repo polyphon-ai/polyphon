@@ -38,10 +38,9 @@ items:
 
   - title: "Session Export"
     pricing: free
-    status: planned
+    status: released
+    release_date: 2026-03-22
     description: "Export full conversation transcripts in multiple formats — Markdown, JSON, or plain text."
-    discussion: https://github.com/polyphon-ai/releases/discussions/2
-    feature_request:
 
   - title: "Plugins"
     pricing: free
