@@ -149,7 +149,7 @@ jobs:
           token: ${{ secrets.RELEASES_REPO_TOKEN }}
           name: ${{ github.ref_name }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: true
           generate_release_notes: false
           body_path: RELEASE_NOTES.md
           files: |
