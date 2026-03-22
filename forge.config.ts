@@ -4,6 +4,8 @@ import { MakerZIP } from '@electron-forge/maker-zip';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import path from 'node:path';
+import fs from 'node:fs';
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -42,6 +44,34 @@ const config: ForgeConfig = {
   // Letting Forge rebuild it here would overwrite the SQLCipher binary with a
   // stock SQLite build.
   rebuildConfig: { onlyModules: [] },
+  hooks: {
+    // The Forge Vite plugin only packages the Vite build output — node_modules
+    // are not included. Native modules can't be bundled by Vite, so we copy
+    // better-sqlite3 and its runtime deps into the build directory so they end
+    // up in app.asar (and app.asar.unpacked for the .node binary via asarUnpack).
+    // We also swap in the Electron-ABI binary (saved to prebuilt-electron/ by
+    // build-sqlcipher.mjs --mode=electron) since postinstall runs electron then
+    // node mode, leaving the Node-ABI binary in build/Release/ for Vitest.
+    packageAfterCopy: async (_config, buildPath) => {
+      const nmSrc = path.join(__dirname, 'node_modules');
+      const nmDest = path.join(buildPath, 'node_modules');
+
+      // Copy better-sqlite3 and its runtime dependencies
+      for (const pkg of ['better-sqlite3', 'bindings', 'file-uri-to-path']) {
+        await fs.promises.cp(
+          path.join(nmSrc, pkg),
+          path.join(nmDest, pkg),
+          { recursive: true },
+        );
+      }
+
+      // Swap in the Electron-ABI binary (overwrite the Node-ABI binary that
+      // postinstall left in build/Release/ for Vitest)
+      const electronBinary = path.join(nmSrc, 'better-sqlite3', 'prebuilt-electron', 'better_sqlite3.node');
+      const destBinary = path.join(nmDest, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
+      await fs.promises.copyFile(electronBinary, destBinary);
+    },
+  },
   makers: [
     new MakerZIP({}, ['darwin']),
     new MakerDMG({
