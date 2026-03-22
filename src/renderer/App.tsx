@@ -285,6 +285,7 @@ function SessionsList({
   const [creating, setCreating] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const workingDir = useWorkingDirField();
+  const [sandboxed, setSandboxed] = useState(false);
 
   useEffect(() => {
     window.polyphon.session.list(showArchived).then(setSessions).catch(() => {});
@@ -312,12 +313,14 @@ function SessionsList({
         pickerComp.id,
         newName.trim(),
         workingDir.resolvedDir,
+        sandboxed,
       );
       setSessions([session, ...sessions]);
       setShowPicker(false);
       setPickerComp(null);
       setNewName('');
       workingDir.clear();
+      setSandboxed(false);
       onOpenSession(session);
     } finally {
       setCreating(false);
@@ -329,6 +332,7 @@ function SessionsList({
     setPickerComp(null);
     setNewName('');
     workingDir.clear();
+    setSandboxed(false);
   }
 
   return (
@@ -464,6 +468,20 @@ function SessionsList({
                     <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">Directory not found</p>
                   )}
                 </div>
+                {workingDir.status === 'valid' && (
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={sandboxed}
+                      onChange={(e) => setSandboxed(e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 shrink-0"
+                    />
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                      Sandbox API voices to this directory
+                    </span>
+                    <HelpTooltip text="Restricts all file system tool calls from API voices to this directory. Voices cannot read, write, or list files outside of it." />
+                  </label>
+                )}
                 <button
                   onClick={handleCreate}
                   disabled={creating || !newName.trim() || workingDir.isBlocking}
@@ -701,6 +719,7 @@ function Dashboard({
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
   const workingDir = useWorkingDirField();
+  const [sandboxed, setSandboxed] = useState(false);
 
   useEffect(() => {
     window.polyphon.session.list(false).then(setSessions).catch(() => {});
@@ -715,12 +734,13 @@ function Dashboard({
     if (!pickerComp || !newName.trim()) return;
     setCreating(true);
     try {
-      const session = await window.polyphon.session.create(pickerComp.id, newName.trim(), workingDir.resolvedDir);
+      const session = await window.polyphon.session.create(pickerComp.id, newName.trim(), workingDir.resolvedDir, sandboxed);
       setSessions([session, ...sessions]);
       setShowPicker(false);
       setPickerComp(null);
       setNewName('');
       workingDir.clear();
+      setSandboxed(false);
       onOpenSession(session);
     } finally {
       setCreating(false);
@@ -732,6 +752,7 @@ function Dashboard({
     setPickerComp(null);
     setNewName('');
     workingDir.clear();
+    setSandboxed(false);
   }
 
   return (
@@ -1060,6 +1081,20 @@ function Dashboard({
                     <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">Directory not found</p>
                   )}
                 </div>
+                {workingDir.status === 'valid' && (
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={sandboxed}
+                      onChange={(e) => setSandboxed(e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 shrink-0"
+                    />
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                      Sandbox API voices to this directory
+                    </span>
+                    <HelpTooltip text="Restricts all file system tool calls from API voices to this directory. Voices cannot read, write, or list files outside of it." />
+                  </label>
+                )}
                 <button
                   onClick={handleCreate}
                   disabled={creating || !newName.trim() || workingDir.isBlocking}
@@ -1118,6 +1153,7 @@ export default function App(): React.JSX.Element {
   const [newSessionName, setNewSessionName] = useState('');
   const [newSessionCreating, setNewSessionCreating] = useState(false);
   const sidebarWorkingDir = useWorkingDirField();
+  const [sidebarSandboxed, setSidebarSandboxed] = useState(false);
 
 
   // First-run onboarding modal
@@ -1241,12 +1277,14 @@ export default function App(): React.JSX.Element {
         newSessionPickerComp.id,
         newSessionName.trim(),
         sidebarWorkingDir.resolvedDir,
+        sidebarSandboxed,
       );
       setSessions([session, ...sessions]);
       setShowNewSessionModal(false);
       setNewSessionPickerComp(null);
       setNewSessionName('');
       sidebarWorkingDir.clear();
+      setSidebarSandboxed(false);
       handleOpenSession(session);
     } finally {
       setNewSessionCreating(false);
@@ -1258,6 +1296,7 @@ export default function App(): React.JSX.Element {
     setNewSessionPickerComp(null);
     setNewSessionName('');
     sidebarWorkingDir.clear();
+    setSidebarSandboxed(false);
   }
 
   async function handleSaveComposition(
@@ -1699,6 +1738,20 @@ export default function App(): React.JSX.Element {
                     <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">Directory not found</p>
                   )}
                 </div>
+                {sidebarWorkingDir.status === 'valid' && (
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={sidebarSandboxed}
+                      onChange={(e) => setSidebarSandboxed(e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 shrink-0"
+                    />
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                      Sandbox API voices to this directory
+                    </span>
+                    <HelpTooltip text="Restricts all file system tool calls from API voices to this directory. Voices cannot read, write, or list files outside of it." />
+                  </label>
+                )}
                 <button
                   onClick={handleSidebarCreateSession}
                   disabled={newSessionCreating || !newSessionName.trim() || sidebarWorkingDir.isBlocking}
