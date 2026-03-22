@@ -2,119 +2,120 @@ items:
   # ── Active / upcoming ──────────────────────────────────────
 
   - title: "Sync"
-    description: "End-to-end encrypted sync of your sessions, compositions, and settings across all your devices. Your data stays private — we can't read it."
     pricing: paid
     status: planned
+    description: "End-to-end encrypted sync of your sessions, compositions, and settings across all your devices. Your data stays private — we can't read it."
     discussion: https://github.com/polyphon-ai/releases/discussions/5
     feature_request:
 
   - title: "Working Directory"
-    description: "Set a starting directory when you create a session. CLI voices spawn with that directory as their working directory, and all voices receive it as context in the ensemble system prompt — so API voices know what project they're working in too."
     pricing: free
     status: released
     release_date: 2026-03-19
+    description: "Set a starting directory when you create a session. CLI voices spawn with that directory as their working directory, and all voices receive it as context in the ensemble system prompt — so API voices know what project they're working in too."
 
-  - title: "API Voice Filesystem Access"
-    description: "Give API voices (Claude, GPT, Gemini) the ability to read and write files, list directories, and run shell commands through a set of host-brokered tools. The model decides what to do; Polyphon executes it in the session working directory. The same sequential execution model already used for CLI voices keeps multiple voices from stepping on each other."
+  - title: "API Voice Filesystem Access & Sandboxing"
     pricing: free
-    status: planned
+    status: released
+    release_date: 2026-03-22
+    description: "Give API voices (Claude, GPT, Gemini) the ability to read and write files, list directories, and run shell commands through a set of host-brokered tools. The model decides what to do; Polyphon executes it in the session working directory. The same sequential execution model already used for CLI voices keeps multiple voices from stepping on each other."
     discussion:
     feature_request:
 
   - title: "Custom Color Picker"
-    description: "Choose any accent color for each voice in your session. Color-coded message bubbles, voice panels, and indicators make it easy to track who said what at a glance."
     pricing: free
     status: released
     release_date: 2026-03-19
+    description: "Choose any accent color for each voice in your session. Color-coded message bubbles, voice panels, and indicators make it easy to track who said what at a glance."
 
   - title: "Markdown Rendering"
-    description: "Voice responses rendered as formatted Markdown — headings, code blocks, lists, bold, italics, and inline code displayed as intended rather than as raw syntax."
     pricing: free
     status: released
     release_date: 2026-03-20
+    description: "Voice responses rendered as formatted Markdown — headings, code blocks, lists, bold, italics, and inline code displayed as intended rather than as raw syntax."
     discussion:
     feature_request:
 
   - title: "Session Export"
-    description: "Export full conversation transcripts in multiple formats — Markdown, JSON, or plain text."
     pricing: free
     status: planned
+    description: "Export full conversation transcripts in multiple formats — Markdown, JSON, or plain text."
     discussion: https://github.com/polyphon-ai/releases/discussions/2
     feature_request:
 
   - title: "Plugins"
-    description: "Extend Polyphon with community and first-party plugins. Add new voice providers, custom session behaviors, output formatters, and more — without touching core."
     pricing: free
     status: planned
+    description: "Extend Polyphon with community and first-party plugins. Add new voice providers, custom session behaviors, output formatters, and more — without touching core."
     discussion: https://github.com/polyphon-ai/releases/discussions/3
     feature_request:
 
   - title: "Extensions"
-    description: "Build and install extensions that hook into the Polyphon UI — custom panels, session widgets, and integrations with external tools and workflows."
     pricing: free
     status: planned
+    description: "Build and install extensions that hook into the Polyphon UI — custom panels, session widgets, and integrations with external tools and workflows."
     discussion: https://github.com/polyphon-ai/releases/discussions/4
     feature_request:
 
   # ── Released ───────────────────────────────────────────────
 
   - title: "Auto Update"
-    description: "Polyphon checks for new releases in the background and notifies you when one is available. Install with one click — no manual download required."
     pricing: free
     status: released
+    description: "Polyphon checks for new releases in the background and notifies you when one is available. Install with one click — no manual download required."
     discussion:
     feature_request:
 
   - title: "YOLO Mode for CLI Voices"
-    description: "Per-voice checkboxes to enable non-interactive / auto-approve mode for CLI providers like Claude Code and Codex. Let them run without confirmation prompts when you trust the session."
     pricing: free
     status: released
     release_date: 2026-03-19
+    description: "Per-voice checkboxes to enable non-interactive / auto-approve mode for CLI providers like Claude Code and Codex. Let them run without confirmation prompts when you trust the session."
 
   - title: "Encryption at Rest"
-    description: "Your sessions, compositions, and settings are encrypted on disk. Your data is protected even if your device is compromised."
     pricing: free
     status: released
     release_date: 2026-03-19
+    description: "Your sessions, compositions, and settings are encrypted on disk. Your data is protected even if your device is compromised."
 
   - title: "Tones & System Prompt Templates"
-    description: "Custom tone presets and reusable system prompt templates for fine-grained control over each voice's personality and behavior."
     pricing: free
     status: released
     release_date: 2025-03-01
+    description: "Custom tone presets and reusable system prompt templates for fine-grained control over each voice's personality and behavior."
 
   - title: "Conductor Profile"
-    description: "Set your name, pronouns, and context once. Every voice in every session knows who they're talking to, injected automatically into the ensemble system prompt."
     pricing: free
     status: released
     release_date: 2025-02-15
+    description: "Set your name, pronouns, and context once. Every voice in every session knows who they're talking to, injected automatically into the ensemble system prompt."
 
   - title: "Custom OpenAI-Compatible Providers"
-    description: "Add your own endpoints — Ollama, LM Studio, vLLM, or any OpenAI-compatible API — and run voices entirely on your machine."
     pricing: free
     status: released
     release_date: 2025-02-15
+    description: "Add your own endpoints — Ollama, LM Studio, vLLM, or any OpenAI-compatible API — and run voices entirely on your machine."
 
   - title: "CLI Voices"
-    description: "Use Claude Code, Codex, and GitHub Copilot as voices in your sessions. Spawned as local subprocesses — no extra credentials beyond what you already have."
     pricing: free
     status: released
     release_date: 2025-02-01
+    description: "Use Claude Code, Codex, and GitHub Copilot as voices in your sessions. Spawned as local subprocesses — no extra credentials beyond what you already have."
 
   - title: "API Voices"
-    description: "Connect Anthropic Claude, OpenAI GPT, and Google Gemini via API key with full model selection per voice and real-time streaming responses."
     pricing: free
     status: released
     release_date: 2025-02-01
+    description: "Connect Anthropic Claude, OpenAI GPT, and Google Gemini via API key with full model selection per voice and real-time streaming responses."
 
   - title: "Compositions"
-    description: "Save and reuse multi-voice configurations. Build your preferred ensemble once and launch it instantly in any new session."
     pricing: free
     status: released
     release_date: 2025-02-01
+    description: "Save and reuse multi-voice configurations. Build your preferred ensemble once and launch it instantly in any new session."
 
   - title: "Multi-Voice Sessions"
-    description: "Orchestrate multiple AI voices simultaneously in a single conversation. Voices hear each other and build on each other's responses in real time."
     pricing: free
     status: released
     release_date: 2025-02-01
+    description: "Orchestrate multiple AI voices simultaneously in a single conversation. Voices hear each other and build on each other's responses in real time."
