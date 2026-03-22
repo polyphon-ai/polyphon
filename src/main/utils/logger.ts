@@ -4,32 +4,30 @@ import fs from 'node:fs';
 import { app } from 'electron';
 import log from 'electron-log/main';
 
-import { ENCRYPTED_FIELDS } from '../db/encryptionManifest';
+// Keys whose values must never appear in logs (credentials, PII, key material)
+export const SENSITIVE_LOG_KEYS: ReadonlySet<string> = new Set([
+  // DB key material
+  'keyHex', 'dbKey', 'wrappedKey', 'wrappingKey',
+  // Conductor profile PII
+  'conductor_name', 'conductorName',
+  'pronouns',
+  'conductor_context', 'conductorContext',
+  'conductor_avatar', 'conductorAvatar',
+  // Encrypted DB columns
+  'content', 'metadata', 'description',
+  'system_prompt', 'systemPrompt',
+  'cli_command', 'cliCommand',
+  'cli_args', 'cliArgs',
+  'base_url', 'baseUrl',
+  'working_dir', 'workingDir',
+  // API credentials
+  'apiKey', 'api_key', 'authorization', 'Authorization', 'x-api-key', 'x-goog-api-key',
+]);
 
-// Build SENSITIVE_LOG_KEYS from the encryption manifest + explicit extras
-function buildSensitiveKeys(): ReadonlySet<string> {
-  const keys = new Set<string>();
-  for (const columns of Object.values(ENCRYPTED_FIELDS)) {
-    for (const col of columns) {
-      keys.add(col);
-      // Derive camelCase variant
-      const camel = col.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
-      if (camel !== col) keys.add(camel);
-    }
-  }
-  // Explicit extras
-  for (const k of ['apiKey', 'api_key', 'authorization', 'Authorization', 'x-api-key', 'x-goog-api-key']) {
-    keys.add(k);
-  }
-  return keys;
-}
-
-export const SENSITIVE_LOG_KEYS: ReadonlySet<string> = buildSensitiveKeys();
-const ENCRYPTED_BLOB_RE = /ENC:v1:[A-Za-z0-9+/=]+/g;
 const API_KEY_RE = /sk-\S+|sk-ant-\S+|AIza\S+|gsk_\S+|GOOG\S+|ghp_\S+|github_pat_\S+|Bearer\s+\S+/g;
 
 function sanitizeString(s: string): string {
-  return s.replace(ENCRYPTED_BLOB_RE, '[ENCRYPTED]').replace(API_KEY_RE, '[REDACTED]');
+  return s.replace(API_KEY_RE, '[REDACTED]');
 }
 
 export function sanitizeValue(value: unknown, visited?: WeakSet<object>, depth?: number): unknown {

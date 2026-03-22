@@ -51,10 +51,6 @@ describe('sanitizeValue — strings', () => {
     expect(sanitizeValue('hello')).toBe('hello');
   });
 
-  it('redacts ENC:v1: blobs', () => {
-    expect(sanitizeValue('ENC:v1:abc123==')).toBe('[ENCRYPTED]');
-  });
-
   it('redacts sk- API keys', () => {
     expect(sanitizeValue('sk-proj-abc')).toBe('[REDACTED]');
   });
