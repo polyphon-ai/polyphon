@@ -29,7 +29,7 @@ function assertInSandbox(resolved: string, sandboxDir: string): void {
   }
 }
 
-function sandboxOneTool(tool: ToolDefinition, sandboxDir: string): ToolDefinition {
+function sandboxOneTool(tool: ToolDefinition, sandboxDir: string, enforce: boolean): ToolDefinition {
   const pathArgNames = PATH_ARGS[tool.name];
   if (!pathArgNames) return tool;
 
@@ -53,7 +53,7 @@ function sandboxOneTool(tool: ToolDefinition, sandboxDir: string): ToolDefinitio
 
         // Resolve relative to sandboxDir so the voice can use relative paths naturally
         const resolved = resolve(sandboxDir, String(raw));
-        assertInSandbox(resolved, sandboxDir);
+        if (enforce) assertInSandbox(resolved, sandboxDir);
         args[argName] = resolved;
       }
 
@@ -62,6 +62,6 @@ function sandboxOneTool(tool: ToolDefinition, sandboxDir: string): ToolDefinitio
   };
 }
 
-export function sandboxTools(tools: ToolDefinition[], sandboxDir: string): ToolDefinition[] {
-  return tools.map((tool) => sandboxOneTool(tool, sandboxDir));
+export function sandboxTools(tools: ToolDefinition[], sandboxDir: string, enforce = true): ToolDefinition[] {
+  return tools.map((tool) => sandboxOneTool(tool, sandboxDir, enforce));
 }

@@ -405,7 +405,7 @@ export function registerIpcHandlers(
     }
   });
 
-  ipcMain.handle(IPC.SESSION_EXPORT, async (_event, sessionId: unknown, format: unknown) => {
+  ipcMain.handle(IPC.SESSION_EXPORT, async (_event, sessionId: unknown, format: unknown, savePath?: unknown) => {
     requireId(sessionId, 'sessionId');
     if (format !== 'markdown' && format !== 'json' && format !== 'plaintext') {
       return { ok: false, error: 'Invalid format' };
@@ -473,17 +473,24 @@ export function registerIpcHandlers(
       content = lines.join('\n');
     }
 
-    const defaultPath = `${safeSessionName}.${ext}`;
-    const saveResult = await dialog.showSaveDialog({
-      defaultPath,
-      filters: [{ name: filterName, extensions: [ext] }],
-    });
+    const resolvedPath =
+      typeof savePath === 'string' && savePath.trim()
+        ? savePath.trim()
+        : await (async () => {
+            const defaultPath = `${safeSessionName}.${ext}`;
+            const saveResult = await dialog.showSaveDialog({
+              defaultPath,
+              filters: [{ name: filterName, extensions: [ext] }],
+            });
+            if (saveResult.canceled || !saveResult.filePath) return null;
+            return saveResult.filePath;
+          })();
 
-    if (saveResult.canceled || !saveResult.filePath) return { ok: false, error: 'Cancelled' };
+    if (!resolvedPath) return { ok: false, error: 'Cancelled' };
 
     try {
-      await fs.promises.writeFile(saveResult.filePath, content, 'utf-8');
-      logger.debug('session:export', { sessionId, format, path: saveResult.filePath });
+      await fs.promises.writeFile(resolvedPath, content, 'utf-8');
+      logger.debug('session:export', { sessionId, format, path: resolvedPath });
       return { ok: true };
     } catch (err) {
       logger.warn('Session export failed', err);

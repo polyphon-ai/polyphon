@@ -232,8 +232,12 @@ export class VoiceManager {
       if (voice.type === 'cli' && 'setWorkingDir' in voice) {
         (voice as unknown as { setWorkingDir: (d: string | null) => void }).setWorkingDir(workingDir ?? null);
       }
-      if (sandboxed && workingDir && 'applySandbox' in voice) {
-        (voice as unknown as { applySandbox: (dir: string) => void }).applySandbox(workingDir);
+      if (workingDir) {
+        if (sandboxed && 'applySandbox' in voice) {
+          (voice as unknown as { applySandbox: (dir: string) => void }).applySandbox(workingDir);
+        } else if ('applyWorkingDir' in voice) {
+          (voice as unknown as { applyWorkingDir: (dir: string) => void }).applyWorkingDir(workingDir);
+        }
       }
       voice.setEnsembleSystemPrompt(
         this.buildEnsembleSystemPrompt(voice, voices, mode, profile, workingDir, sandboxed)

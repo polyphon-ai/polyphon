@@ -66,8 +66,12 @@ export abstract class APIVoice implements Voice {
     this.ensembleSystemPrompt = prompt;
   }
 
+  applyWorkingDir(workingDir: string): void {
+    this.enabledTools = resolveTools(this.rawToolNames, workingDir, false);
+  }
+
   applySandbox(sandboxDir: string): void {
-    this.enabledTools = resolveTools(this.rawToolNames, sandboxDir);
+    this.enabledTools = resolveTools(this.rawToolNames, sandboxDir, true);
   }
 
   protected buildSystemPrompt(): string {

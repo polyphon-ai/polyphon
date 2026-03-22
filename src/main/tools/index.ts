@@ -26,9 +26,9 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
   fetch_url: fetchUrlTool,
 };
 
-export function resolveTools(names: string[], sandboxDir?: string | null): ToolDefinition[] {
+export function resolveTools(names: string[], workingDir?: string | null, enforce = true): ToolDefinition[] {
   const tools = names
     .filter((name) => name in TOOL_REGISTRY)
     .map((name) => TOOL_REGISTRY[name]!);
-  return sandboxDir ? sandboxTools(tools, sandboxDir) : tools;
+  return workingDir ? sandboxTools(tools, workingDir, enforce) : tools;
 }
