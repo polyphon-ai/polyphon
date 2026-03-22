@@ -2,7 +2,7 @@ import { ipcMain, BrowserWindow, shell, app, dialog } from 'electron';
 import { URL } from 'url';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import type { Message, Composition } from '../../shared/types';
 import { IPC } from '../../shared/constants';
 import { logger, isDebugEnabled, setDebugEnabled, writeDebugFlag } from '../utils/logger';
@@ -47,7 +47,7 @@ import { getCachedUpdateInfo, checkForUpdateNow, downloadUpdate, quitAndInstall,
 import type { UpdateChannel } from '../../shared/types';
 
 export function registerIpcHandlers(
-  db: DatabaseSync,
+  db: Database.Database,
   voiceManager: VoiceManager,
   sessionManager: SessionManager,
   encCtx?: EncryptionContext,

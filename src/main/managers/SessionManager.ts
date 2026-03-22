@@ -1,5 +1,5 @@
 import type { BrowserWindow } from 'electron';
-import type { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import type { Message, Session } from '../../shared/types';
 import type { VoiceManager } from './VoiceManager';
 import { IPC, CONTINUATION_MAX_ROUNDS_LIMIT } from '../../shared/constants';
@@ -80,7 +80,7 @@ export class SessionManager {
     win: BrowserWindow,
     session: Session,
     conductorMessage: Message,
-    db: DatabaseSync,
+    db: Database.Database,
     depth = 0,
   ): Promise<void> {
     const ensemble = this.voiceManager.getEnsemble(session.id);
@@ -169,7 +169,7 @@ export class SessionManager {
     session: Session,
     conductorMessage: Message,
     targetVoiceId: string,
-    db: DatabaseSync,
+    db: Database.Database,
   ): Promise<void> {
     const voice = this.voiceManager.getVoice(session.id, targetVoiceId);
     if (!voice) {

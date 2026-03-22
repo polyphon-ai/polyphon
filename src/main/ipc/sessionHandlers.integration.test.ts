@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { runMigrations } from '../db/migrations';
-import { initFieldEncryption, _resetForTests } from '../security/fieldEncryption';
 import { insertComposition } from '../db/queries/compositions';
 import { insertSession } from '../db/queries/sessions';
 import { listMessages } from '../db/queries/messages';
@@ -16,8 +15,8 @@ const VOICE_ID = '00000000-0000-0000-0000-000000000003';
 const MSG_ID   = '00000000-0000-0000-0000-000000000004';
 const CP_ID    = '00000000-0000-0000-0000-000000000005';
 
-function createTestDb(): DatabaseSync {
-  const db = new DatabaseSync(':memory:');
+function createTestDb(): Database.Database {
+  const db = new Database(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   runMigrations(db);
   return db;
@@ -81,12 +80,11 @@ function makeConductorMessage(sessionId = SESS_ID): Message {
 }
 
 describe('SessionManager + DB integration', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
   let voiceManager: VoiceManager;
   let sessionManager: SessionManager;
 
   beforeEach(() => {
-    initFieldEncryption(Buffer.alloc(32));
     db = createTestDb();
     voiceManager = new VoiceManager();
     sessionManager = new SessionManager(voiceManager);
@@ -94,7 +92,6 @@ describe('SessionManager + DB integration', () => {
 
   afterEach(() => {
     db.close();
-    _resetForTests();
   });
 
   describe('runBroadcastRound with mocked voice provider', () => {

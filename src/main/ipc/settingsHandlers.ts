@@ -19,7 +19,7 @@ import { logger } from '../utils/logger';
 import { execFileSync, spawnSync } from 'child_process';
 import path from 'node:path';
 import { randomUUID } from 'crypto';
-import { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import { IPC, PROVIDER_METADATA, SETTINGS_PROVIDERS } from '../../shared/constants';
 import type {
   ProviderConfig,
@@ -117,7 +117,7 @@ export function testCliVoice(command: string): CliTestResult {
 
 // Persists provider config to SQLite.
 export function saveProviderConfig(
-  db: DatabaseSync,
+  db: Database.Database,
   config: Omit<ProviderConfig, 'id' | 'createdAt' | 'updatedAt'>,
 ): ProviderConfig {
   const cliCommand = config.cliCommand ?? PROVIDER_METADATA[config.provider]?.defaultCliCommand ?? null;
@@ -125,7 +125,7 @@ export function saveProviderConfig(
 }
 
 // Loads all saved provider configs from SQLite.
-export function getAllProviderConfigs(db: DatabaseSync): ProviderConfig[] {
+export function getAllProviderConfigs(db: Database.Database): ProviderConfig[] {
   return listProviderConfigs(db);
 }
 
@@ -271,12 +271,12 @@ function resolveCustomProviderStatus(cp: CustomProvider): CustomProviderWithStat
   return { ...cp, apiKeyStatus: { status: 'none', specificVar: cp.apiKeyEnvVar, fallbackVar: cp.apiKeyEnvVar } };
 }
 
-function listCustomProvidersWithStatus(db: DatabaseSync): CustomProviderWithStatus[] {
+function listCustomProvidersWithStatus(db: Database.Database): CustomProviderWithStatus[] {
   return listCustomProviders(db).map(resolveCustomProviderStatus);
 }
 
 async function fetchModelsForCustomProvider(
-  db: DatabaseSync,
+  db: Database.Database,
   customProviderId: string,
 ): Promise<ModelsResult> {
   const cp = getCustomProvider(db, customProviderId);
@@ -316,7 +316,7 @@ async function pickAvatarFilePath(): Promise<string | null> {
   return filePaths[0]!;
 }
 
-export function registerSettingsHandlers(db: DatabaseSync, voiceManager: VoiceManager, encCtx?: EncryptionContext): void {
+export function registerSettingsHandlers(db: Database.Database, voiceManager: VoiceManager, encCtx?: EncryptionContext): void {
   ipcMain.handle(IPC.SETTINGS_GET_PROVIDER_STATUS, () => getProviderStatus());
 
   ipcMain.handle(

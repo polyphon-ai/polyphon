@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 
 vi.mock('child_process', () => ({
   execFileSync: vi.fn(),
@@ -28,7 +28,6 @@ vi.mock('electron', () => ({
 import { execFileSync, spawnSync } from 'child_process';
 import { dialog, nativeImage } from 'electron';
 import { runMigrations } from '../db/migrations';
-import { initFieldEncryption, _resetForTests } from '../security/fieldEncryption';
 import {
   getProviderStatus,
   saveProviderConfig,
@@ -52,8 +51,8 @@ const CP_ID = '00000000-0000-0000-0000-000000000005';
 const mockExecFileSync = execFileSync as ReturnType<typeof vi.fn>;
 const mockSpawnSync = spawnSync as ReturnType<typeof vi.fn>;
 
-function createTestDb(): DatabaseSync {
-  const db = new DatabaseSync(':memory:');
+function createTestDb(): Database.Database {
+  const db = new Database(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   runMigrations(db);
   return db;
@@ -108,16 +107,14 @@ describe('getProviderStatus', () => {
 });
 
 describe('saveProviderConfig and getAllProviderConfigs', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
 
   beforeEach(() => {
-    initFieldEncryption(Buffer.alloc(32));
     db = createTestDb();
   });
 
   afterEach(() => {
     db.close();
-    _resetForTests();
   });
 
   it('saves and retrieves a provider config', () => {
@@ -276,7 +273,7 @@ describe('testCliVoice', () => {
 // ---------------------------------------------------------------------------
 
 describe('settings IPC handler validation', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
   const mockVoiceManager = {
     loadCustomProviders: vi.fn(),
     loadTones: vi.fn(),
@@ -285,14 +282,12 @@ describe('settings IPC handler validation', () => {
 
   beforeEach(() => {
     settingsIpcHandlers.clear();
-    initFieldEncryption(Buffer.alloc(32));
     db = createTestDb();
     registerSettingsHandlers(db, mockVoiceManager as any);
   });
 
   afterEach(() => {
     db.close();
-    _resetForTests();
     vi.clearAllMocks();
   });
 
@@ -483,80 +478,6 @@ describe('settings IPC handler validation', () => {
     });
   });
 
-  // Encryption at the IPC layer
-  describe('Encryption at the IPC layer', () => {
-    const SENTINEL = 'SENTINEL_PLAINTEXT_MUST_NOT_APPEAR';
-
-    it('SETTINGS_SAVE_USER_PROFILE stores conductor_name, pronouns, conductor_context, conductor_avatar as ciphertext', async () => {
-      await settingsIpcHandlers.get(IPC.SETTINGS_SAVE_USER_PROFILE)!({}, {
-        conductorName: SENTINEL,
-        pronouns: SENTINEL,
-        conductorContext: SENTINEL,
-        defaultTone: 'collaborative',
-        conductorColor: '',
-        conductorAvatar: `data:image/png;base64,${Buffer.from(SENTINEL).toString('base64')}`,
-      });
-
-      const row = db
-        .prepare('SELECT conductor_name, pronouns, conductor_context, conductor_avatar FROM user_profile WHERE id = 1')
-        .get() as { conductor_name: string; pronouns: string; conductor_context: string; conductor_avatar: string };
-
-      expect(row.conductor_name).toMatch(/^ENC:v1:/);
-      expect(row.conductor_name).not.toContain(SENTINEL);
-      expect(row.pronouns).toMatch(/^ENC:v1:/);
-      expect(row.pronouns).not.toContain(SENTINEL);
-      expect(row.conductor_context).toMatch(/^ENC:v1:/);
-      expect(row.conductor_context).not.toContain(SENTINEL);
-      expect(row.conductor_avatar).toMatch(/^ENC:v1:/);
-      expect(row.conductor_avatar).not.toContain(SENTINEL);
-    });
-
-    it('SETTINGS_CUSTOM_PROVIDER_CREATE stores base_url as ciphertext', async () => {
-      const result = await settingsIpcHandlers.get(IPC.SETTINGS_CUSTOM_PROVIDER_CREATE)!({}, {
-        name: 'Local LLM',
-        slug: 'local-llm',
-        baseUrl: `https://localhost:11434/${SENTINEL}`,
-        apiKeyEnvVar: null,
-        defaultModel: null,
-      });
-
-      const row = db
-        .prepare('SELECT base_url FROM custom_providers WHERE id = ?')
-        .get(result.id) as { base_url: string };
-
-      expect(row.base_url).toMatch(/^ENC:v1:/);
-      expect(row.base_url).not.toContain(SENTINEL);
-    });
-
-    it('SETTINGS_TONE_CREATE stores description as ciphertext', async () => {
-      const result = await settingsIpcHandlers.get(IPC.SETTINGS_TONE_CREATE)!({}, {
-        name: 'Test Tone',
-        description: SENTINEL,
-      });
-
-      const row = db
-        .prepare('SELECT description FROM tones WHERE id = ?')
-        .get(result.id) as { description: string };
-
-      expect(row.description).toMatch(/^ENC:v1:/);
-      expect(row.description).not.toContain(SENTINEL);
-    });
-
-    it('SETTINGS_SYSTEM_PROMPT_TEMPLATE_CREATE stores content as ciphertext', async () => {
-      const result = await settingsIpcHandlers.get(IPC.SETTINGS_SYSTEM_PROMPT_TEMPLATE_CREATE)!({}, {
-        name: 'Test Template',
-        content: SENTINEL,
-      });
-
-      const row = db
-        .prepare('SELECT content FROM system_prompt_templates WHERE id = ?')
-        .get(result.id) as { content: string };
-
-      expect(row.content).toMatch(/^ENC:v1:/);
-      expect(row.content).not.toContain(SENTINEL);
-    });
-  });
-
   // SETTINGS_UPLOAD_CONDUCTOR_AVATAR
   describe('SETTINGS_UPLOAD_CONDUCTOR_AVATAR', () => {
     it('returns null when dialog is canceled', async () => {
@@ -658,7 +579,7 @@ describe('settings IPC handler validation', () => {
 });
 
 describe('logger sanitization on real code path', () => {
-  it('never passes raw API keys or ciphertext to the electron-log transport', async () => {
+  it('never passes raw API keys to the electron-log transport', async () => {
     // Import the actual logger and electron-log (not pre-mocked in this describe scope)
     const logModule = await import('electron-log/main');
     const log = logModule.default;
@@ -668,11 +589,10 @@ describe('logger sanitization on real code path', () => {
 
     // Construct dynamically so static secret scanners don't flag the test file.
     const rawApiKey = ['sk', 'test', 'abc123sensitive'].join('-');
-    const rawCiphertext = 'ENC:v1:deadbeef==';
 
     // Simulate a code path that accidentally passes sensitive data to the logger
     logger.error('probeModel error', {
-      message: `Response contained ${rawApiKey} and ${rawCiphertext}`,
+      message: `Response contained ${rawApiKey}`,
       apiKey: rawApiKey,
     });
 
@@ -683,11 +603,9 @@ describe('logger sanitization on real code path', () => {
 
     // Sensitive values must not appear in the logged output
     expect(callStr).not.toContain(rawApiKey);
-    expect(callStr).not.toContain(rawCiphertext);
 
-    // Redaction markers must be present
+    // Redaction marker must be present
     expect(callStr).toContain('[REDACTED]');
-    expect(callStr).toContain('[ENCRYPTED]');
 
     errorSpy.mockRestore();
   });

@@ -9,7 +9,6 @@ import { VoiceManager } from './managers/VoiceManager';
 import { SessionManager } from './managers/SessionManager';
 import { setupAutoUpdater } from './utils/updateChecker';
 import { loadOrCreateKey } from './security/keyManager';
-import { initFieldEncryption } from './security/fieldEncryption';
 import { createUnlockWindow } from './security/unlockWindow';
 import { installCsp } from './security/csp';
 import { IPC } from '../shared/constants';
@@ -110,9 +109,8 @@ app.whenReady().then(async () => {
     },
   );
 
-  initFieldEncryption(key);
-
-  const db = getDb();
+  const keyHex = key.toString('hex');
+  const db = getDb(keyHex);
   const voiceManager = new VoiceManager(db);
   const sessionManager = new SessionManager(voiceManager);
 

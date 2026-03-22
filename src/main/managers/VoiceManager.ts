@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import type { Voice, VoiceConfig, VoiceProviderRegistration } from '../voices/Voice';
 import type { CompositionVoice, CustomProvider, ProviderConfig, UserProfile, ToneDefinition, SystemPromptTemplate } from '../../shared/types';
 import { PROVIDER_METADATA, PROVIDER_NAMES } from '../../shared/constants';
@@ -41,10 +41,10 @@ export class VoiceManager {
   // id → SystemPromptTemplate
   private systemPromptTemplatesById: Map<string, SystemPromptTemplate> = new Map();
 
-  private _db: DatabaseSync | null = null;
+  private _db: Database.Database | null = null;
   private _dataLoaded = false;
 
-  constructor(db?: DatabaseSync) {
+  constructor(db?: Database.Database) {
     if (db) this._db = db;
   }
 
@@ -57,24 +57,24 @@ export class VoiceManager {
     this._dataLoaded = true;
   }
 
-  loadCustomProviders(db: DatabaseSync): void {
+  loadCustomProviders(db: Database.Database): void {
     const providers = listCustomProviders(db);
     this.customProviders = new Map(providers.map((p) => [p.id, p]));
   }
 
-  loadProviderConfigs(db: DatabaseSync): void {
+  loadProviderConfigs(db: Database.Database): void {
     const configs = listProviderConfigs(db);
     this.providerCLIConfigs = new Map(
       configs.filter((c) => c.voiceType === 'cli').map((c) => [`${c.provider}:cli`, c]),
     );
   }
 
-  loadTones(db: DatabaseSync): void {
+  loadTones(db: Database.Database): void {
     const tones = listTones(db);
     this.tonesById = new Map(tones.map((t) => [t.id, t]));
   }
 
-  loadSystemPromptTemplates(db: DatabaseSync): void {
+  loadSystemPromptTemplates(db: Database.Database): void {
     const templates = listSystemPromptTemplates(db);
     this.systemPromptTemplatesById = new Map(templates.map((t) => [t.id, t]));
   }

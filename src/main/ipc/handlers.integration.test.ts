@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { CREATE_TABLES_SQL } from '../db/schema';
-import { initFieldEncryption, _resetForTests } from '../security/fieldEncryption';
 import { IPC } from '../../shared/constants';
 import { insertComposition } from '../db/queries/compositions';
 import { insertSession } from '../db/queries/sessions';
@@ -47,8 +46,8 @@ vi.mock('../utils/updateChecker', () => ({
   checkForUpdateNow: (...args: unknown[]) => mockCheckForUpdateNow(...args),
 }));
 
-function createTestDb(): DatabaseSync {
-  const db = new DatabaseSync(':memory:');
+function createTestDb(): Database.Database {
+  const db = new Database(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   db.exec(CREATE_TABLES_SQL);
   // Seed a user_profile row (required for update preference queries)
@@ -136,12 +135,11 @@ function makeMessage(overrides: Partial<Message> = {}): Message {
 }
 
 describe('IPC handlers integration', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
   let voiceManager: ReturnType<typeof makeMockVoiceManager>;
   let sessionManager: ReturnType<typeof makeMockSessionManager>;
 
   beforeEach(async () => {
-    initFieldEncryption(Buffer.alloc(32));
     handlers.clear();
     mockShellOpenExternal.mockClear();
     mockGetCachedUpdateInfo.mockClear().mockReturnValue(null);
@@ -153,7 +151,6 @@ describe('IPC handlers integration', () => {
     registerIpcHandlers(db, voiceManager, sessionManager);
   });
 
-  afterEach(() => { db.close(); _resetForTests(); });
 
   // --- SESSION handlers ---
 
@@ -613,61 +610,6 @@ describe('IPC handlers integration', () => {
     it('calls voiceManager.disposeSession', async () => {
       await handlers.get(IPC.VOICE_ABORT)!({}, SESS_ID);
       expect(voiceManager.disposeSession).toHaveBeenCalledWith(SESS_ID);
-    });
-  });
-
-  // --- Encryption at the IPC layer ---
-
-  describe('Encryption at the IPC layer', () => {
-    const SENTINEL = 'SENTINEL_PLAINTEXT_MUST_NOT_APPEAR';
-
-    it('COMPOSITION_CREATE stores composition_voices encrypted fields as ciphertext', async () => {
-      const data = {
-        name: 'Encrypted Comp',
-        mode: 'broadcast',
-        continuationPolicy: 'none',
-        continuationMaxRounds: 1,
-        voices: [
-          {
-            id: 'cv-enc',
-            provider: 'anthropic',
-            model: 'claude-opus-4-6',
-            displayName: 'Alice',
-            systemPrompt: SENTINEL,
-            cliCommand: SENTINEL,
-            cliArgs: [SENTINEL],
-            order: 0,
-            color: '#000',
-            avatarIcon: 'star',
-          },
-        ],
-      };
-
-      const result = await handlers.get(IPC.COMPOSITION_CREATE)!({}, data);
-      const row = db
-        .prepare('SELECT system_prompt, cli_command, cli_args FROM composition_voices WHERE composition_id = ?')
-        .get(result.id) as { system_prompt: string; cli_command: string; cli_args: string };
-
-      expect(row.system_prompt).toMatch(/^ENC:v1:/);
-      expect(row.system_prompt).not.toContain(SENTINEL);
-      expect(row.cli_command).toMatch(/^ENC:v1:/);
-      expect(row.cli_command).not.toContain(SENTINEL);
-      expect(row.cli_args).toMatch(/^ENC:v1:/);
-      expect(row.cli_args).not.toContain(SENTINEL);
-    });
-
-    it('VOICE_SEND stores messages.content as ciphertext', async () => {
-      insertComposition(db, makeComposition());
-      insertSession(db, makeSession());
-
-      await handlers.get(IPC.VOICE_SEND)!({ sender: {} }, SESS_ID, makeMessage({ content: SENTINEL }));
-
-      const row = db
-        .prepare('SELECT content FROM messages WHERE id = ?')
-        .get(MSG_ID) as { content: string };
-
-      expect(row.content).toMatch(/^ENC:v1:/);
-      expect(row.content).not.toContain(SENTINEL);
     });
   });
 

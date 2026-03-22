@@ -2,7 +2,7 @@ import { autoUpdater } from 'electron-updater';
 import { app } from 'electron';
 import semver from 'semver';
 import type { BrowserWindow } from 'electron';
-import type { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import { logger } from './logger';
 import { IPC } from '../../shared/constants';
 import { getUpdatePreferences, getUpdateChannel } from '../db/queries/userProfile';
@@ -32,9 +32,9 @@ let downloading = false;
 
 // Stored reference to the active window so changeChannel can use it.
 let activeWin: BrowserWindow | null = null;
-let activeDb: DatabaseSync | null = null;
+let activeDb: Database.Database | null = null;
 
-export function setupAutoUpdater(db: DatabaseSync, win: BrowserWindow): void {
+export function setupAutoUpdater(db: Database.Database, win: BrowserWindow): void {
   if (process.env.POLYPHON_E2E) return;
 
   activeWin = win;

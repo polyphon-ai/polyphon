@@ -15,7 +15,7 @@ import { listProviderConfigs } from '../db/queries/providerConfigs';
 import { VoiceManager } from './VoiceManager';
 import { PROVIDER_NAMES, PROVIDER_METADATA } from '../../shared/constants';
 import type { CompositionVoice, Message } from '../../shared/types';
-import type { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 
 const mockSpawn = spawn as ReturnType<typeof vi.fn>;
 const mockListProviderConfigs = listProviderConfigs as ReturnType<typeof vi.fn>;
@@ -140,7 +140,7 @@ describe('VoiceManager.createVoice — yolo mode flag injection', () => {
 
   function loadConfig(provider: string, yoloMode: boolean) {
     mockListProviderConfigs.mockReturnValue([makeProviderConfig(provider, yoloMode)]);
-    vm.loadProviderConfigs({} as DatabaseSync);
+    vm.loadProviderConfigs({} as Database.Database);
   }
 
   it('appends --dangerously-skip-permissions for anthropic CLI when yolo mode is enabled', async () => {

@@ -1,15 +1,13 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { SessionManager } from './SessionManager';
 import { VoiceManager } from './VoiceManager';
 import { CREATE_TABLES_SQL } from '../db/schema';
 import { runMigrations } from '../db/migrations';
 import { listMessages, insertMessage } from '../db/queries/messages';
-import { initFieldEncryption, _resetForTests } from '../security/fieldEncryption';
 import { IPC } from '../../shared/constants';
 import type { Session, Message } from '../../shared/types';
 
-const TEST_KEY = Buffer.alloc(32);
 
 function makeSessionManager(): SessionManager {
   return new SessionManager(new VoiceManager());
@@ -55,13 +53,12 @@ describe('SessionManager.parseMention', () => {
 
 describe('VoiceManager.buildEnsembleSystemPrompt', () => {
   let vm: VoiceManager;
-  let testDb: DatabaseSync;
+  let testDb: Database.Database;
 
   beforeAll(() => {
-    initFieldEncryption(TEST_KEY);
     vm = new VoiceManager();
     // Load tones from a real in-memory DB so tone resolution works
-    testDb = new DatabaseSync(':memory:');
+    testDb = new Database(':memory:');
     testDb.exec('PRAGMA journal_mode = WAL');
     runMigrations(testDb);
     vm.loadTones(testDb);
@@ -69,7 +66,6 @@ describe('VoiceManager.buildEnsembleSystemPrompt', () => {
 
   afterAll(() => {
     testDb.close();
-    _resetForTests();
   });
 
   function makeVoice(id: string, name: string, provider = 'anthropic') {
@@ -212,8 +208,8 @@ describe('SessionManager.parseMention edge cases', () => {
 
 // ── Round orchestration ───────────────────────────────────────────────────────
 
-function makeTestDb(): DatabaseSync {
-  const db = new DatabaseSync(':memory:');
+function makeTestDb(): Database.Database {
+  const db = new Database(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   db.exec(CREATE_TABLES_SQL);
   // Insert a minimal session row so message FK constraints pass
@@ -277,17 +273,15 @@ function makeVoiceManager(voices: ReturnType<typeof makeVoiceMock>[]) {
 }
 
 describe('SessionManager.runBroadcastRound', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
   let win: ReturnType<typeof makeWin>;
 
   beforeEach(() => {
-    initFieldEncryption(TEST_KEY);
     db = makeTestDb();
     win = makeWin();
   });
 
   afterEach(() => {
-    _resetForTests();
   });
 
   it('calls send() on every voice in the ensemble', async () => {
@@ -438,17 +432,15 @@ describe('SessionManager.runBroadcastRound', () => {
 });
 
 describe('SessionManager.runDirectedRound', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
   let win: ReturnType<typeof makeWin>;
 
   beforeEach(() => {
-    initFieldEncryption(TEST_KEY);
     db = makeTestDb();
     win = makeWin();
   });
 
   afterEach(() => {
-    _resetForTests();
   });
 
   it('calls send() only on the targeted voice', async () => {
