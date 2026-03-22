@@ -1,6 +1,8 @@
 import { isIPv4, isIPv6 } from 'net';
 import type { Message, CompositionVoice, Composition, UserProfile } from '../../shared/types';
-import { CONTINUATION_MAX_ROUNDS_LIMIT } from '../../shared/constants';
+import { CONTINUATION_MAX_ROUNDS_LIMIT, AVAILABLE_TOOLS } from '../../shared/constants';
+
+const ALLOWED_TOOL_NAMES = new Set(AVAILABLE_TOOLS.map((t) => t.name));
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const CLI_COMMAND_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
@@ -216,6 +218,20 @@ export function requireCompositionVoiceShape(value: unknown, index: number): Com
   if (obj['customProviderId'] != null) requireId(obj['customProviderId'], `voices[${index}].customProviderId`);
   if (obj['systemPromptTemplateId'] != null) requireId(obj['systemPromptTemplateId'], `voices[${index}].systemPromptTemplateId`);
   if (obj['toneOverride'] != null) requireNonEmptyString(obj['toneOverride'], `voices[${index}].toneOverride`, MAX_SHORT_NAME);
+  if (obj['enabledTools'] != null) {
+    const tools = requireArray(obj['enabledTools'], `voices[${index}].enabledTools`);
+    const seen = new Set<string>();
+    tools.forEach((tool, ti) => {
+      const name = requireNonEmptyString(tool, `voices[${index}].enabledTools[${ti}]`, MAX_SHORT_NAME);
+      if (!ALLOWED_TOOL_NAMES.has(name)) {
+        throw new Error(`Invalid voices[${index}].enabledTools[${ti}]: unknown tool name "${name}"`);
+      }
+      if (seen.has(name)) {
+        throw new Error(`Invalid voices[${index}].enabledTools[${ti}]: duplicate tool name "${name}"`);
+      }
+      seen.add(name);
+    });
+  }
   return value as CompositionVoice;
 }
 

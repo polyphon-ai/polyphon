@@ -40,8 +40,8 @@ const api = {
   },
 
   session: {
-    create: (compositionId: string, name: string, workingDir?: string | null): Promise<Session> =>
-      ipcRenderer.invoke(IPC.SESSION_CREATE, compositionId, name, workingDir ?? null),
+    create: (compositionId: string, name: string, workingDir?: string | null, sandboxedToWorkingDir?: boolean): Promise<Session> =>
+      ipcRenderer.invoke(IPC.SESSION_CREATE, compositionId, name, workingDir ?? null, sandboxedToWorkingDir ?? false),
     pickWorkingDir: (): Promise<string | null> =>
       ipcRenderer.invoke(IPC.SESSION_PICK_WORKING_DIR),
     validateWorkingDir: (path: string): Promise<boolean> =>

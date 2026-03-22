@@ -96,6 +96,10 @@ export class VoiceManager {
       }
     }
 
+    // Tools are only supported by API voices; CLI voices are explicitly excluded.
+    const isCli = Boolean(compositionVoice.cliCommand);
+    const enabledTools = isCli ? undefined : (compositionVoice.enabledTools ?? []);
+
     const config: VoiceConfig = {
       id: compositionVoice.id,
       displayName: compositionVoice.displayName,
@@ -106,6 +110,7 @@ export class VoiceManager {
       model: compositionVoice.model,
       cliCommand: compositionVoice.cliCommand,
       cliArgs,
+      enabledTools,
     };
 
     if (process.env.POLYPHON_MOCK_VOICES === '1') {
@@ -151,7 +156,7 @@ export class VoiceManager {
   }
 
   // Builds the injected system prompt that makes a voice aware of the full ensemble
-  buildEnsembleSystemPrompt(voice: Voice, ensemble: Voice[], mode: 'conductor' | 'broadcast', profile?: UserProfile, workingDir?: string | null): string {
+  buildEnsembleSystemPrompt(voice: Voice, ensemble: Voice[], mode: 'conductor' | 'broadcast', profile?: UserProfile, workingDir?: string | null, sandboxed?: boolean): string {
     this.ensureLoaded();
     const others = ensemble.filter((v) => v.id !== voice.id);
     const roster = others
@@ -197,6 +202,9 @@ export class VoiceManager {
 
     if (workingDir) {
       parts.push(`Working directory: ${workingDir}`);
+      if (sandboxed) {
+        parts.push('File system access is sandboxed to this directory. All file read/write/list operations are restricted to paths within this directory. Attempts to access paths outside it will be rejected.');
+      }
       parts.push('');
     }
 
@@ -218,14 +226,17 @@ export class VoiceManager {
     return parts.join('\n');
   }
 
-  initSession(sessionId: string, voices: Voice[], mode: 'conductor' | 'broadcast', profile?: UserProfile, workingDir?: string | null): void {
+  initSession(sessionId: string, voices: Voice[], mode: 'conductor' | 'broadcast', profile?: UserProfile, workingDir?: string | null, sandboxed?: boolean): void {
     this.sessions.set(sessionId, new Map(voices.map((v) => [v.id, v])));
     for (const voice of voices) {
       if (voice.type === 'cli' && 'setWorkingDir' in voice) {
         (voice as unknown as { setWorkingDir: (d: string | null) => void }).setWorkingDir(workingDir ?? null);
       }
+      if (sandboxed && workingDir && 'applySandbox' in voice) {
+        (voice as unknown as { applySandbox: (dir: string) => void }).applySandbox(workingDir);
+      }
       voice.setEnsembleSystemPrompt(
-        this.buildEnsembleSystemPrompt(voice, voices, mode, profile, workingDir)
+        this.buildEnsembleSystemPrompt(voice, voices, mode, profile, workingDir, sandboxed)
       );
     }
     logger.info('Session voices initialized', {

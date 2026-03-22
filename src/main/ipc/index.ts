@@ -54,12 +54,13 @@ export function registerIpcHandlers(
 ): void {
   // --- Session handlers ---
 
-  ipcMain.handle(IPC.SESSION_CREATE, async (_event, compositionId: unknown, name: unknown, workingDir: unknown) => {
+  ipcMain.handle(IPC.SESSION_CREATE, async (_event, compositionId: unknown, name: unknown, workingDir: unknown, sandboxedToWorkingDir: unknown) => {
     const validCompositionId = requireId(compositionId, 'compositionId');
     const validName = requireString(name, 'name', MAX_NAME);
     const validWorkingDir = (typeof workingDir === 'string' && workingDir.trim().length > 0)
       ? workingDir.trim()
       : null;
+    const validSandboxed = validWorkingDir !== null && sandboxedToWorkingDir === true;
     const composition = getComposition(db, validCompositionId);
     if (!composition) throw new Error(`Composition not found: ${validCompositionId}`);
 
@@ -76,12 +77,13 @@ export function registerIpcHandlers(
       updatedAt: now,
       archived: false,
       workingDir: validWorkingDir,
+      sandboxedToWorkingDir: validSandboxed,
     };
 
     const profile = getUserProfile(db);
-    voiceManager.initSession(session.id, voices, session.mode, profile, validWorkingDir);
+    voiceManager.initSession(session.id, voices, session.mode, profile, validWorkingDir, validSandboxed);
     insertSession(db, session);
-    logger.debug('session:create', { sessionId: session.id, compositionId: validCompositionId, mode: session.mode, voiceCount: voices.length, hasWorkingDir: validWorkingDir !== null });
+    logger.debug('session:create', { sessionId: session.id, compositionId: validCompositionId, mode: session.mode, voiceCount: voices.length, hasWorkingDir: validWorkingDir !== null, sandboxed: validSandboxed });
     return session;
   });
 
