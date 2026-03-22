@@ -48,7 +48,7 @@ Pre-built installers for **macOS (Apple Silicon)** are available on the [Release
 git clone https://github.com/polyphon-ai/polyphon.git
 cd polyphon
 make install
-make dev
+make run
 ```
 
 ---
@@ -70,7 +70,7 @@ make test-unit         # Vitest unit tests only
 make test-integration  # Vitest integration tests only
 make test-e2e          # Playwright e2e with mocked voices (CI-safe, no credentials needed)
 make test-e2e-live     # e2e against real providers (opt-in, never CI)
-make test-openai-compatible # e2e against real openai compatible providers (ollama)
+make test-openai-compatible-live # e2e against real openai compatible providers (ollama)
 make test-watch        # Vitest in watch mode
 ```
 
@@ -85,7 +85,7 @@ make lint           # TypeScript type-check (no emit)
 Chrome DevTools are closed by default in `make run`. To open them at launch:
 
 ```sh
-POLYPHON_DEVTOOLS=1 make dev
+POLYPHON_DEVTOOLS=1 make run
 ```
 
 ---

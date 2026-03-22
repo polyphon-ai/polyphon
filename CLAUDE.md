@@ -86,10 +86,24 @@ There are three distinct kinds of voice providers:
 All types conform to the same internal `Voice` interface so the rest of the application
 treats them identically.
 
-**Tool use:** Filesystem tools (`read_file`, `write_file`, `list_directory`) are supported
-only by **API voices** (Anthropic, OpenAI, OpenAI-compatible). CLI voices use a subprocess
-protocol incompatible with the tool-use request/response loop and never receive tools.
-`VoiceManager.createVoice()` explicitly sets `enabledTools = undefined` for CLI voices.
+**Tool use:** Tools are supported only by **API voices** (Anthropic, OpenAI, OpenAI-compatible). CLI voices use a subprocess protocol incompatible with the tool-use request/response loop and never receive tools. `VoiceManager.createVoice()` explicitly sets `enabledTools = undefined` for CLI voices.
+
+Available tools (defined in `AVAILABLE_TOOLS` in `src/shared/constants.ts`):
+
+| Tool | Writable | Description |
+|---|---|---|
+| `read_file` | no | Read file contents as text (up to 50 KB) |
+| `write_file` | yes | Write or overwrite a file |
+| `list_directory` | no | List directory contents recursively (depth 3, max 500 entries) |
+| `run_command` | yes | Run an executable and return its output |
+| `search_files` | no | Search for files by name pattern within a directory tree |
+| `grep_files` | no | Search for a text pattern across files in a directory |
+| `move_file` | yes | Move or rename a file |
+| `copy_file` | yes | Copy a file to a new location |
+| `delete_file` | yes | Permanently delete a file |
+| `fetch_url` | no | Fetch the content of an HTTP/HTTPS URL as text |
+
+When a session has a `working_dir` set, `resolveTools()` passes it to `sandboxTools()` which constrains all path-based tools to that directory.
 
 ---
 
@@ -112,7 +126,7 @@ const db = new DatabaseSync(dbPath)
 db.exec('PRAGMA journal_mode = WAL')
 ```
 
-### Schema (SCHEMA_VERSION = 9)
+### Schema (SCHEMA_VERSION = 10)
 
 Tables: `schema_version`, `compositions`, `composition_voices`, `sessions`, `messages`,
 `provider_configs`, `custom_providers`, `tones`, `system_prompt_templates`, `user_profile`
@@ -120,10 +134,13 @@ Tables: `schema_version`, `compositions`, `composition_voices`, `sessions`, `mes
 Key constraints:
 - `messages.role` CHECK: `('conductor', 'voice', 'system')`
 - `compositions.mode` and `sessions.mode` CHECK: `('conductor', 'broadcast')`
+- `compositions.continuation_policy` and `sessions.continuation_policy` CHECK: `('none', 'prompt', 'auto')`; both also have `continuation_max_rounds INTEGER NOT NULL DEFAULT 1`
 - `user_profile` is a single-row table enforced with `CHECK(id = 1)`
 - `compositions` and `sessions` both have an `archived INTEGER NOT NULL DEFAULT 0` column
+- `sessions` has `working_dir TEXT` (nullable, encrypted) and `sandboxed_to_working_dir INTEGER NOT NULL DEFAULT 0` for filesystem sandboxing
 - `composition_voices` has a nullable `custom_provider_id TEXT` column (UUID into `custom_providers`) used when `provider = 'openai-compat'`
 - `composition_voices` has a nullable `system_prompt_template_id TEXT` column (UUID into `system_prompt_templates`)
+- `composition_voices` has a nullable `tone_override TEXT` column (NULL means use conductor `default_tone`)
 - `composition_voices` has `enabled_tools TEXT NOT NULL DEFAULT '[]'` — JSON-serialized `string[]` of tool names (e.g. `["read_file","write_file"]`). Not encrypted.
 - `custom_providers.slug` has a UNIQUE constraint; `deleted INTEGER NOT NULL DEFAULT 0` enables soft-delete
 - `tones.name` has a UNIQUE constraint; `is_builtin = 1` rows (seeded at startup) cannot be deleted or updated
@@ -243,14 +260,17 @@ suffixed with `:${sessionId}` at runtime to scope them to a single session.
 
 | Domain | Channels |
 |---|---|
-| Sessions | `session:create`, `session:list`, `session:get`, `session:delete`, `session:archive`, `session:messages:list`, `session:continuation-prompt`, `session:no-target:${sessionId}` |
-| Voices | `voice:send`, `voice:abort`, `voice:available`, `voice:token:${sessionId}`, `voice:done:${sessionId}`, `voice:error:${sessionId}` |
+| Sessions | `session:create`, `session:list`, `session:get`, `session:delete`, `session:rename`, `session:archive`, `session:messages:list`, `session:continuation-prompt`, `session:no-target:${sessionId}`, `session:pickWorkingDir`, `session:validateWorkingDir`, `session:export` |
+| Voices | `voice:send`, `voice:abort`, `voice:available`, `voice:pending:${sessionId}`, `voice:token:${sessionId}`, `voice:done:${sessionId}`, `voice:error:${sessionId}` |
 | Compositions | `composition:create`, `composition:list`, `composition:get`, `composition:update`, `composition:delete`, `composition:archive` |
-| Settings | `settings:getProviderStatus`, `settings:testCliVoice`, `settings:saveProviderConfig`, `settings:getProviderConfig`, `settings:fetchModels`, `settings:getUserProfile`, `settings:saveUserProfile` |
+| Settings | `settings:getProviderStatus`, `settings:testCliVoice`, `settings:saveProviderConfig`, `settings:getProviderConfig`, `settings:fetchModels`, `settings:getUserProfile`, `settings:saveUserProfile`, `settings:uploadConductorAvatar`, `settings:pickAvatarFile`, `settings:probeModel`, `settings:getDebugInfo` |
 | Custom Providers | `settings:customProvider:list`, `settings:customProvider:create`, `settings:customProvider:update`, `settings:customProvider:delete`, `settings:customProvider:fetchModels` |
 | Tones | `settings:tone:list`, `settings:tone:create`, `settings:tone:update`, `settings:tone:delete` |
 | System Prompt Templates | `settings:systemPromptTemplate:list`, `settings:systemPromptTemplate:create`, `settings:systemPromptTemplate:update`, `settings:systemPromptTemplate:delete` |
-| Updates | `update:available` (main→renderer push), `update:get-state` (renderer invoke), `update:dismiss` (renderer invoke) |
+| Updates | `update:available`, `update:get-state`, `update:dismiss`, `update:check-now`, `update:download`, `update:download-progress`, `update:error`, `update:ready-to-install`, `update:install`, `update:get-channel`, `update:set-channel` |
+| Encryption | `settings:encryption:getStatus`, `settings:encryption:setPassword`, `settings:encryption:changePassword`, `settings:encryption:removePassword`, `settings:encryption:unlock-attempt`, `settings:encryption:key-regenerated-warning` |
+| Logs | `logs:getRecent`, `logs:getDebugEnabled`, `logs:setDebugEnabled`, `logs:export`, `logs:getPaths` |
+| Shell | `shell:openExternal` |
 
 All IPC handlers validate their arguments using `src/main/ipc/validate.ts` before touching the DB or voice system. New handlers must apply validation — see the file for available helpers. `CONTINUATION_MAX_ROUNDS_LIMIT` in `shared/constants.ts` is the authoritative cap for `continuationMaxRounds` validation.
 
@@ -276,7 +296,11 @@ The `user_profile` table stores a single row with:
 - `conductor_name` — how voices address the user
 - `pronouns` — preferred pronouns injected into the ensemble system prompt
 - `conductor_context` — free-form background injected into the ensemble system prompt
+- `conductor_color` — color hex used for the conductor avatar in the UI
+- `conductor_avatar` — avatar image (encrypted)
 - `default_tone` — tone ID (built-in preset key or custom UUID); resolved via `VoiceManager.tonesById`
+- `prefer_markdown` — boolean; whether the conductor prefers markdown-formatted responses
+- `update_channel` — `'stable'` or `'preview'`; controls which release channel is checked for updates
 - `dismissed_update_version` — release version string the user permanently dismissed (empty = none)
 - `update_remind_after` — Unix ms timestamp; update banner is suppressed until this time (0 = show immediately)
 
@@ -404,12 +428,15 @@ logic gets a test when it is written.
 ### Makefile targets
 
 ```
-make test              # unit + integration + e2e
-make test-unit         # Vitest unit tests only
-make test-integration  # Vitest integration tests only
-make test-e2e          # Playwright e2e with mocked voices
-make test-e2e-live     # e2e against real providers (opt-in, never CI)
-make test-watch        # Vitest in watch mode
+make run                        # start in development mode (hot reload)
+make test                       # lint + unit + integration + e2e
+make test-unit                  # Vitest unit tests only
+make test-integration           # Vitest integration tests only
+make test-e2e                   # Playwright e2e with mocked voices
+make test-e2e-live              # e2e against real providers (opt-in, never CI)
+make test-openai-compatible-live # e2e against Ollama in Docker (opt-in, never CI)
+make test-watch                 # Vitest in watch mode
+make lint                       # TypeScript type-check (no emit)
 ```
 
 ---
@@ -431,6 +458,7 @@ ENCRYPTED_FIELDS = {
   system_prompt_templates: ['content'],
   composition_voices:      ['system_prompt', 'cli_args', 'cli_command'],
   tones:                   ['description'],
+  sessions:                ['working_dir'],
 }
 ```
 
