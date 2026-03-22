@@ -35,6 +35,8 @@ export interface VoiceConfig {
   // OpenAI-compatible custom providers
   baseUrl?: string;
   apiKeyEnvVar?: string | null;
+  // Filesystem tools (API voices only; CLI voices ignore this)
+  enabledTools?: string[];
 }
 
 // A provider registration — one per provider file in providers/
