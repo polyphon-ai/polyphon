@@ -67,6 +67,7 @@ Click **Add Voice** to add a voice to the composition. For each voice, configure
 | **System prompt template** | An optional saved template to attach (see [System Prompt Templates](../system-prompt-templates/)) |
 | **System prompt** | Optional inline instructions that shape this voice's behavior |
 | **Tone** | Per-voice tone override — or "Use conductor default" to inherit from your profile |
+| **Tools** | For API voices: an optional set of host-brokered tools the voice can invoke — file reads, writes, directory listing, command execution, and URL fetching. Not shown for CLI voices. See [Filesystem Tools](../tools/) for the full list. |
 
 ![Voice configuration panel fully configured with provider, model, display name, avatar icon, color, and tone](/images/screenshots/compositions/builder-voice-config-full.webp)
 <!-- Prerequisites: voice added to composition, all fields filled | Platform: any | Theme: any | Window: default -->
@@ -109,6 +110,20 @@ See [System Prompt Templates](../system-prompt-templates/) for how to create and
 Custom providers configured in **Settings → Custom Providers** appear in the provider grid alongside built-in providers. Select one to open the voice configuration form. The model list is populated from that provider's endpoint.
 
 See [Custom Providers](../custom-providers/) for setup instructions.
+
+---
+
+## Enabling Tools on a Voice
+
+API voices can be granted access to host-brokered filesystem tools — file reads, writes, directory listing, command execution, and URL fetching. The voice decides when to use them; Polyphon executes the operation on your machine and returns the result.
+
+In the voice configuration panel, the **Tools** section appears below the system prompt for API voices. Enable only the tools the voice needs for the task.
+
+Write-capable tools (Write File, Move / Rename File, Copy File, Delete File, Run Command) show an amber warning when selected — they can modify or delete files on your machine.
+
+CLI voices do not have a Tools section. They run as autonomous subprocess agents with their own file access.
+
+See [Filesystem Tools](../tools/) for descriptions of every tool, sandboxing, and security considerations.
 
 ---
 

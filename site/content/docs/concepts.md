@@ -90,9 +90,9 @@ You can direct your message to a **specific voice**. The other voices see the ex
 
 Polyphon supports two categories of voice providers:
 
-**API voices** connect to a cloud model using an API key you provide. The request goes over the network to Anthropic, OpenAI, or Google's servers.
+**API voices** connect to a cloud model using an API key you provide. The request goes over the network to Anthropic, OpenAI, or Google's servers. API voices can be granted access to [filesystem tools](../tools/) — host-brokered operations like reading files, listing directories, running commands, and fetching URLs. These are enabled per-voice in the Composition Builder and optionally sandboxed to the session working directory.
 
-**CLI voices** spawn a local subprocess — a command-line tool already installed on your machine (like the `claude` or `codex` CLI). No additional API key is needed beyond what the CLI tool itself uses. Everything runs locally.
+**CLI voices** spawn a local subprocess — a command-line tool already installed on your machine (like the `claude` or `codex` CLI). No additional API key is needed beyond what the CLI tool itself uses. Everything runs locally. CLI voices run as autonomous agents and manage their own file access — Polyphon's filesystem tools do not apply to them.
 
 Both types are treated identically inside a session. You can mix them freely in a composition.
 

@@ -29,6 +29,18 @@ When creating a session you can optionally choose a working directory from your 
 
 The working directory is shown in the session header next to the mode badge. It is stored encrypted and never leaves your machine.
 
+### Sandboxing API Voices
+
+When a working directory is set, a **Sandbox API voices to this directory** checkbox appears in the new session panel.
+
+When enabled, all file path arguments from API voice tool calls are resolved relative to the working directory. Any path that would escape outside the directory (e.g. via `../`) is blocked. This limits API voice file access to the project you are working on.
+
+The session header shows a green **Sandboxed** badge when sandboxing is active.
+
+CLI voices are not affected — they run as autonomous subprocess agents and manage their own file access. If your composition includes CLI voices and you enable sandboxing, an amber warning explains this.
+
+See [Filesystem Tools](../tools/) for details on the tools that can be sandboxed and how sandboxing works.
+
 ---
 
 ## The Session View

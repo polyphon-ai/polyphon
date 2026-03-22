@@ -6,6 +6,10 @@ description: "Configure API keys for Anthropic, OpenAI, and Google Gemini, or se
 
 Polyphon supports two categories of voice providers: **API voices** that communicate with a remote model using an API key, and **CLI voices** that spawn a local command-line tool as a subprocess.
 
+**API voices** (Anthropic, OpenAI, Gemini, and custom OpenAI-compatible providers) can be granted access to [filesystem tools](../tools/) — host-brokered file operations, command execution, and URL fetching that Polyphon executes on the model's behalf.
+
+**CLI voices** run as autonomous subprocess agents with their own file access. Polyphon's filesystem tools do not apply to them.
+
 ---
 
 ## API Providers

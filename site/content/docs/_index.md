@@ -15,6 +15,7 @@ Welcome to the Polyphon documentation. Use the navigation to explore each topic,
 - [System Prompt Templates](./system-prompt-templates/) — save and reuse system prompts across voices and compositions
 - [Voice Providers](./providers/) — configure API keys and CLI tools for all built-in providers
 - [Compositions](./compositions/) — save and reuse multi-voice configurations, including continuation policy (None, Prompt me, Auto)
+- [Filesystem Tools](./tools/) — grant API voices access to file operations, command execution, and URL fetching, with optional sandboxing to the session working directory
 - [Sessions](./sessions/) — start conversations, send messages in broadcast or conductor-directed mode, and manage continuation rounds
 - [Custom Providers](./custom-providers/) — configure custom OpenAI-compatible endpoints (Ollama, LM Studio, vLLM)
 - [Logging](./logging/) — view app logs, enable debug logging, copy log paths, and export the debug log
