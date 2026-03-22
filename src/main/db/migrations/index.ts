@@ -9,6 +9,8 @@ import { up as migration005 } from './005_add_yolo_mode';
 import { up as migration006 } from './006_add_update_channel';
 import { up as migration007 } from './007_add_session_working_dir';
 import { up as migration008 } from './008_add_prefer_markdown';
+import { up as migration009 } from './009_add_enabled_tools';
+import { up as migration010 } from './010_add_session_sandbox';
 
 const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
   [
@@ -126,4 +128,6 @@ export function runMigrations(db: DatabaseSync): void {
   apply(6, migration006);
   apply(7, migration007);
   apply(8, migration008);
+  apply(9, migration009);
+  apply(10, migration010);
 }

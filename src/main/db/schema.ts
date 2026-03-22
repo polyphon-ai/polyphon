@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 10;
 
 export const CREATE_TABLES_SQL = `
   CREATE TABLE IF NOT EXISTS schema_version (
@@ -30,7 +30,8 @@ export const CREATE_TABLES_SQL = `
     avatar_icon TEXT NOT NULL,
     custom_provider_id TEXT,  -- NULL for built-in providers; UUID for 'openai-compat' voices
     tone_override TEXT,       -- NULL means use conductor default_tone
-    system_prompt_template_id TEXT  -- NULL means use inline system_prompt
+    system_prompt_template_id TEXT,  -- NULL means use inline system_prompt
+    enabled_tools TEXT NOT NULL DEFAULT '[]'  -- JSON-serialized string[] of tool names
   );
 
   CREATE TABLE IF NOT EXISTS sessions (
@@ -43,7 +44,8 @@ export const CREATE_TABLES_SQL = `
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     archived INTEGER NOT NULL DEFAULT 0,
-    working_dir TEXT
+    working_dir TEXT,
+    sandboxed_to_working_dir INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS messages (

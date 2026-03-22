@@ -28,6 +28,7 @@ interface CompositionVoiceRow {
   custom_provider_id: string | null;
   tone_override: string | null;
   system_prompt_template_id: string | null;
+  enabled_tools: string;
 }
 
 function rowToCompositionVoice(row: CompositionVoiceRow): CompositionVoice {
@@ -49,6 +50,7 @@ function rowToCompositionVoice(row: CompositionVoiceRow): CompositionVoice {
     color: row.color,
     avatarIcon: row.avatar_icon,
     customProviderId: row.custom_provider_id ?? undefined,
+    enabledTools: JSON.parse(row.enabled_tools ?? '[]') as string[],
   };
 }
 
@@ -105,8 +107,8 @@ export function insertComposition(db: DatabaseSync, composition: Composition): v
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
   const insertVoice = db.prepare(`
-    INSERT INTO composition_voices (id, composition_id, provider, model, cli_command, cli_args, display_name, system_prompt, sort_order, color, avatar_icon, custom_provider_id, tone_override, system_prompt_template_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO composition_voices (id, composition_id, provider, model, cli_command, cli_args, display_name, system_prompt, sort_order, color, avatar_icon, custom_provider_id, tone_override, system_prompt_template_id, enabled_tools)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   db.exec('BEGIN');
@@ -136,6 +138,7 @@ export function insertComposition(db: DatabaseSync, composition: Composition): v
         voice.customProviderId ?? null,
         voice.toneOverride ?? null,
         voice.systemPromptTemplateId ?? null,
+        JSON.stringify(voice.enabledTools ?? []),
       );
     }
     db.exec('COMMIT');
@@ -197,8 +200,8 @@ export function upsertCompositionVoices(db: DatabaseSync, voices: CompositionVoi
   const compositionId = voices[0]!.compositionId;
   const deleteVoices = db.prepare('DELETE FROM composition_voices WHERE composition_id = ?');
   const insertVoice = db.prepare(`
-    INSERT INTO composition_voices (id, composition_id, provider, model, cli_command, cli_args, display_name, system_prompt, sort_order, color, avatar_icon, custom_provider_id, tone_override, system_prompt_template_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO composition_voices (id, composition_id, provider, model, cli_command, cli_args, display_name, system_prompt, sort_order, color, avatar_icon, custom_provider_id, tone_override, system_prompt_template_id, enabled_tools)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   db.exec('BEGIN');
@@ -220,6 +223,7 @@ export function upsertCompositionVoices(db: DatabaseSync, voices: CompositionVoi
         voice.customProviderId ?? null,
         voice.toneOverride ?? null,
         voice.systemPromptTemplateId ?? null,
+        JSON.stringify(voice.enabledTools ?? []),
       );
     }
     db.exec('COMMIT');

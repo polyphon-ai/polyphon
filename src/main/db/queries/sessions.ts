@@ -13,6 +13,7 @@ interface SessionRow {
   updated_at: number;
   archived: number;
   working_dir: EncryptedField | null;
+  sandboxed_to_working_dir: number;
 }
 
 function rowToSession(row: SessionRow): Session {
@@ -27,6 +28,7 @@ function rowToSession(row: SessionRow): Session {
     updatedAt: row.updated_at,
     archived: row.archived === 1,
     workingDir: row.working_dir ? decryptField(row.working_dir) : null,
+    sandboxedToWorkingDir: row.sandboxed_to_working_dir === 1,
   };
 }
 
@@ -46,8 +48,8 @@ export function getSession(db: DatabaseSync, id: string): Session | null {
 
 export function insertSession(db: DatabaseSync, session: Session): void {
   db.prepare(`
-    INSERT INTO sessions (id, composition_id, name, mode, continuation_policy, continuation_max_rounds, created_at, updated_at, working_dir)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO sessions (id, composition_id, name, mode, continuation_policy, continuation_max_rounds, created_at, updated_at, working_dir, sandboxed_to_working_dir)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     session.id,
     session.compositionId,
@@ -58,6 +60,7 @@ export function insertSession(db: DatabaseSync, session: Session): void {
     session.createdAt,
     session.updatedAt,
     session.workingDir ? encryptField(session.workingDir) : null,
+    session.sandboxedToWorkingDir ? 1 : 0,
   );
 }
 
