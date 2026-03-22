@@ -69,7 +69,7 @@ builds are unaffected. See `forge.config.ts` and `.github/workflows/release.yml`
 | Icons | `lucide-react` — all generic UI icons; `ProviderLogo.tsx` is the exception for provider branding |
 | Typography | `geist` npm package (Geist Sans variable font, loaded locally) |
 | State management | Zustand 5 |
-| Database | Node built-in `node:sqlite` (`DatabaseSync`) |
+| Database | `better-sqlite3` v12 + SQLCipher 4.14.0 amalgamation |
 | Build | Electron Forge + Vite 7 |
 | Testing | Vitest 4 (unit/integration) + Playwright (e2e) |
 
@@ -109,24 +109,52 @@ When a session has a `working_dir` set, `resolveTools()` passes it to `sandboxTo
 
 ## Database
 
-Polyphon uses SQLite via the **Node.js built-in `node:sqlite` module** (`DatabaseSync`) for
-all local persistence. There is no ORM or query builder — queries are written as raw
-parameterized SQL using `db.prepare()`.
+Polyphon uses **SQLCipher** (SQLite with whole-database AES-256 encryption) via
+`better-sqlite3` v12 for all local persistence. The SQLCipher 4.14.0 amalgamation is
+built from source and linked into `better-sqlite3` via a custom build pipeline
+(`scripts/build-sqlcipher.mjs`). There is no ORM or query builder — queries are written
+as raw parameterized SQL using `db.prepare()`.
 
 SQLite lives in the **main process only**. Never import or use it from the renderer
 process. All data access from the renderer goes through IPC.
+
+### Encryption
+
+The 32-byte AES-256-GCM key from `keyManager.ts` is passed as a 64-char hex string
+to `getDb(keyHex)`. The database is opened with:
+
+```
+PRAGMA key = "x'<keyHex>'"
+PRAGMA kdf_iter = 1       -- bypass PBKDF2 (scrypt in keyManager already does KDF)
+SELECT count(*) FROM sqlite_master  -- sanity check key is correct
+PRAGMA journal_mode = WAL
+```
+
+`kdf_iter = 1` is intentional: scrypt (in `keyManager.ts`) already provides the
+key-derivation work; PBKDF2 inside SQLCipher would be redundant.
+
+### Legacy DB Detection
+
+On first open (sentinel file `sqlcipher-migrated-v1` absent), `getDb` reads the first
+16 bytes of the existing database file. If they match the plaintext SQLite magic header
+(`SQLite format 3\x00`), the file is a legacy unencrypted database — it is deleted and
+a fresh encrypted database is created. If the 16 bytes do NOT match the plaintext magic
+(i.e., already encrypted), the function throws rather than silently deleting user data.
 
 ### Setup
 
 ```typescript
 // src/main/db/index.ts
-import { DatabaseSync } from 'node:sqlite'
+import Database from 'better-sqlite3'
 
-const db = new DatabaseSync(dbPath)
-db.exec('PRAGMA journal_mode = WAL')
+const db = new Database(dbPath)
+db.pragma(`key = "x'${keyHex}'"`)
+db.pragma('kdf_iter = 1')
+db.prepare('SELECT count(*) FROM sqlite_master').get()
+db.pragma('journal_mode = WAL')
 ```
 
-### Schema (SCHEMA_VERSION = 10)
+### Schema (SCHEMA_VERSION = 11)
 
 Tables: `schema_version`, `compositions`, `composition_voices`, `sessions`, `messages`,
 `provider_configs`, `custom_providers`, `tones`, `system_prompt_templates`, `user_profile`
@@ -137,7 +165,7 @@ Key constraints:
 - `compositions.continuation_policy` and `sessions.continuation_policy` CHECK: `('none', 'prompt', 'auto')`; both also have `continuation_max_rounds INTEGER NOT NULL DEFAULT 1`
 - `user_profile` is a single-row table enforced with `CHECK(id = 1)`
 - `compositions` and `sessions` both have an `archived INTEGER NOT NULL DEFAULT 0` column
-- `sessions` has `working_dir TEXT` (nullable, encrypted) and `sandboxed_to_working_dir INTEGER NOT NULL DEFAULT 0` for filesystem sandboxing
+- `sessions` has `working_dir TEXT` (nullable) and `sandboxed_to_working_dir INTEGER NOT NULL DEFAULT 0` for filesystem sandboxing
 - `composition_voices` has a nullable `custom_provider_id TEXT` column (UUID into `custom_providers`) used when `provider = 'openai-compat'`
 - `composition_voices` has a nullable `system_prompt_template_id TEXT` column (UUID into `system_prompt_templates`)
 - `composition_voices` has a nullable `tone_override TEXT` column (NULL means use conductor `default_tone`)
@@ -441,61 +469,32 @@ make lint                       # TypeScript type-check (no emit)
 
 ---
 
-## Encrypted Fields
+## Database Encryption
 
-Certain database columns contain user-generated content, credentials, or PII and must
-be encrypted at rest using AES-256-GCM via `src/main/db/encryption.ts`.
+All data is encrypted at the **whole-database** level via SQLCipher AES-256. There is
+no per-field encryption layer — the `EncryptedField` branded type, `encryptField()`,
+`decryptField()`, and `encryptionManifest.ts` have been removed.
 
-### Canonical manifest
+The key is a 32-byte AES-256 raw key stored in `polyphon.key.json` (mode `0o600`) in the
+Electron `userData` directory. See the Key Management section under Security for details.
 
-The authoritative list of encrypted fields lives in `src/main/db/encryptionManifest.ts`:
+### Rules for new columns
 
-```
-ENCRYPTED_FIELDS = {
-  messages:                ['content', 'metadata'],
-  user_profile:            ['conductor_name', 'pronouns', 'conductor_context', 'conductor_avatar'],
-  custom_providers:        ['base_url'],
-  system_prompt_templates: ['content'],
-  composition_voices:      ['system_prompt', 'cli_args', 'cli_command'],
-  tones:                   ['description'],
-  sessions:                ['working_dir'],
-}
-```
+- **All columns are encrypted** by virtue of SQLCipher whole-database encryption.
+- No additional per-field work is needed when adding new columns or tables.
+- `composition_voices.enabled_tools` stores only tool names (e.g. `["read_file"]`) and
+  has always been safe to store as plaintext — it remains so under SQLCipher.
+- Never send raw SQLite row values over IPC without appropriate type-checking.
 
-> **Note:** `composition_voices.enabled_tools` is intentionally **not** in the encryption manifest.
-> It stores only tool names (e.g. `["read_file","write_file"]`) — no paths, credentials, or user
-> content. The names are validated against `AVAILABLE_TOOLS` before being stored.
+### SQLCipher integration test (CI gate)
 
-### Branded type enforcement
-
-The `EncryptedField` branded type in `src/main/db/encryption.ts` makes it a **TypeScript
-compile error** to assign a plain `string` to an encrypted column or use an
-`EncryptedField` where a plain `string` is expected. All `*Row` interfaces in
-`src/main/db/queries/` use `EncryptedField` for encrypted columns. The `rowToX` /
-`xToRow` conversion functions are the only place that crosses the boundary via
-`encryptField()` / `decryptField()`.
-
-### Rules for adding or modifying fields
-
-1. **New field with user content, credentials, or PII?** Add it to `encryptionManifest.ts`
-   and use `EncryptedField` in the corresponding `*Row` interface. The TypeScript compiler
-   will flag any missing `encryptField()` / `decryptField()` calls.
-2. **New table?** Review every column against the criteria above before writing the query
-   file. If any column qualifies, add the table to the manifest before the first commit.
-3. **Never bypass the query layer** for encrypted tables — raw `db.prepare()` calls
-   outside of `src/main/db/queries/` must not write to encrypted columns.
-4. **Never send an `EncryptedField` value over IPC** — always decrypt before the value
-   leaves the query layer.
-
-### Manifest test (CI gate)
-
-`src/main/db/encryption.manifest.test.ts` is an integration test that inserts known
-sentinel values through the query layer and then reads raw rows directly from SQLite to
-assert the stored value is **not** the plaintext. This test fails automatically if any
-manifest field is written without encryption. It must pass in CI.
-
-When you add a new encrypted field, add a corresponding assertion to this test in the
-same commit.
+`src/main/db/sqlcipher.integration.test.ts` verifies:
+- Encrypted DB header is NOT the plaintext SQLite magic
+- Correct key unlocks the database
+- Wrong key is rejected
+- `kdf_iter=1` works correctly
+- `runMigrations` succeeds on an encrypted database
+- Data round-trips correctly through the encrypted database
 
 ---
 

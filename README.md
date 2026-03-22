@@ -133,7 +133,7 @@ The pipeline runs automatically:
 | Shell         | Electron 41                          |
 | UI | React 19 + TypeScript + Tailwind CSS v4 |
 | State | Zustand 5 |
-| Database | Node.js built-in `node:sqlite` (`DatabaseSync`) |
+| Database | `better-sqlite3` v12 + SQLCipher 4.14.0 (AES-256 whole-database encryption) |
 | Build | Electron Forge + Vite 7 |
 | Testing | Vitest 4 + Playwright |
 
