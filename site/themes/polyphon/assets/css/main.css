@@ -1067,6 +1067,10 @@ a:hover {
     gap: 2.5rem;
   }
 
+  .security-statement {
+    order: -1;
+  }
+
 }
 
 @media (max-width: 640px) {
