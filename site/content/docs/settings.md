@@ -96,23 +96,9 @@ The **Encryption** tab lets you manage how Polyphon protects sensitive data stor
 
 ### How it works
 
-Polyphon uses AES-256-GCM field-level encryption. When you first launch the app, a 256-bit database key is generated and stored in `polyphon.key.json` in the app data directory. By default the key is stored directly in that file, protected only by filesystem permissions. You can optionally set a password to wrap the key with an additional layer of encryption.
+Polyphon uses **SQLCipher** — SQLite with AES-256 whole-database encryption. When you first launch the app, a 256-bit key is generated and stored in `polyphon.key.json` in the app data directory. The key is used to open the database; every page on disk is encrypted, including indexes and metadata. By default the key is stored directly in that file, protected only by filesystem permissions. You can optionally set a password to wrap the key with an additional layer of encryption.
 
-This all happens automatically with no user action required.
-
-### What is and isn't encrypted
-
-| | |
-|---|---|
-| ✅ Message content | ❌ Session and composition names |
-| ✅ Your profile (name, pronouns, context, avatar) | ❌ Voice display names |
-| ✅ Voice system prompts | ❌ Custom provider names |
-| ✅ Custom provider URLs | ❌ Template and tone names |
-| ✅ CLI voice commands and arguments | ❌ Timestamps and counts |
-| ✅ Tone descriptions | |
-| ✅ System prompt template content | |
-
-Names and labels are left unencrypted so they can be queried directly in the database — for example, to list and search your sessions and compositions. They contain no message content or credentials.
+This all happens automatically with no user action required. Every row in every table — messages, sessions, compositions, profiles, API keys, and settings — is encrypted.
 
 ### Setting a password
 

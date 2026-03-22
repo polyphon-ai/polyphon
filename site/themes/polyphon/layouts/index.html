@@ -362,6 +362,10 @@
           {{ partial "icon.html" (dict "name" "lock" "size" 16) }}
           <span>Sandboxed tools</span>
         </li>
+        <li class="principles-item">
+          {{ partial "icon.html" (dict "name" "shield" "size" 16) }}
+          <span>Encrypted at rest</span>
+        </li>
       </ul>
     </div>
   </div>
@@ -383,7 +387,7 @@
             <span class="security-item-icon" aria-hidden="true">{{ partial "icon.html" (dict "name" "hard-drive" "size" 16) }}</span>
             <span class="security-item-body">
               <strong>Encrypted at rest</strong>
-              <span>AES-256-GCM — messages, credentials, and profile data. Plaintext never writes to disk.</span>
+              <span>AES-256 whole-database encryption via SQLCipher. Every byte on disk is ciphertext — not just selected fields.</span>
             </span>
             <span class="security-verified" aria-label="Verified">VERIFIED</span>
           </li>
@@ -416,10 +420,10 @@
           </li>
 
           <li class="security-manifest-item">
-            <span class="security-item-icon" aria-hidden="true">{{ partial "icon.html" (dict "name" "terminal" "size" 16) }}</span>
+            <span class="security-item-icon" aria-hidden="true">{{ partial "icon.html" (dict "name" "file-x" "size" 16) }}</span>
             <span class="security-item-body">
-              <strong>Type-safe encryption</strong>
-              <span>A branded <code>EncryptedField</code> type makes storing sensitive data as plaintext a compile error.</span>
+              <strong>Sanitized log output</strong>
+              <span>All diagnostic output is sanitized before writing to disk. API keys and sensitive values are replaced with <code>[REDACTED]</code>.</span>
             </span>
             <span class="security-verified" aria-label="Verified">VERIFIED</span>
           </li>

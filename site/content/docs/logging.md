@@ -91,8 +91,7 @@ POLYPHON_DEBUG=1 open -a Polyphon
 
 All output written to the log file is sanitized before being written to disk:
 
-- Encrypted database field values are replaced with `[ENCRYPTED]`
 - API keys and bearer tokens matching known patterns are replaced with `[REDACTED]`
-- Fields from the encryption manifest (message content, your profile data, system prompts, CLI commands, custom provider URLs) are replaced with `[REDACTED]` when they appear as named object keys
+- Sensitive object fields (message content, profile data, system prompts, CLI commands, custom provider URLs) are replaced with `[REDACTED]` when they appear as named keys in logged objects
 
 Stack traces are only included in log output when debug logging is active.
