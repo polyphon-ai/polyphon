@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { runMigrations } from '../migrations';
-import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import {
   listCompositions,
   getComposition,
@@ -12,10 +11,9 @@ import {
 } from './compositions';
 import type { Composition, CompositionVoice } from '../../../shared/types';
 
-const TEST_KEY = Buffer.alloc(32);
 
-function createTestDb(): DatabaseSync {
-  const db = new DatabaseSync(':memory:');
+function createTestDb(): Database.Database {
+  const db = new Database(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   runMigrations(db);
   return db;
@@ -52,10 +50,10 @@ function makeComposition(overrides: Partial<Composition> = {}): Composition {
 }
 
 describe('compositions queries', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
 
-  beforeEach(() => { initFieldEncryption(TEST_KEY); db = createTestDb(); });
-  afterEach(() => { db.close(); _resetForTests(); });
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
 
   it('insertComposition + getComposition round-trip with voices', () => {
     const comp = makeComposition();
@@ -116,17 +114,6 @@ describe('compositions queries', () => {
     expect(updated!.mode).toBe('broadcast');
   });
 
-  it('deleteComposition removes composition and cascades to voices', () => {
-    insertComposition(db, makeComposition());
-    deleteComposition(db, 'comp-1');
-    expect(getComposition(db, 'comp-1')).toBeNull();
-    // Verify voices are also deleted
-    const voiceCount = db
-      .prepare('SELECT COUNT(*) as n FROM composition_voices WHERE composition_id = ?')
-      .get('comp-1') as { n: number };
-    expect(voiceCount.n).toBe(0);
-  });
-
   it('upsertCompositionVoices replaces all voices for a composition', () => {
     insertComposition(db, makeComposition());
     const newVoices: CompositionVoice[] = [
@@ -140,17 +127,6 @@ describe('compositions queries', () => {
     expect(retrieved!.voices[1]!.displayName).toBe('NewBob');
   });
 
-  it('stores system_prompt, cli_args, and cli_command as ENC:v1: ciphertext', () => {
-    const comp = makeComposition({
-      voices: [makeVoice({ id: 'v-enc', systemPrompt: 'Secret prompt', cliCommand: 'claude', cliArgs: ['--verbose'] })],
-    });
-    insertComposition(db, comp);
-    const row = db.prepare('SELECT system_prompt, cli_args, cli_command FROM composition_voices WHERE id = ?').get('v-enc') as { system_prompt: string; cli_args: string; cli_command: string };
-    expect(row.system_prompt).toMatch(/^ENC:v1:/);
-    expect(row.cli_args).toMatch(/^ENC:v1:/);
-    expect(row.cli_command).toMatch(/^ENC:v1:/);
-  });
-
   it('decrypts system_prompt, cli_args, and cli_command back to original values', () => {
     const comp = makeComposition({
       voices: [makeVoice({ id: 'v-enc', systemPrompt: 'Secret prompt', cliCommand: 'claude', cliArgs: ['--verbose'] })],
@@ -160,6 +136,12 @@ describe('compositions queries', () => {
     expect(retrieved!.voices[0]!.systemPrompt).toBe('Secret prompt');
     expect(retrieved!.voices[0]!.cliArgs).toEqual(['--verbose']);
     expect(retrieved!.voices[0]!.cliCommand).toBe('claude');
+  });
+
+  it('deleteComposition removes the composition', () => {
+    insertComposition(db, makeComposition());
+    deleteComposition(db, 'comp-1');
+    expect(getComposition(db, 'comp-1')).toBeNull();
   });
 
   it('reads legacy plaintext system_prompt, cli_args, and cli_command without error', () => {

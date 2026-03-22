@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { runMigrations } from '../migrations';
-import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import {
   listCustomProviders,
   getCustomProvider,
@@ -10,20 +9,19 @@ import {
   softDeleteCustomProvider,
 } from './customProviders';
 
-const TEST_KEY = Buffer.alloc(32);
 
-function createTestDb(): DatabaseSync {
-  const db = new DatabaseSync(':memory:');
+function createTestDb(): Database.Database {
+  const db = new Database(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   runMigrations(db);
   return db;
 }
 
 describe('customProviders queries', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
 
-  beforeEach(() => { initFieldEncryption(TEST_KEY); db = createTestDb(); });
-  afterEach(() => { db.close(); _resetForTests(); });
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
 
   it('creates and retrieves a custom provider', () => {
     const cp = createCustomProvider(db, {
@@ -106,12 +104,6 @@ describe('customProviders queries', () => {
 
   it('returns null for unknown id', () => {
     expect(getCustomProvider(db, 'nonexistent-id')).toBeNull();
-  });
-
-  it('stores base_url as ENC:v1: ciphertext', () => {
-    const cp = createCustomProvider(db, { name: 'Enc', slug: 'enc', baseUrl: 'http://enc.test/v1', apiKeyEnvVar: null, defaultModel: null });
-    const row = db.prepare('SELECT base_url FROM custom_providers WHERE id = ?').get(cp.id) as { base_url: string };
-    expect(row.base_url).toMatch(/^ENC:v1:/);
   });
 
   it('decrypts base_url back to original value', () => {

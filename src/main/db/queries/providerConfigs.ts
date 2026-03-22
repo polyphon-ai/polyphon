@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import type { ProviderConfig } from '../../../shared/types';
 
 interface ProviderConfigRow {
@@ -29,15 +29,15 @@ function rowToConfig(row: ProviderConfigRow): ProviderConfig {
   };
 }
 
-export function listProviderConfigs(db: DatabaseSync): ProviderConfig[] {
+export function listProviderConfigs(db: Database.Database): ProviderConfig[] {
   const rows = db
     .prepare('SELECT * FROM provider_configs ORDER BY provider ASC, voice_type ASC')
-    .all() as unknown as ProviderConfigRow[];
+    .all() as ProviderConfigRow[];
   return rows.map(rowToConfig);
 }
 
 function getProviderConfigByType(
-  db: DatabaseSync,
+  db: Database.Database,
   provider: string,
   voiceType: string,
 ): ProviderConfig | null {
@@ -48,7 +48,7 @@ function getProviderConfigByType(
 }
 
 export function upsertProviderConfig(
-  db: DatabaseSync,
+  db: Database.Database,
   config: Omit<ProviderConfig, 'createdAt' | 'updatedAt'>,
 ): ProviderConfig {
   const now = Date.now();

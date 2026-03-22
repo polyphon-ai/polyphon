@@ -1,6 +1,5 @@
-import { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import type { Message } from '../../../shared/types';
-import { encryptField, decryptField, type EncryptedField } from '../encryption';
 
 interface MessageRow {
   id: string;
@@ -8,10 +7,10 @@ interface MessageRow {
   role: string;
   voice_id: string | null;
   voice_name: string | null;
-  content: EncryptedField;
+  content: string;
   timestamp: number;
   round_index: number;
-  metadata: EncryptedField | null;
+  metadata: string | null;
 }
 
 function rowToMessage(row: MessageRow): Message {
@@ -21,21 +20,21 @@ function rowToMessage(row: MessageRow): Message {
     role: row.role as Message['role'],
     voiceId: row.voice_id,
     voiceName: row.voice_name,
-    content: decryptField(row.content) ?? '',
+    content: row.content,
     timestamp: row.timestamp,
     roundIndex: row.round_index,
-    metadata: row.metadata ? (JSON.parse(decryptField(row.metadata) ?? '{}') as Record<string, unknown>) : undefined,
+    metadata: row.metadata ? (JSON.parse(row.metadata) as Record<string, unknown>) : undefined,
   };
 }
 
-export function listMessages(db: DatabaseSync, sessionId: string): Message[] {
+export function listMessages(db: Database.Database, sessionId: string): Message[] {
   const rows = db
     .prepare('SELECT * FROM messages WHERE session_id = ? ORDER BY timestamp ASC')
-    .all(sessionId) as unknown as MessageRow[];
+    .all(sessionId) as MessageRow[];
   return rows.map(rowToMessage);
 }
 
-export function insertMessage(db: DatabaseSync, message: Message): void {
+export function insertMessage(db: Database.Database, message: Message): void {
   db.prepare(`
     INSERT INTO messages (id, session_id, role, voice_id, voice_name, content, timestamp, round_index, metadata)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -45,13 +44,13 @@ export function insertMessage(db: DatabaseSync, message: Message): void {
     message.role,
     message.voiceId,
     message.voiceName,
-    encryptField(message.content),
+    message.content,
     message.timestamp,
     message.roundIndex,
-    message.metadata ? encryptField(JSON.stringify(message.metadata)) : null,
+    message.metadata ? JSON.stringify(message.metadata) : null,
   );
 }
 
-export function deleteMessagesBySession(db: DatabaseSync, sessionId: string): void {
+export function deleteMessagesBySession(db: Database.Database, sessionId: string): void {
   db.prepare('DELETE FROM messages WHERE session_id = ?').run(sessionId);
 }

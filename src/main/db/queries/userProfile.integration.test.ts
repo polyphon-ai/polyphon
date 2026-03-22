@@ -1,23 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { runMigrations } from '../migrations';
-import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import { getUserProfile, upsertUserProfile } from './userProfile';
 
-const TEST_KEY = Buffer.alloc(32);
 
-function createTestDb(): DatabaseSync {
-  const db = new DatabaseSync(':memory:');
+function createTestDb(): Database.Database {
+  const db = new Database(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   runMigrations(db);
   return db;
 }
 
 describe('userProfile queries', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
 
-  beforeEach(() => { initFieldEncryption(TEST_KEY); db = createTestDb(); });
-  afterEach(() => { db.close(); _resetForTests(); });
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
 
   it('getUserProfile returns default profile when no row exists', () => {
     // migration004 seeds a row — delete it to exercise the fallback code path
@@ -123,14 +121,6 @@ describe('userProfile queries', () => {
     upsertUserProfile(db, { conductorName: '', pronouns: '', conductorContext: '', defaultTone: tone, conductorColor: '', conductorAvatar: '', preferMarkdown: true });
     const profile = getUserProfile(db);
     expect(profile.defaultTone).toBe(tone);
-  });
-
-  it('stores conductor_name as ENC:v1: ciphertext', () => {
-    upsertUserProfile(db, { conductorName: 'Ada', pronouns: 'she/her', conductorContext: 'Engineer', defaultTone: 'collaborative', conductorColor: '', conductorAvatar: '', preferMarkdown: true });
-    const row = db.prepare('SELECT conductor_name, pronouns, conductor_context FROM user_profile WHERE id = 1').get() as { conductor_name: string; pronouns: string; conductor_context: string };
-    expect(row.conductor_name).toMatch(/^ENC:v1:/);
-    expect(row.pronouns).toMatch(/^ENC:v1:/);
-    expect(row.conductor_context).toMatch(/^ENC:v1:/);
   });
 
   it('decrypts profile fields back to original values', () => {

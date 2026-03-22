@@ -1,14 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { runMigrations } from '../migrations';
-import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import { listTones, getTone, createTone, updateTone, deleteTone } from './tones';
 import { upsertUserProfile } from './userProfile';
 import { insertComposition } from './compositions';
 import type { Composition, CompositionVoice } from '../../../shared/types';
 
-function createTestDb(): DatabaseSync {
-  const db = new DatabaseSync(':memory:');
+function createTestDb(): Database.Database {
+  const db = new Database(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   runMigrations(db);
   return db;
@@ -41,10 +40,10 @@ function makeCompositionWithTone(toneId: string): Composition {
 }
 
 describe('tones queries', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
 
-  beforeEach(() => { initFieldEncryption(Buffer.alloc(32)); db = createTestDb(); });
-  afterEach(() => { db.close(); _resetForTests(); });
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
 
   it('seeds 5 built-in tones on migration', () => {
     const tones = listTones(db);

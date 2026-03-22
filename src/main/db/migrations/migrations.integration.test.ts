@@ -1,14 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { runMigrations, applyMigration } from './index';
-import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import { up as migration002 } from './002_add_update_preferences';
 
 // Builds an in-memory DB that looks like a v6 production database:
 // all tables present, schema_version = 6, but missing the columns added
 // by migrations 007 (sessions.working_dir) and 008 (user_profile.prefer_markdown).
-function makeV6Database(): DatabaseSync {
-  const db = new DatabaseSync(':memory:');
+function makeV6Database(): Database.Database {
+  const db = new Database(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   db.exec(`
     CREATE TABLE schema_version (version INTEGER NOT NULL);
@@ -83,14 +82,11 @@ function makeV6Database(): DatabaseSync {
   return db;
 }
 
-const TEST_KEY = Buffer.alloc(32);
 
 describe('runMigrations (fresh install)', () => {
-  beforeEach(() => { initFieldEncryption(TEST_KEY); });
-  afterEach(() => { _resetForTests(); });
 
   it('creates all tables and sets schema_version to current', () => {
-    const db = new DatabaseSync(':memory:');
+    const db = new Database(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
 
     runMigrations(db);
@@ -118,11 +114,11 @@ describe('runMigrations (fresh install)', () => {
     }
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(10);
+    expect(row.version).toBe(11);
   });
 
   it('seeds built-in tones', () => {
-    const db = new DatabaseSync(':memory:');
+    const db = new Database(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
 
     runMigrations(db);
@@ -140,7 +136,7 @@ describe('runMigrations (fresh install)', () => {
   });
 
   it('seeds sample system prompt templates', () => {
-    const db = new DatabaseSync(':memory:');
+    const db = new Database(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
 
     runMigrations(db);
@@ -152,7 +148,7 @@ describe('runMigrations (fresh install)', () => {
   });
 
   it('is idempotent — running twice does not fail or duplicate data', () => {
-    const db = new DatabaseSync(':memory:');
+    const db = new Database(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
 
     runMigrations(db);
@@ -165,19 +161,17 @@ describe('runMigrations (fresh install)', () => {
     expect(templates).toHaveLength(5);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(10);
+    expect(row.version).toBe(11);
   });
 });
 
 describe('incremental migration from v6', () => {
-  beforeEach(() => { initFieldEncryption(TEST_KEY); });
-  afterEach(() => { _resetForTests(); });
 
   it('applies migrations 007, 008, 009, and 010, advancing schema_version to 10', () => {
     const db = makeV6Database();
     runMigrations(db);
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(10);
+    expect(row.version).toBe(11);
   });
 
   it('adds working_dir column to sessions', () => {
@@ -210,8 +204,6 @@ describe('incremental migration from v6', () => {
 });
 
 describe('crash-recovery: DDL already applied but schema_version not updated', () => {
-  beforeEach(() => { initFieldEncryption(TEST_KEY); });
-  afterEach(() => { _resetForTests(); });
 
   it('recovers when v7, v8, v9, and v10 columns exist but schema_version is still 6', () => {
     const db = makeV6Database();
@@ -225,7 +217,7 @@ describe('crash-recovery: DDL already applied but schema_version not updated', (
     runMigrations(db);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(10);
+    expect(row.version).toBe(11);
   });
 
   it('does not throw and leaves data intact during recovery', () => {
@@ -249,11 +241,9 @@ describe('crash-recovery: DDL already applied but schema_version not updated', (
 });
 
 describe('applyMigration — atomic transaction behaviour', () => {
-  beforeEach(() => { initFieldEncryption(TEST_KEY); });
-  afterEach(() => { _resetForTests(); });
 
   it('commits DDL and version bump together on success', () => {
-    const db = new DatabaseSync(':memory:');
+    const db = new Database(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
     db.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
     db.exec('INSERT INTO schema_version (version) VALUES (0)');
@@ -270,7 +260,7 @@ describe('applyMigration — atomic transaction behaviour', () => {
   });
 
   it('skips migration and leaves version unchanged when already at target', () => {
-    const db = new DatabaseSync(':memory:');
+    const db = new Database(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
     db.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
     db.exec('INSERT INTO schema_version (version) VALUES (5)');
@@ -284,7 +274,7 @@ describe('applyMigration — atomic transaction behaviour', () => {
   });
 
   it('rolls back and re-throws on non-duplicate-column errors', () => {
-    const db = new DatabaseSync(':memory:');
+    const db = new Database(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
     db.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
     db.exec('INSERT INTO schema_version (version) VALUES (0)');
@@ -301,7 +291,7 @@ describe('applyMigration — atomic transaction behaviour', () => {
   });
 
   it('commits version bump on duplicate-column error (crash recovery)', () => {
-    const db = new DatabaseSync(':memory:');
+    const db = new Database(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
     db.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
     db.exec('INSERT INTO schema_version (version) VALUES (0)');
@@ -318,11 +308,9 @@ describe('applyMigration — atomic transaction behaviour', () => {
 });
 
 describe('migration 002 — update preferences', () => {
-  beforeEach(() => { initFieldEncryption(TEST_KEY); });
-  afterEach(() => { _resetForTests(); });
 
   it('runs cleanly on a v1 in-memory DB and adds new columns', () => {
-    const db = new DatabaseSync(':memory:');
+    const db = new Database(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
 
     // Simulate a v1 database (schema without the new columns)
@@ -351,7 +339,7 @@ describe('migration 002 — update preferences', () => {
   });
 
   it('fresh install via runMigrations includes the new columns', () => {
-    const db = new DatabaseSync(':memory:');
+    const db = new Database(':memory:');
     db.exec('PRAGMA journal_mode = WAL');
 
     runMigrations(db);

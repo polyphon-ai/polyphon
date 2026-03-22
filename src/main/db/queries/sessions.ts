@@ -1,6 +1,5 @@
-import { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import type { Session } from '../../../shared/types';
-import { encryptField, decryptField, type EncryptedField } from '../encryption';
 
 interface SessionRow {
   id: string;
@@ -12,7 +11,7 @@ interface SessionRow {
   created_at: number;
   updated_at: number;
   archived: number;
-  working_dir: EncryptedField | null;
+  working_dir: string | null;
   sandboxed_to_working_dir: number;
 }
 
@@ -27,26 +26,26 @@ function rowToSession(row: SessionRow): Session {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     archived: row.archived === 1,
-    workingDir: row.working_dir ? decryptField(row.working_dir) : null,
+    workingDir: row.working_dir,
     sandboxedToWorkingDir: row.sandboxed_to_working_dir === 1,
   };
 }
 
-export function listSessions(db: DatabaseSync, archived = false): Session[] {
+export function listSessions(db: Database.Database, archived = false): Session[] {
   const rows = db
     .prepare('SELECT * FROM sessions WHERE archived = ? ORDER BY created_at DESC')
-    .all(archived ? 1 : 0) as unknown as SessionRow[];
+    .all(archived ? 1 : 0) as SessionRow[];
   return rows.map(rowToSession);
 }
 
-export function getSession(db: DatabaseSync, id: string): Session | null {
+export function getSession(db: Database.Database, id: string): Session | null {
   const row = db
     .prepare('SELECT * FROM sessions WHERE id = ?')
     .get(id) as SessionRow | undefined;
   return row ? rowToSession(row) : null;
 }
 
-export function insertSession(db: DatabaseSync, session: Session): void {
+export function insertSession(db: Database.Database, session: Session): void {
   db.prepare(`
     INSERT INTO sessions (id, composition_id, name, mode, continuation_policy, continuation_max_rounds, created_at, updated_at, working_dir, sandboxed_to_working_dir)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -59,21 +58,21 @@ export function insertSession(db: DatabaseSync, session: Session): void {
     session.continuationMaxRounds,
     session.createdAt,
     session.updatedAt,
-    session.workingDir ? encryptField(session.workingDir) : null,
+    session.workingDir ?? null,
     session.sandboxedToWorkingDir ? 1 : 0,
   );
 }
 
-export function deleteSession(db: DatabaseSync, id: string): void {
+export function deleteSession(db: Database.Database, id: string): void {
   db.prepare('DELETE FROM sessions WHERE id = ?').run(id);
 }
 
-export function renameSession(db: DatabaseSync, id: string, name: string): Session | null {
+export function renameSession(db: Database.Database, id: string, name: string): Session | null {
   db.prepare('UPDATE sessions SET name = ?, updated_at = ? WHERE id = ?').run(name, Date.now(), id);
   return getSession(db, id);
 }
 
-export function archiveSession(db: DatabaseSync, id: string, archived: boolean): void {
+export function archiveSession(db: Database.Database, id: string, archived: boolean): void {
   db.prepare('UPDATE sessions SET archived = ?, updated_at = ? WHERE id = ?').run(
     archived ? 1 : 0,
     Date.now(),
@@ -81,9 +80,9 @@ export function archiveSession(db: DatabaseSync, id: string, archived: boolean):
   );
 }
 
-export function listSessionsByCompositionId(db: DatabaseSync, compositionId: string): Session[] {
+export function listSessionsByCompositionId(db: Database.Database, compositionId: string): Session[] {
   const rows = db
     .prepare('SELECT * FROM sessions WHERE composition_id = ?')
-    .all(compositionId) as unknown as SessionRow[];
+    .all(compositionId) as SessionRow[];
   return rows.map(rowToSession);
 }

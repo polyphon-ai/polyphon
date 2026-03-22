@@ -1,7 +1,6 @@
-import { DatabaseSync } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import { TONE_PRESETS } from '../../../shared/constants';
 import { CREATE_TABLES_SQL, SCHEMA_VERSION } from '../schema';
-import { encryptField } from '../encryption';
 import { up as migration002 } from './002_add_update_preferences';
 import { up as migration003 } from './003_encrypt_conductor_avatar';
 import { up as migration004 } from './004_encrypt_tones_metadata_cli_command';
@@ -11,6 +10,7 @@ import { up as migration007 } from './007_add_session_working_dir';
 import { up as migration008 } from './008_add_prefer_markdown';
 import { up as migration009 } from './009_add_enabled_tools';
 import { up as migration010 } from './010_add_session_sandbox';
+import { up as migration011 } from './011_sqlcipher_transition';
 
 const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
   [
@@ -50,10 +50,10 @@ const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
 // treat the migration as applied and commit the version bump anyway.
 // Any other error rolls back and re-throws.
 export function applyMigration(
-  db: DatabaseSync,
+  db: Database.Database,
   targetVersion: number,
   currentVersion: number,
-  up: (db: DatabaseSync) => void,
+  up: (db: Database.Database) => void,
 ): void {
   if (currentVersion >= targetVersion) return;
 
@@ -72,7 +72,7 @@ export function applyMigration(
   db.exec('COMMIT');
 }
 
-export function runMigrations(db: DatabaseSync): void {
+export function runMigrations(db: Database.Database): void {
   db.exec(CREATE_TABLES_SQL);
 
   const now = Date.now();
@@ -91,7 +91,7 @@ export function runMigrations(db: DatabaseSync): void {
     VALUES (?, ?, ?, 1, ?, ?, ?)
   `);
   for (const [id, name, description, sortOrder] of tonePresets) {
-    insertTone.run(id, name, encryptField(description), sortOrder, now, now);
+    insertTone.run(id, name, description, sortOrder, now, now);
   }
 
   const insertTemplate = db.prepare(`
@@ -99,7 +99,7 @@ export function runMigrations(db: DatabaseSync): void {
     VALUES (?, ?, ?, ?, ?)
   `);
   for (const [id, name, content] of SAMPLE_TEMPLATES) {
-    insertTemplate.run(id, name, encryptField(content), now, now);
+    insertTemplate.run(id, name, content, now, now);
   }
 
   db.prepare(`
@@ -119,7 +119,7 @@ export function runMigrations(db: DatabaseSync): void {
 
   // Existing database — apply any pending migrations, each atomically.
   const currentVersion = row.version;
-  const apply = (v: number, up: (db: DatabaseSync) => void) => applyMigration(db, v, currentVersion, up);
+  const apply = (v: number, up: (db: Database.Database) => void) => applyMigration(db, v, currentVersion, up);
 
   apply(2, migration002);
   apply(3, migration003);
@@ -130,4 +130,5 @@ export function runMigrations(db: DatabaseSync): void {
   apply(8, migration008);
   apply(9, migration009);
   apply(10, migration010);
+  apply(11, migration011);
 }

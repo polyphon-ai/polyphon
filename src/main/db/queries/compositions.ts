@@ -1,6 +1,5 @@
-import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import type { Composition, CompositionVoice } from '../../../shared/types';
-import { encryptField, decryptField, type EncryptedField } from '../encryption';
 
 interface CompositionRow {
   id: string;
@@ -18,10 +17,10 @@ interface CompositionVoiceRow {
   composition_id: string;
   provider: string;
   model: string | null;
-  cli_command: EncryptedField | null;
-  cli_args: EncryptedField | null;
+  cli_command: string | null;
+  cli_args: string | null;
   display_name: string;
-  system_prompt: EncryptedField | null;
+  system_prompt: string | null;
   sort_order: number;
   color: string;
   avatar_icon: string;
@@ -32,18 +31,15 @@ interface CompositionVoiceRow {
 }
 
 function rowToCompositionVoice(row: CompositionVoiceRow): CompositionVoice {
-  const systemPromptDecrypted = row.system_prompt ? decryptField(row.system_prompt) : null;
-  const cliArgsDecrypted = row.cli_args ? decryptField(row.cli_args) : null;
-  const cliCommandDecrypted = row.cli_command ? decryptField(row.cli_command) : null;
   return {
     id: row.id,
     compositionId: row.composition_id,
     provider: row.provider,
     model: row.model ?? undefined,
-    cliCommand: cliCommandDecrypted ?? undefined,
-    cliArgs: cliArgsDecrypted ? (JSON.parse(cliArgsDecrypted) as string[]) : undefined,
+    cliCommand: row.cli_command ?? undefined,
+    cliArgs: row.cli_args ? (JSON.parse(row.cli_args) as string[]) : undefined,
     displayName: row.display_name,
-    systemPrompt: systemPromptDecrypted ?? undefined,
+    systemPrompt: row.system_prompt ?? undefined,
     toneOverride: row.tone_override ?? undefined,
     systemPromptTemplateId: row.system_prompt_template_id ?? undefined,
     order: row.sort_order,
@@ -68,15 +64,15 @@ function rowToComposition(row: CompositionRow, voices: CompositionVoiceRow[]): C
   };
 }
 
-export function listCompositions(db: DatabaseSync, archived = false): Composition[] {
+export function listCompositions(db: Database.Database, archived = false): Composition[] {
   const comps = db
     .prepare('SELECT * FROM compositions WHERE archived = ? ORDER BY created_at DESC')
-    .all(archived ? 1 : 0) as unknown as CompositionRow[];
+    .all(archived ? 1 : 0) as CompositionRow[];
   if (comps.length === 0) return [];
 
   const allVoices = db
     .prepare('SELECT * FROM composition_voices')
-    .all() as unknown as CompositionVoiceRow[];
+    .all() as CompositionVoiceRow[];
 
   const voicesByComp = new Map<string, CompositionVoiceRow[]>();
   for (const v of allVoices) {
@@ -88,7 +84,7 @@ export function listCompositions(db: DatabaseSync, archived = false): Compositio
   return comps.map((comp) => rowToComposition(comp, voicesByComp.get(comp.id) ?? []));
 }
 
-export function getComposition(db: DatabaseSync, id: string): Composition | null {
+export function getComposition(db: Database.Database, id: string): Composition | null {
   const comp = db
     .prepare('SELECT * FROM compositions WHERE id = ?')
     .get(id) as CompositionRow | undefined;
@@ -96,7 +92,7 @@ export function getComposition(db: DatabaseSync, id: string): Composition | null
 
   const voices = db
     .prepare('SELECT * FROM composition_voices WHERE composition_id = ? ORDER BY sort_order ASC')
-    .all(id) as unknown as CompositionVoiceRow[];
+    .all(id) as CompositionVoiceRow[];
 
   return rowToComposition(comp, voices);
 }
@@ -106,16 +102,16 @@ const INSERT_VOICE_SQL = `
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
-function runInsertVoice(stmt: ReturnType<DatabaseSync['prepare']>, voice: CompositionVoice): void {
+function runInsertVoice(stmt: Database.Statement, voice: CompositionVoice): void {
   stmt.run(
     voice.id,
     voice.compositionId,
     voice.provider,
     voice.model ?? null,
-    voice.cliCommand ? encryptField(voice.cliCommand) : null,
-    voice.cliArgs ? encryptField(JSON.stringify(voice.cliArgs)) : null,
+    voice.cliCommand ?? null,
+    voice.cliArgs ? JSON.stringify(voice.cliArgs) : null,
     voice.displayName,
-    voice.systemPrompt != null ? encryptField(voice.systemPrompt) : null,
+    voice.systemPrompt ?? null,
     voice.order,
     voice.color,
     voice.avatarIcon,
@@ -126,7 +122,7 @@ function runInsertVoice(stmt: ReturnType<DatabaseSync['prepare']>, voice: Compos
   );
 }
 
-export function insertComposition(db: DatabaseSync, composition: Composition): void {
+export function insertComposition(db: Database.Database, composition: Composition): void {
   const insertComp = db.prepare(`
     INSERT INTO compositions (id, name, mode, continuation_policy, continuation_max_rounds, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -155,12 +151,12 @@ export function insertComposition(db: DatabaseSync, composition: Composition): v
 }
 
 export function updateComposition(
-  db: DatabaseSync,
+  db: Database.Database,
   id: string,
   data: Partial<Pick<Composition, 'name' | 'mode' | 'continuationPolicy' | 'continuationMaxRounds'>>,
 ): void {
   const updates: string[] = [];
-  const values: SQLInputValue[] = [];
+  const values: unknown[] = [];
 
   if (data.name !== undefined) {
     updates.push('name = ?');
@@ -188,11 +184,11 @@ export function updateComposition(
   db.prepare(`UPDATE compositions SET ${updates.join(', ')} WHERE id = ?`).run(...values);
 }
 
-export function deleteComposition(db: DatabaseSync, id: string): void {
+export function deleteComposition(db: Database.Database, id: string): void {
   db.prepare('DELETE FROM compositions WHERE id = ?').run(id);
 }
 
-export function archiveComposition(db: DatabaseSync, id: string, archived: boolean): void {
+export function archiveComposition(db: Database.Database, id: string, archived: boolean): void {
   db.prepare('UPDATE compositions SET archived = ?, updated_at = ? WHERE id = ?').run(
     archived ? 1 : 0,
     Date.now(),
@@ -200,7 +196,7 @@ export function archiveComposition(db: DatabaseSync, id: string, archived: boole
   );
 }
 
-export function upsertCompositionVoices(db: DatabaseSync, voices: CompositionVoice[]): void {
+export function upsertCompositionVoices(db: Database.Database, voices: CompositionVoice[]): void {
   if (voices.length === 0) return;
 
   const compositionId = voices[0]!.compositionId;

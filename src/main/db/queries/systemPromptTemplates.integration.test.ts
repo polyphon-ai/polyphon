@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { runMigrations } from '../migrations';
-import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import {
   listSystemPromptTemplates,
   getSystemPromptTemplate,
@@ -12,10 +11,9 @@ import {
 import { insertComposition, getComposition } from './compositions';
 import type { Composition, CompositionVoice } from '../../../shared/types';
 
-const TEST_KEY = Buffer.alloc(32);
 
-function createTestDb(): DatabaseSync {
-  const db = new DatabaseSync(':memory:');
+function createTestDb(): Database.Database {
+  const db = new Database(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   runMigrations(db);
   return db;
@@ -48,10 +46,10 @@ function makeCompositionWithTemplate(templateId: string): Composition {
 }
 
 describe('systemPromptTemplates queries', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
 
-  beforeEach(() => { initFieldEncryption(TEST_KEY); db = createTestDb(); });
-  afterEach(() => { db.close(); _resetForTests(); });
+  beforeEach(() => { db = createTestDb(); });
+  afterEach(() => { db.close(); });
 
   it('starts with seeded sample templates', () => {
     const list = listSystemPromptTemplates(db);
@@ -128,12 +126,6 @@ describe('systemPromptTemplates queries', () => {
   it('allows duplicate names (no uniqueness constraint on templates)', () => {
     createSystemPromptTemplate(db, { name: 'Same', content: 'Content A.' });
     expect(() => createSystemPromptTemplate(db, { name: 'Same', content: 'Content B.' })).not.toThrow();
-  });
-
-  it('stores template content as ENC:v1: ciphertext', () => {
-    const t = createSystemPromptTemplate(db, { name: 'Secret', content: 'Secret content' });
-    const row = db.prepare('SELECT content FROM system_prompt_templates WHERE id = ?').get(t.id) as { content: string };
-    expect(row.content).toMatch(/^ENC:v1:/);
   });
 
   it('decrypts content back to original value', () => {

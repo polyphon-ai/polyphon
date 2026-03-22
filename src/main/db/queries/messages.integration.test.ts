@@ -1,15 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { runMigrations } from '../migrations';
-import { initFieldEncryption, _resetForTests } from '../../security/fieldEncryption';
 import { insertSession } from './sessions';
 import { listMessages, insertMessage, deleteMessagesBySession } from './messages';
 import type { Message, Session } from '../../../shared/types';
 
-const TEST_KEY = Buffer.alloc(32);
 
-function createTestDb(): DatabaseSync {
-  const db = new DatabaseSync(':memory:');
+function createTestDb(): Database.Database {
+  const db = new Database(':memory:');
   db.exec('PRAGMA journal_mode = WAL');
   runMigrations(db);
   return db;
@@ -46,17 +44,15 @@ function makeMessage(overrides: Partial<Message> = {}): Message {
 }
 
 describe('messages queries', () => {
-  let db: DatabaseSync;
+  let db: Database.Database;
 
   beforeEach(() => {
-    initFieldEncryption(TEST_KEY);
     db = createTestDb();
     insertSession(db, makeSession());
   });
 
   afterEach(() => {
     db.close();
-    _resetForTests();
   });
 
   it('insertMessage + listMessages round-trip', () => {
@@ -131,23 +127,4 @@ describe('messages queries', () => {
     expect(listMessages(db, 'sess-1')).toHaveLength(0);
   });
 
-  it('stores content as ENC:v1: ciphertext in the database', () => {
-    insertMessage(db, makeMessage({ content: 'Secret message' }));
-    const row = db.prepare('SELECT content FROM messages WHERE id = ?').get('msg-1') as { content: string };
-    expect(row.content).toMatch(/^ENC:v1:/);
-  });
-
-  it('decrypts ENC:v1: content back to original value', () => {
-    insertMessage(db, makeMessage({ content: 'Secret message' }));
-    const [msg] = listMessages(db, 'sess-1');
-    expect(msg!.content).toBe('Secret message');
-  });
-
-  it('reads legacy plaintext content without error (migration fallback)', () => {
-    db.prepare('INSERT INTO messages (id, session_id, role, voice_id, voice_name, content, timestamp, round_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run('legacy-1', 'sess-1', 'conductor', null, null, 'Plaintext legacy content', 9999, 0);
-    const messages = listMessages(db, 'sess-1');
-    const legacy = messages.find((m) => m.id === 'legacy-1');
-    expect(legacy!.content).toBe('Plaintext legacy content');
-  });
 });

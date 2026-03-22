@@ -1,12 +1,11 @@
-import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import { randomUUID } from 'crypto';
 import type { ToneDefinition } from '../../../shared/types';
-import { encryptField, decryptField, type EncryptedField } from '../encryption';
 
 interface ToneRow {
   id: string;
   name: string;
-  description: EncryptedField;
+  description: string;
   is_builtin: number;
   sort_order: number;
   created_at: number;
@@ -17,7 +16,7 @@ function rowToToneDefinition(row: ToneRow): ToneDefinition {
   return {
     id: row.id,
     name: row.name,
-    description: decryptField(row.description) ?? '',
+    description: row.description,
     isBuiltin: row.is_builtin === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -25,14 +24,14 @@ function rowToToneDefinition(row: ToneRow): ToneDefinition {
   };
 }
 
-export function listTones(db: DatabaseSync): ToneDefinition[] {
+export function listTones(db: Database.Database): ToneDefinition[] {
   const rows = db
     .prepare('SELECT * FROM tones ORDER BY sort_order ASC, created_at ASC')
-    .all() as unknown as ToneRow[];
+    .all() as ToneRow[];
   return rows.map(rowToToneDefinition);
 }
 
-export function getTone(db: DatabaseSync, id: string): ToneDefinition | null {
+export function getTone(db: Database.Database, id: string): ToneDefinition | null {
   const row = db
     .prepare('SELECT * FROM tones WHERE id = ?')
     .get(id) as ToneRow | undefined;
@@ -40,7 +39,7 @@ export function getTone(db: DatabaseSync, id: string): ToneDefinition | null {
 }
 
 export function createTone(
-  db: DatabaseSync,
+  db: Database.Database,
   data: Pick<ToneDefinition, 'name' | 'description'>,
 ): ToneDefinition {
   const now = Date.now();
@@ -53,28 +52,28 @@ export function createTone(
   db.prepare(`
     INSERT INTO tones (id, name, description, is_builtin, sort_order, created_at, updated_at)
     VALUES (?, ?, ?, 0, ?, ?, ?)
-  `).run(id, data.name, encryptField(data.description), sortOrder, now, now);
+  `).run(id, data.name, data.description, sortOrder, now, now);
   return getTone(db, id)!;
 }
 
 export function updateTone(
-  db: DatabaseSync,
+  db: Database.Database,
   id: string,
   data: Partial<Pick<ToneDefinition, 'name' | 'description'>>,
 ): ToneDefinition {
   const now = Date.now();
   const sets: string[] = ['updated_at = ?'];
-  const values: SQLInputValue[] = [now];
+  const values: unknown[] = [now];
 
   if (data.name !== undefined) { sets.push('name = ?'); values.push(data.name); }
-  if (data.description !== undefined) { sets.push('description = ?'); values.push(encryptField(data.description)); }
+  if (data.description !== undefined) { sets.push('description = ?'); values.push(data.description); }
 
   values.push(id);
   db.prepare(`UPDATE tones SET ${sets.join(', ')} WHERE id = ?`).run(...values);
   return getTone(db, id)!;
 }
 
-export function deleteTone(db: DatabaseSync, id: string): void {
+export function deleteTone(db: Database.Database, id: string): void {
   db.prepare('DELETE FROM tones WHERE id = ?').run(id);
   // Reset user_profile.default_tone if it references the deleted tone
   const firstTone = db

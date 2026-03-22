@@ -1,13 +1,12 @@
-import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
+import type Database from 'better-sqlite3';
 import { randomUUID } from 'crypto';
 import type { CustomProvider } from '../../../shared/types';
-import { encryptField, decryptField, type EncryptedField } from '../encryption';
 
 interface CustomProviderRow {
   id: string;
   name: string;
   slug: string;
-  base_url: EncryptedField;
+  base_url: string;
   api_key_env_var: string | null;
   default_model: string | null;
   deleted: number;
@@ -20,7 +19,7 @@ function rowToCustomProvider(row: CustomProviderRow): CustomProvider {
     id: row.id,
     name: row.name,
     slug: row.slug,
-    baseUrl: decryptField(row.base_url) ?? '',
+    baseUrl: row.base_url,
     apiKeyEnvVar: row.api_key_env_var,
     defaultModel: row.default_model,
     deleted: row.deleted === 1,
@@ -29,14 +28,14 @@ function rowToCustomProvider(row: CustomProviderRow): CustomProvider {
   };
 }
 
-export function listCustomProviders(db: DatabaseSync): CustomProvider[] {
+export function listCustomProviders(db: Database.Database): CustomProvider[] {
   const rows = db
     .prepare('SELECT * FROM custom_providers WHERE deleted = 0 ORDER BY created_at ASC')
-    .all() as unknown as CustomProviderRow[];
+    .all() as CustomProviderRow[];
   return rows.map(rowToCustomProvider);
 }
 
-export function getCustomProvider(db: DatabaseSync, id: string): CustomProvider | null {
+export function getCustomProvider(db: Database.Database, id: string): CustomProvider | null {
   const row = db
     .prepare('SELECT * FROM custom_providers WHERE id = ?')
     .get(id) as CustomProviderRow | undefined;
@@ -44,7 +43,7 @@ export function getCustomProvider(db: DatabaseSync, id: string): CustomProvider 
 }
 
 export function createCustomProvider(
-  db: DatabaseSync,
+  db: Database.Database,
   data: Omit<CustomProvider, 'id' | 'deleted' | 'createdAt' | 'updatedAt'>,
 ): CustomProvider {
   const now = Date.now();
@@ -52,21 +51,21 @@ export function createCustomProvider(
   db.prepare(`
     INSERT INTO custom_providers (id, name, slug, base_url, api_key_env_var, default_model, deleted, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
-  `).run(id, data.name, data.slug, encryptField(data.baseUrl), data.apiKeyEnvVar ?? null, data.defaultModel ?? null, now, now);
+  `).run(id, data.name, data.slug, data.baseUrl, data.apiKeyEnvVar ?? null, data.defaultModel ?? null, now, now);
   return getCustomProvider(db, id)!;
 }
 
 export function updateCustomProvider(
-  db: DatabaseSync,
+  db: Database.Database,
   id: string,
   data: Partial<Omit<CustomProvider, 'id' | 'slug' | 'deleted' | 'createdAt' | 'updatedAt'>>,
 ): CustomProvider {
   const now = Date.now();
   const sets: string[] = ['updated_at = ?'];
-  const values: SQLInputValue[] = [now];
+  const values: unknown[] = [now];
 
   if (data.name !== undefined) { sets.push('name = ?'); values.push(data.name); }
-  if (data.baseUrl !== undefined) { sets.push('base_url = ?'); values.push(encryptField(data.baseUrl)); }
+  if (data.baseUrl !== undefined) { sets.push('base_url = ?'); values.push(data.baseUrl); }
   if ('apiKeyEnvVar' in data) { sets.push('api_key_env_var = ?'); values.push(data.apiKeyEnvVar ?? null); }
   if ('defaultModel' in data) { sets.push('default_model = ?'); values.push(data.defaultModel ?? null); }
 
@@ -75,7 +74,7 @@ export function updateCustomProvider(
   return getCustomProvider(db, id)!;
 }
 
-export function softDeleteCustomProvider(db: DatabaseSync, id: string): void {
+export function softDeleteCustomProvider(db: Database.Database, id: string): void {
   db.prepare('UPDATE custom_providers SET deleted = 1, updated_at = ? WHERE id = ?').run(
     Date.now(),
     id,
