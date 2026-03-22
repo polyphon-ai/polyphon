@@ -470,12 +470,6 @@ const MANIFEST: ScreenshotSpec[] = [
   },
   {
     file: 'site/content/docs/conductor-profile.md',
-    placeholder: 'Conductor Profile — AvatarEditor modal open with a photo loaded; circular crop preview visible with drag-to-reposition instructions, zoom slider, and rotate buttons; Cancel and Apply buttons at bottom',
-    output: 'images/screenshots/settings/avatar-editor.webp',
-    alt: 'AvatarEditor modal with circular crop preview, zoom slider, and rotate buttons',
-  },
-  {
-    file: 'site/content/docs/conductor-profile.md',
     placeholder: 'Conductor Profile — Settings → Conductor Profile tab with avatar photo, name, pronouns, and background context all filled in',
     output: 'images/screenshots/settings/conductor-profile.webp',
     alt: 'Conductor Profile tab with avatar photo, name, pronouns, and background context filled in',
@@ -693,54 +687,7 @@ async function runTrack2(window: Page): Promise<void> {
   // 2a: Conductor Profile — empty state (Settings opens on Conductor Profile tab)
   await captureWebP(window, 'images/screenshots/settings/conductor-profile-empty.webp');
 
-  // 2a-avatar: Open AvatarEditor by intercepting pickAvatarFile with a synthetic image
-  try {
-    // Create a synthetic gradient image data URL and override the IPC call
-    await window.evaluate(() => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 400; canvas.height = 400;
-      const ctx = canvas.getContext('2d')!;
-      const grad = ctx.createLinearGradient(0, 0, 400, 400);
-      grad.addColorStop(0, '#4f46e5');
-      grad.addColorStop(1, '#7c3aed');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 400, 400);
-      // Add a circle so it looks like a face silhouette
-      ctx.fillStyle = '#c7d2fe';
-      ctx.beginPath(); ctx.arc(200, 160, 80, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#818cf8';
-      ctx.beginPath(); ctx.arc(200, 320, 140, Math.PI, 0); ctx.fill();
-      // @ts-ignore
-      (window as any).__testAvatarDataUrl = canvas.toDataURL('image/png');
-      // Override pickAvatarFile to return our synthetic image
-      // @ts-ignore
-      (window as any).polyphon.settings.pickAvatarFile = async () =>
-        (window as any).__testAvatarDataUrl;
-    });
-    // Click the avatar button (circular button at the top of the Conductor Profile tab)
-    const avatarBtn = window.locator('button').filter({ has: window.locator('svg') }).first();
-    // Try a more targeted locator — the avatar button typically has a specific test id or aria label
-    const avatarTrigger = window.getByRole('button', { name: /upload|avatar|photo/i }).first();
-    try {
-      await avatarTrigger.waitFor({ state: 'visible', timeout: 3_000 });
-      await avatarTrigger.click();
-    } catch {
-      // Fallback: click the circular avatar button by its position/class
-      await avatarBtn.click();
-    }
-    await window.waitForTimeout(800);
-    // AvatarEditor modal should now be open — capture it
-    const applyBtn = window.getByRole('button', { name: /apply/i });
-    await applyBtn.waitFor({ state: 'visible', timeout: 5_000 });
-    await captureWebP(window, 'images/screenshots/settings/avatar-editor.webp');
-    // Apply the crop to proceed
-    await applyBtn.click();
-    await window.waitForTimeout(500);
-  } catch {
-    console.warn('  WARN: AvatarEditor capture failed — skipping avatar-editor.webp');
-  }
-
-  // 2a: Fill conductor profile fields (avatar already applied above if successful)
+  // 2a: Fill conductor profile fields
   try {
     const nameInput = window.getByPlaceholder(/your name/i);
     await nameInput.fill('Alex Rivera');
@@ -924,27 +871,6 @@ async function runTrack3(window: Page): Promise<void> {
 
   await captureWebP(window, 'images/screenshots/compositions/builder-voice-config-full.webp');
 
-  // 3c-tools: Scroll to Tools section, enable read-only tools, capture
-  try {
-    // Find and scroll to the Tools heading inside the voice config panel
-    const toolsHeading = window.getByText('Tools', { exact: true }).last();
-    await toolsHeading.scrollIntoViewIfNeeded();
-    await window.waitForTimeout(300);
-    // Enable read-only tool toggles (checkboxes or switches)
-    for (const label of ['Read File', 'List Directory', 'Search Files', 'Search File Contents', 'Fetch URL']) {
-      const toggle = window.getByLabel(new RegExp(`^${label}$`, 'i'));
-      const isVisible = await toggle.isVisible({ timeout: 500 }).catch(() => false);
-      if (isVisible) {
-        await toggle.check().catch(() => {});
-        await window.waitForTimeout(100);
-      }
-    }
-    await window.waitForTimeout(200);
-    await captureWebP(window, 'images/screenshots/compositions/builder-voice-tools.webp');
-  } catch {
-    console.warn('  WARN: Tools section capture failed — skipping builder-voice-tools.webp');
-  }
-
   // 3e: Attach Security Reviewer template
   try {
     const templateSelect = window.locator('select').filter({ hasText: 'No template (inline)' }).first();
@@ -965,6 +891,30 @@ async function runTrack3(window: Page): Promise<void> {
   // Add voice and save (need at least 1 voice for save to work)
   await window.getByRole('button', { name: 'Add Voice' }).click();
   await window.waitForTimeout(300);
+
+  // 3c-tools: Expand the Critic voice row in VoiceOrderList to show the Tools section.
+  // Tools are only visible in VoiceOrderList (showTools=true), not in VoiceSelector (showTools=false).
+  try {
+    const editCriticBtn = window.getByRole('button', { name: /Edit Critic/i });
+    await editCriticBtn.waitFor({ state: 'visible', timeout: 3_000 });
+    await editCriticBtn.click();
+    await window.waitForTimeout(300);
+    // Scroll to the Tools section (identified by "filesystem access" label text)
+    const toolsLabel = window.getByText(/filesystem access/, { exact: false }).first();
+    await toolsLabel.scrollIntoViewIfNeeded();
+    await window.waitForTimeout(200);
+    // Enable read-only tool buttons (they are <button> elements, not checkboxes)
+    for (const label of ['Read File', 'List Directory', 'Search Files', 'Search File Contents', 'Fetch URL']) {
+      try {
+        await window.getByText(label, { exact: true }).first().click({ timeout: 500 });
+        await window.waitForTimeout(100);
+      } catch { /* tool not found or not visible, skip */ }
+    }
+    await window.waitForTimeout(200);
+    await captureWebP(window, 'images/screenshots/compositions/builder-voice-tools.webp');
+  } catch {
+    console.warn('  WARN: Tools section capture failed — skipping builder-voice-tools.webp');
+  }
 
   // Add a second voice for drag handles screenshot
   await window.getByRole('button', { name: 'OpenAI' }).first().click();
@@ -1051,75 +1001,80 @@ async function runTrack4(window: Page): Promise<void> {
   // First, enable providers and set up a composition for sessions
   await enableAllProviders(window);
 
-  // Create a broadcast composition for sessions
+  // Create compositions for sessions.
+  // Session Demo: three API voices for the main session screenshots.
   await buildComposition(window, 'Session Demo', ['Anthropic', 'OpenAI', 'Gemini'], { mode: 'broadcast' });
+  // Sandbox Demo: one API voice + one CLI voice (Copilot) so the CLI warning
+  // appears when sandboxing is enabled on a session using this composition.
+  await buildComposition(window, 'Sandbox Demo', ['Anthropic', 'Copilot'], { mode: 'broadcast' });
 
   // 4a: Navigate to Sessions — sidebar with New button
   await goToSessions(window);
   await captureWebP(window, 'images/screenshots/sessions/new-button.webp');
 
-  // 4b: Click New Session — composition picker
+  // 4b: Click New Session — composition picker (Phase 1)
   await window.getByRole('button', { name: 'New Session', exact: true }).click();
   await window.waitForTimeout(300);
   await captureWebP(window, 'images/screenshots/sessions/new-panel.webp');
+  // Dismiss the picker so sandbox flow can open a fresh panel
+  await window.getByRole('button', { name: 'Cancel' }).click();
+  await window.waitForTimeout(200);
 
-  // 4b-sandbox: Mock directory picker and capture sandbox-related panels
+  // 4b-sandbox: Select Sandbox Demo (API + CLI), set working directory via the text
+  // field (not Browse, which opens a native dialog), capture sandbox panels.
+  // The CLI warning requires a composition with a CLI voice (Copilot) selected.
   try {
-    // Inject a mock for the directory picker IPC call
-    await window.evaluate(() => {
-      const p = (window as any).polyphon;
-      if (p?.dialog?.openDirectory) {
-        p.dialog.openDirectory = async () => '/Users/demo/my-project';
-      } else if (p?.session?.pickWorkingDirectory) {
-        p.session.pickWorkingDirectory = async () => '/Users/demo/my-project';
-      }
-    });
-    const browseBtn = window.getByRole('button', { name: /browse/i });
-    await browseBtn.waitFor({ state: 'visible', timeout: 3_000 });
-    await browseBtn.click();
-    await window.waitForTimeout(500);
-    // If the working directory was set, the sandbox checkbox should appear
-    const sandboxCheckbox = window.getByRole('checkbox', { name: /sandbox/i });
-    const sandboxVisible = await sandboxCheckbox.isVisible({ timeout: 2_000 }).catch(() => false);
-    if (sandboxVisible) {
+    await window.getByRole('button', { name: 'New Session', exact: true }).click();
+    await window.waitForTimeout(300);
+    // Phase 1 → select Sandbox Demo to enter Phase 2
+    await window.getByRole('button', { name: /sandbox demo/i }).first().click();
+    await window.waitForTimeout(300);
+
+    // Fill the working directory text field directly (avoids opening a native file dialog)
+    const wdInput = window.getByPlaceholder('/path/to/project');
+    await wdInput.waitFor({ state: 'visible', timeout: 3_000 });
+    await wdInput.fill('/tmp');
+    // Wait for the 1.5s debounce + IPC validation round-trip
+    await window.waitForTimeout(2500);
+
+    // Sandbox checkbox appears once the directory validates as "valid"
+    const validLabel = window.getByText('Valid directory');
+    const isValid = await validLabel.isVisible({ timeout: 3_000 }).catch(() => false);
+    if (isValid) {
       await captureWebP(window, 'images/screenshots/sessions/new-panel-sandbox-checkbox.webp');
-      // Check the sandbox box to trigger CLI warning (if composition has CLI voices)
-      await sandboxCheckbox.check();
+      // Check the sandbox box by clicking its label — CLI warning appears because Sandbox Demo includes Copilot
+      await window.getByText('Sandbox API voices to this directory').click();
       await window.waitForTimeout(300);
       await captureWebP(window, 'images/screenshots/sessions/new-panel-sandbox-cli-warning.webp');
 
       // Start a sandboxed session to capture the session header with the Sandboxed badge
-      let sandboxedSessionStarted = false;
       try {
-        await window.getByRole('button', { name: /session demo/i }).first().click();
         await window.getByPlaceholder('My session').fill('Sandboxed Session');
         await window.getByRole('button', { name: 'Start Session' }).click();
         await window.getByPlaceholder('Message the ensemble\u2026').waitFor({ state: 'visible', timeout: 20_000 });
         await window.waitForTimeout(300);
         const sessionHeader = window.locator('header').first();
         await captureClippedWebP(window, sessionHeader, 'images/screenshots/sessions/session-header-sandboxed.webp');
-        sandboxedSessionStarted = true;
-        await goToSessions(window);
-        await window.waitForTimeout(300);
       } catch {
         console.warn('  WARN: Sandboxed session header capture failed — skipping session-header-sandboxed.webp');
+        await window.getByRole('button', { name: 'Cancel' }).click().catch(() => {});
       }
-
-      if (sandboxedSessionStarted) {
-        // Re-open the new session panel for the main session demo flow below
-        await window.getByRole('button', { name: 'New Session', exact: true }).click();
-        await window.waitForTimeout(300);
-      }
+    } else {
+      console.warn('  WARN: Working directory did not validate — skipping sandbox panel screenshots');
     }
   } catch {
     console.warn('  WARN: Sandbox panel capture failed — skipping sandbox panel screenshots');
+  } finally {
+    // Dismiss the modal if still open
+    const cancelBtn = window.getByRole('button', { name: 'Cancel' });
+    if (await cancelBtn.isVisible().catch(() => false)) {
+      await cancelBtn.click();
+      await window.waitForTimeout(200);
+    }
   }
 
-  // 4c-4d: Start session, send message, wait for completion
-  await window.getByRole('button', { name: /session demo/i }).first().click();
-  await window.getByPlaceholder('My session').fill('Demo Session');
-  await window.getByRole('button', { name: 'Start Session' }).click();
-  await window.getByPlaceholder('Message the ensemble\u2026').waitFor({ state: 'visible', timeout: 20_000 });
+  // 4c-4d: Start main session with three API voices
+  await startSession(window, 'Session Demo', 'Demo Session');
   await window.waitForTimeout(300);
 
   await sendMessage(window, 'What is the most important principle of good software design?');
@@ -1145,8 +1100,8 @@ async function runTrack4(window: Page): Promise<void> {
     await exportBtn.click();
     await window.waitForTimeout(500);
     await captureWebP(window, 'images/screenshots/sessions/export-modal.webp');
-    // Dismiss modal
-    await window.keyboard.press('Escape');
+    // Dismiss modal — ExportModal has no Escape handler, must click Cancel
+    await window.getByRole('button', { name: /^cancel$/i }).click();
     await window.waitForTimeout(300);
   } catch {
     console.warn('  WARN: Export modal capture failed — skipping export-modal.webp');
@@ -1195,11 +1150,11 @@ async function runTrack4(window: Page): Promise<void> {
 
   // Capture the continuation nudge banner BEFORE clicking Allow
   try {
-    const allowBtn = window.getByRole('button', { name: 'Allow' });
-    await allowBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    const yesBtn = window.getByRole('button', { name: 'Yes', exact: true });
+    await yesBtn.waitFor({ state: 'visible', timeout: 5_000 });
     await captureWebP(window, 'images/screenshots/sessions/continuation-nudge.webp');
-    // Now click Allow to start round 2 for the home/continuation-session screenshot
-    await allowBtn.click();
+    // Now click Yes to start round 2 for the home/continuation-session screenshot
+    await yesBtn.click();
     await window.waitForTimeout(300);
     await captureWebP(window, 'images/screenshots/home/continuation-session.webp');
     await waitForSessionIdle(window);
@@ -1207,7 +1162,6 @@ async function runTrack4(window: Page): Promise<void> {
     // Round 2 complete — capture the feed showing the round divider
     await captureWebP(window, 'images/screenshots/sessions/continuation-round2.webp');
   } catch {
-    // nudge banner may not appear in mock mode — skip these captures
     console.warn('  WARN: Continuation nudge banner not found — skipping continuation-nudge.webp');
   }
 }
