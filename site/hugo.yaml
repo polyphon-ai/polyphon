@@ -11,7 +11,7 @@ params:
   ogImage: "/images/og-default.png"
   # downloadVersion is only updated after a release is confirmed published.
   # Leave empty to show the "coming soon" fallback in the download section.
-  downloadVersion: "0.4.1"
+  downloadVersion: "0.5.0"
   # twitterHandle: "polyphonapp"        # set to enable twitter:site tag
 
 taxonomies:
