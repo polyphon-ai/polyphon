@@ -1,0 +1,10 @@
+{
+  "minLines": 20,
+  "minTokens": 50,
+  "reporters": ["console"],
+  "ignore": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.integration.test.ts"
+  ]
+}

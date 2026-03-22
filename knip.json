@@ -1,0 +1,26 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/main/index.ts",
+    "src/main/preload.ts",
+    "vite.*.config.ts",
+    "e2e/**/*.ts",
+    "src/**/*.test.{ts,tsx}",
+    "src/**/*.integration.test.{ts,tsx}"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "e2e/**/*.ts",
+    "vite.*.config.ts"
+  ],
+  "ignoreDependencies": [
+    "geist",
+    "tailwindcss",
+    "@electron-forge/maker-dmg",
+    "@electron-forge/maker-zip",
+    "@electron-forge/plugin-fuses",
+    "@electron-forge/plugin-vite",
+    "@electron/fuses",
+    "@vitest/coverage-v8"
+  ]
+}

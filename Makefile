@@ -60,8 +60,16 @@ test-watch: ## Run Vitest in watch mode
 	npm run test:watch
 
 .PHONY: lint
-lint: ## TypeScript type-check (no emit)
+lint: lint-dead lint-dupes ## TypeScript type-check (no emit)
 	npm run lint
+
+.PHONY: lint-dead
+lint-dead: ## Find dead/orphaned code (knip) — run periodically; not yet in make test
+	npx knip --no-progress
+
+.PHONY: lint-dupes
+lint-dupes: ## Find duplicate code (jscpd) — run periodically; not yet in make test
+	npx jscpd src
 
 ##@ Icons
 
