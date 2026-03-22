@@ -16,7 +16,7 @@
     "test:watch": "vitest --config vitest.unit.config.ts",
     "build:e2e": "node scripts/build-e2e.mjs",
     "screenshots": "npx tsx scripts/take-screenshots.ts",
-    "postinstall": "patch-package && node scripts/build-sqlcipher.mjs --mode=electron && node scripts/build-sqlcipher.mjs --mode=node"
+    "postinstall": "node scripts/build-sqlcipher.mjs --mode=electron && node scripts/build-sqlcipher.mjs --mode=node"
   },
   "keywords": [],
   "author": "Polyphon AI",
@@ -43,7 +43,6 @@
     "electron": "^41.0.2",
     "happy-dom": "^20.8.3",
     "knip": "^6.0.1",
-    "patch-package": "^8.0.1",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.2.1",
     "tsx": "^4.21.0",
