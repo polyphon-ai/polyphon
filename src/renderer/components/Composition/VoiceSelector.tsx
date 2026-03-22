@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X, Check } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import type { CompositionVoice, CustomProviderWithStatus } from '../../../shared/types';
 import {
   PROVIDER_METADATA,
@@ -10,7 +10,7 @@ import {
 } from '../../../shared/constants';
 import { useSettingsStore } from '../../store/settingsStore';
 import ProviderLogo from '../Shared/ProviderLogo';
-import { ColorPicker } from '../Shared';
+import { VoiceConfigFields } from './VoiceConfigFields';
 
 export interface VoiceSelectorProps {
   onSelect: (voice: Omit<CompositionVoice, 'id' | 'compositionId' | 'order'>) => void;
@@ -257,164 +257,50 @@ export default function VoiceSelector({
             Configure Voice
           </div>
 
-          {/* Display name */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-              Display name
-            </label>
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => { setDisplayName(e.target.value); setNameError(''); }}
-              className={`w-full bg-white dark:bg-gray-800 border rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${nameError ? 'border-red-400 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'}`}
-              placeholder="Display name"
-            />
-            {nameError && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{nameError}</p>
-            )}
-          </div>
-
-          {/* Color picker */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-              Color
-            </label>
-            <ColorPicker value={color} onChange={setColor} excludedColors={excludedColors} />
-          </div>
-
-          {/* Voice type — only shown when multiple types are enabled for this provider */}
-          {!selectedCustomProvider && selectedProvider && (() => {
-            const enabledTypes = PROVIDER_METADATA[selectedProvider]?.supportedTypes.filter(
-              (t) => providerConfigs[selectedProvider]?.[t]?.enabled,
-            ) ?? [];
-            if (enabledTypes.length <= 1) return null;
+          {(() => {
+            const enabledTypes = selectedProvider
+              ? (PROVIDER_METADATA[selectedProvider]?.supportedTypes.filter(
+                  (t) => providerConfigs[selectedProvider]?.[t]?.enabled,
+                ) as VoiceType[] ?? [])
+              : [];
             return (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                  Voice type
-                </label>
-                <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 w-fit">
-                  {enabledTypes.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setVoiceType(t)}
-                      className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                        voiceType === t
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      {t.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <VoiceConfigFields
+                displayName={displayName}
+                color={color}
+                voiceType={voiceType}
+                model={model}
+                systemPrompt={systemPrompt}
+                toneOverride={toneOverride}
+                systemPromptTemplateId={systemPromptTemplateId}
+                enabledTools={[]}
+                setDisplayName={setDisplayName}
+                setColor={setColor}
+                setVoiceType={setVoiceType}
+                setModel={setModel}
+                setSystemPrompt={setSystemPrompt}
+                setToneOverride={setToneOverride}
+                setSystemPromptTemplateId={setSystemPromptTemplateId}
+                setEnabledTools={() => {}}
+                nameError={nameError}
+                setNameError={setNameError}
+                isCli={voiceType === 'cli'}
+                enabledTypes={enabledTypes}
+                canToggleType={enabledTypes.length > 1}
+                lockedBecauseSettings={false}
+                hideVoiceTypeToggle={!!selectedCustomProvider || !selectedProvider}
+                availableModels={availableModels}
+                tones={tones}
+                systemPromptTemplates={systemPromptTemplates}
+                excludedColors={excludedColors}
+                showHelpTooltips={false}
+                showTools={false}
+                showSystemPromptHint
+                systemPromptRows={2}
+                showTemplateAttachedBadge
+                displayNamePlaceholder="Display name"
+              />
             );
           })()}
-
-          {/* Model selector (API mode only) */}
-          {voiceType === 'api' && availableModels.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                Model
-              </label>
-              <select
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {availableModels.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Template selector */}
-          {systemPromptTemplates.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                System prompt template{' '}
-                <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <select
-                  value={systemPromptTemplateId ?? ''}
-                  onChange={(e) => {
-                    const id = e.target.value || undefined;
-                    setSystemPromptTemplateId(id);
-                    if (id) {
-                      const tmpl = systemPromptTemplates.find((t) => t.id === id);
-                      if (tmpl) setSystemPrompt(tmpl.content);
-                    }
-                  }}
-                  className="flex-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">No template (inline)</option>
-                  {systemPromptTemplates.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-                {systemPromptTemplateId && (
-                  <span className="text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 px-2 py-1 rounded-lg whitespace-nowrap">
-                    Template attached
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* System prompt */}
-          <div>
-            <label
-              htmlFor="voice-system-prompt"
-              className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5"
-            >
-              System prompt{' '}
-              <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <textarea
-              id="voice-system-prompt"
-              value={systemPrompt}
-              onChange={(e) => {
-                setSystemPrompt(e.target.value);
-                // Editing the textarea detaches from the template (goes inline)
-                if (systemPromptTemplateId) setSystemPromptTemplateId(undefined);
-              }}
-              rows={2}
-              aria-describedby="voice-system-prompt-hint"
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-              placeholder="Optional per-voice system prompt…"
-            />
-            <p
-              id="voice-system-prompt-hint"
-              className="mt-1 text-xs text-gray-400 dark:text-gray-600"
-            >
-              Editing this field detaches the voice from any selected template.
-            </p>
-          </div>
-
-          {/* Tone override */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-              Tone{' '}
-              <span className="text-gray-400 font-normal">(optional — overrides global default)</span>
-            </label>
-            <select
-              value={toneOverride}
-              onChange={(e) => setToneOverride(e.target.value)}
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Use conductor default</option>
-              {tones.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} — {t.description}
-                </option>
-              ))}
-            </select>
-          </div>
 
           <div className="flex gap-2 pt-1">
             <button
