@@ -12,12 +12,12 @@ A **composition** is a saved, named configuration of voices. Create one to quick
 
 Click the **New Composition** button in the sidebar (below the session list).
 
-![Sidebar showing the New Composition button below the session list](/images/screenshots/compositions/sidebar-new-button.webp)
+> **Screenshot placeholder:** Compositions — sidebar showing the New Composition button below the session list
 <!-- Prerequisites: app open with at least one session visible | Platform: any | Theme: any | Window: default -->
 
 The composition builder opens. Give your composition a name, then add voices.
 
-![Composition Builder in empty state with name field, mode selector, and Add Voice button](/images/screenshots/compositions/builder-empty.webp)
+> **Screenshot placeholder:** Compositions — Composition Builder in empty state: name field, mode selector (Conductor-Directed / Broadcast buttons), and Add Voice button visible
 <!-- Prerequisites: newly opened Composition Builder | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -47,7 +47,7 @@ When **Broadcast** mode is selected, the **Continuation policy** section appears
 
 When **Auto** is selected, a **Max rounds** slider appears (range 1–3). This caps the total number of automatic continuation rounds.
 
-![Composition Builder showing Broadcast mode with continuation policy set to Auto and Max rounds slider visible](/images/screenshots/compositions/builder-continuation-auto.webp)
+> **Screenshot placeholder:** Compositions — Composition Builder showing Broadcast mode selected and the Continuation policy cards (None, Prompt me, Auto) with Auto selected and the Max rounds slider visible
 <!-- Prerequisites: Broadcast mode selected, Auto continuation selected | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -69,7 +69,7 @@ Click **Add Voice** to add a voice to the composition. For each voice, configure
 | **Tone** | Per-voice tone override — or "Use conductor default" to inherit from your profile |
 | **Tools** | For API voices: an optional set of host-brokered tools the voice can invoke — file reads, writes, directory listing, command execution, and URL fetching. Not shown for CLI voices. See [Filesystem Tools](../tools/) for the full list. |
 
-![Voice configuration panel fully configured with provider, model, display name, avatar icon, color, and tone](/images/screenshots/compositions/builder-voice-config-full.webp)
+> **Screenshot placeholder:** Compositions — voice configuration panel with provider, model, display name, avatar icon, color, and tone all configured; Tools section visible below system prompt showing available tool toggles
 <!-- Prerequisites: voice added to composition, all fields filled | Platform: any | Theme: any | Window: default -->
 
 You can add as many voices as you like. There is no hard limit, though more voices means more tokens and longer wait times per round.
@@ -100,7 +100,7 @@ In the voice configuration panel, the **System prompt template** dropdown lets y
 
 See [System Prompt Templates](../system-prompt-templates/) for how to create and manage templates.
 
-![Voice configuration panel with Security Reviewer template attached and Template attached badge visible](/images/screenshots/compositions/builder-template-attached.webp)
+> **Screenshot placeholder:** Compositions — voice configuration panel with a system prompt template attached; "Template attached" badge visible next to the template dropdown
 <!-- Prerequisites: at least one template saved in Settings → Templates; template selected in voice config | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -123,6 +123,9 @@ Write-capable tools (Write File, Move / Rename File, Copy File, Delete File, Run
 
 CLI voices do not have a Tools section. They run as autonomous subprocess agents with their own file access.
 
+> **Screenshot placeholder:** Compositions — voice configuration panel showing the Tools section with some read-only tools enabled; amber warning visible for write-capable tools
+<!-- Prerequisites: API voice added to composition, Tools section scrolled into view | Platform: any | Theme: any | Window: default -->
+
 See [Filesystem Tools](../tools/) for descriptions of every tool, sandboxing, and security considerations.
 
 ---
@@ -131,7 +134,7 @@ See [Filesystem Tools](../tools/) for descriptions of every tool, sandboxing, an
 
 Drag voices in the voice list to change their order. The order determines how voice responses appear in the message feed — voices respond in parallel, but are displayed in composition order.
 
-![Composition Builder voice list with drag handles on each voice row](/images/screenshots/compositions/builder-drag-handles.webp)
+> **Screenshot placeholder:** Compositions — voice list in the Composition Builder showing drag handles on each voice row
 <!-- Prerequisites: at least 2 voices added to the composition | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -150,7 +153,7 @@ Click a composition in the sidebar to open it, then click **Start Session**. A n
 
 You can launch as many sessions from the same composition as you like. Each session is independent.
 
-![Saved composition detail view showing name, voice list, mode, continuation policy, and Start Session button](/images/screenshots/compositions/detail-start-session.webp)
+> **Screenshot placeholder:** Compositions — saved composition detail view showing name, voice list, mode, continuation policy, and the Start Session button
 <!-- Prerequisites: a saved composition with at least 2 voices | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -167,5 +170,5 @@ Editing a composition does not affect sessions that were already started from it
 
 To remove a composition from the sidebar without deleting it, right-click it and select **Archive**. Archived compositions are hidden but not deleted.
 
-![Right-click context menu on a composition showing Archive and Delete options](/images/screenshots/compositions/context-menu.webp)
+> **Screenshot placeholder:** Compositions — right-click context menu on a composition showing Archive and Delete options
 <!-- Prerequisites: at least one saved composition in the sidebar | Platform: any | Theme: any | Window: default -->

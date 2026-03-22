@@ -8,7 +8,7 @@ The Settings page lets you configure voice providers, manage tones and system pr
 
 Settings is organized into tabs: **Conductor**, **Tones**, **System Prompts**, **Providers**, **Encryption**, **General**, **Logs**, and **About**.
 
-![Full Settings page showing the tab navigation bar with all six tabs](/images/screenshots/settings/settings-overview.webp)
+> **Screenshot placeholder:** Settings — full Settings page showing the tab navigation bar with all eight tabs visible (Conductor, Tones, System Prompts, Providers, Encryption, General, Logs, About)
 <!-- Prerequisites: Settings open | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -17,7 +17,7 @@ Settings is organized into tabs: **Conductor**, **Tones**, **System Prompts**, *
 
 Each supported voice provider has its own settings card. The card shows the provider's current status and lets you enter or update credentials.
 
-![Settings Providers tab showing all provider cards in their default states](/images/screenshots/settings/providers-tab-all-cards.webp)
+> **Screenshot placeholder:** Settings — Providers tab showing all provider cards (Anthropic, OpenAI, Google, Claude CLI, Codex CLI, Copilot CLI) in their default states
 <!-- Prerequisites: Settings → Providers tab open, no keys configured | Platform: any | Theme: any | Window: default -->
 
 ### API key providers
@@ -55,7 +55,7 @@ For API providers, you can select which model to use as the default when adding 
 
 Click **Fetch Models** to retrieve the current list of available models from the provider's API.
 
-![Anthropic provider card expanded showing voice type selector, API key field, and Fetch Models button](/images/screenshots/settings/providers-tab-anthropic-expanded.webp)
+> **Screenshot placeholder:** Settings — Anthropic provider card expanded showing the voice type selector, API key field, and Fetch Models button
 <!-- Prerequisites: Settings → Providers tab, Anthropic card expanded | Platform: any | Theme: any | Window: default -->
 
 ---

@@ -37,8 +37,8 @@ Download the latest release from [polyphon.ai](https://polyphon.ai/#download).
 
 When you open Polyphon for the first time, a welcome dialog appears. This is your chance to set up your conductor profile — how voices will address you — before starting your first session.
 
-![Polyphon welcome dialog on first launch showing avatar button, name field, pronouns dropdown, and About me textarea](/images/screenshots/home/onboarding-welcome.webp)
-<!-- Prerequisites: fresh install with no prior profile (clear localStorage polyphon.onboardingComplete) | Platform: any | Theme: any | Window: default -->
+> **Screenshot placeholder:** Onboarding — welcome dialog with avatar upload button, name field, pronouns dropdown, and "About me" context textarea visible; "Get started" and "Skip for now" buttons at bottom
+<!-- Prerequisites: fresh install with no prior profile | Platform: any | Theme: any | Window: default -->
 
 The welcome dialog lets you set:
 

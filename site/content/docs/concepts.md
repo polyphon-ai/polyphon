@@ -32,7 +32,7 @@ For example, you might have a composition called *"Code Review Panel"* with thre
 
 Compositions can be created from the sidebar and launched as many times as you like. Each launch creates a new independent session.
 
-![Composition list in the sidebar showing several named compositions](/images/screenshots/compositions/concepts-composition-list.webp)
+> **Screenshot placeholder:** Concepts — sidebar showing several named compositions in the composition list
 <!-- Prerequisites: at least 3 compositions saved | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -47,8 +47,8 @@ A **session** is a live conversation thread. It has:
 
 Sessions are persistent — they are saved to your local database and can be resumed. Archived sessions are hidden from the sidebar but not deleted.
 
-![Active session with voice message bubbles showing voice names, avatar icons, and colors](/images/screenshots/sessions/concepts-active-session.webp)
-<!-- Prerequisites: session with 2+ voices that have responded; voice icons and colors set | Platform: any | Theme: any | Window: default -->
+> **Screenshot placeholder:** Concepts — active session with voice message bubbles; each bubble shows the voice name, its avatar icon, its color, and markdown-rendered response content
+<!-- Prerequisites: session with 2+ voices that have responded with markdown content; voice icons and colors set | Platform: any | Theme: any | Window: default -->
 
 ---
 

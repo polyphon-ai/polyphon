@@ -25,10 +25,10 @@ A **system prompt template** is a saved, reusable system prompt that can be atta
    - **Content** — the full system prompt text
 4. Click **Save**.
 
-![System Prompts settings tab showing saved template list with names and previews](/images/screenshots/settings/templates-tab.webp)
+> **Screenshot placeholder:** Templates — Settings → Templates tab showing the saved template list with names and content previews
 <!-- Prerequisites: Settings → Templates tab open, at least 2 templates saved | Platform: any | Theme: any | Window: default -->
 
-![Template creation form with Security Reviewer name and content filled in](/images/screenshots/settings/templates-add-form.webp)
+> **Screenshot placeholder:** Templates — template creation form with "Security Reviewer" name and content filled in
 <!-- Prerequisites: Settings → Templates tab, Add Template form open | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -49,7 +49,7 @@ When adding a voice in the Composition Builder:
 2. Select a template from the list.
 3. The system prompt textarea below is pre-filled with the template content, and a **"Template attached"** badge appears next to the dropdown.
 
-![Voice configuration panel with Security Reviewer template attached and textarea pre-filled](/images/screenshots/compositions/builder-template-attached.webp)
+> **Screenshot placeholder:** Compositions — voice configuration panel with the "Security Reviewer" template attached; "Template attached" badge visible, system prompt textarea pre-filled with template content
 <!-- Prerequisites: Composition Builder open, voice added, template selected from dropdown | Platform: any | Theme: any | Window: default -->
 
 ### Detaching a template

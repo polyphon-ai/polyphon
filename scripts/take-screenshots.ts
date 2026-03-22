@@ -414,9 +414,15 @@ const MANIFEST: ScreenshotSpec[] = [
   },
   {
     file: 'site/content/docs/compositions.md',
-    placeholder: 'Compositions — voice configuration panel with provider, model, display name, avatar icon, color, and tone all configured',
+    placeholder: 'Compositions — voice configuration panel with provider, model, display name, avatar icon, color, and tone all configured; Tools section visible below system prompt showing available tool toggles',
     output: 'images/screenshots/compositions/builder-voice-config-full.webp',
-    alt: 'Voice configuration panel fully configured with provider, model, display name, avatar icon, color, and tone',
+    alt: 'Voice configuration panel fully configured with provider, model, display name, avatar icon, color, tone, and Tools section visible',
+  },
+  {
+    file: 'site/content/docs/compositions.md',
+    placeholder: 'Compositions — voice configuration panel showing the Tools section with some read-only tools enabled; amber warning visible for write-capable tools',
+    output: 'images/screenshots/compositions/builder-voice-tools.webp',
+    alt: 'Voice configuration panel showing Tools section with read-only tools checked and write-capable tools unchecked',
   },
   {
     file: 'site/content/docs/compositions.md',
@@ -451,9 +457,9 @@ const MANIFEST: ScreenshotSpec[] = [
   },
   {
     file: 'site/content/docs/concepts.md',
-    placeholder: 'Concepts — active session with voice message bubbles; each bubble shows the voice name, its avatar icon, and its color',
+    placeholder: 'Concepts — active session with voice message bubbles; each bubble shows the voice name, its avatar icon, its color, and markdown-rendered response content',
     output: 'images/screenshots/sessions/concepts-active-session.webp',
-    alt: 'Active session with voice message bubbles showing voice names, avatar icons, and colors',
+    alt: 'Active session with voice message bubbles showing voice names, avatar icons, colors, and markdown-rendered content',
   },
   // ── conductor-profile ──────────────────────────────────────────────────────
   {
@@ -528,15 +534,15 @@ const MANIFEST: ScreenshotSpec[] = [
   },
   {
     file: 'site/content/docs/sessions.md',
-    placeholder: 'Sessions — new session panel showing the composition picker and the option to add voices manually',
+    placeholder: 'Sessions — new session panel showing the composition picker, session name field, optional working directory field, and option to add voices manually',
     output: 'images/screenshots/sessions/new-panel.webp',
-    alt: 'New session panel showing composition picker and option to add voices manually',
+    alt: 'New session panel showing composition picker, session name field, optional working directory field, and option to add voices manually',
   },
   {
     file: 'site/content/docs/sessions.md',
-    placeholder: 'Sessions — full session view: message feed with voice bubbles showing avatar icons and colors, voice panel on the right with status indicators, input bar at bottom',
+    placeholder: 'Sessions — full session view: message feed with voice bubbles showing markdown-rendered responses with avatar icons and colors, voice panel on the right with status indicators, input bar at bottom',
     output: 'images/screenshots/sessions/full-view.webp',
-    alt: 'Full session view showing message feed with voice bubbles, voice panel, and input bar',
+    alt: 'Full session view showing message feed with voice bubbles and markdown content, voice panel, and input bar',
   },
   {
     file: 'site/content/docs/sessions.md',
@@ -550,12 +556,54 @@ const MANIFEST: ScreenshotSpec[] = [
     output: 'images/screenshots/sessions/context-menu.webp',
     alt: 'Right-click context menu on a session showing Archive and Delete options',
   },
+  {
+    file: 'site/content/docs/sessions.md',
+    placeholder: 'Sessions — new session panel with a working directory path entered and the "Sandbox API voices to this directory" checkbox visible',
+    output: 'images/screenshots/sessions/new-panel-sandbox-checkbox.webp',
+    alt: 'New session panel with working directory path entered and Sandbox API voices checkbox visible',
+  },
+  {
+    file: 'site/content/docs/sessions.md',
+    placeholder: 'Sessions — new session panel showing the amber warning that CLI voices are not affected by sandboxing, visible when the sandbox checkbox is checked in a composition that includes CLI voices',
+    output: 'images/screenshots/sessions/new-panel-sandbox-cli-warning.webp',
+    alt: 'New session panel showing amber warning that CLI voices are not affected by sandboxing',
+  },
+  {
+    file: 'site/content/docs/sessions.md',
+    placeholder: 'Sessions — session header showing the green Sandboxed badge, working directory path, and Broadcast mode badge',
+    output: 'images/screenshots/sessions/session-header-sandboxed.webp',
+    alt: 'Session header showing green Sandboxed badge, working directory path, and Broadcast mode badge',
+  },
+  {
+    file: 'site/content/docs/sessions.md',
+    placeholder: 'Sessions — @ mention voice picker dropdown open in the conductor input showing active voice display names as selectable options',
+    output: 'images/screenshots/sessions/at-mention-dropdown.webp',
+    alt: '@ mention voice picker dropdown open in conductor input showing active voice display names',
+  },
+  {
+    file: 'site/content/docs/sessions.md',
+    placeholder: 'Sessions — continuation nudge banner visible in the session feed asking whether to continue to the next round, with Yes and Dismiss buttons',
+    output: 'images/screenshots/sessions/continuation-nudge.webp',
+    alt: 'Continuation nudge banner in session feed with Yes and Dismiss buttons',
+  },
+  {
+    file: 'site/content/docs/sessions.md',
+    placeholder: 'Sessions — session message feed showing a round divider separating round 1 and round 2 voice responses, with voice bubbles in both rounds',
+    output: 'images/screenshots/sessions/continuation-round2.webp',
+    alt: 'Session message feed showing round divider between round 1 and round 2 voice responses',
+  },
+  {
+    file: 'site/content/docs/sessions.md',
+    placeholder: 'Sessions — transcript export modal showing the three format options (Markdown, JSON, Plain text) with the unencrypted export note visible',
+    output: 'images/screenshots/sessions/export-modal.webp',
+    alt: 'Transcript export modal showing Markdown, JSON, and Plain text format options with unencrypted note',
+  },
   // ── settings ──────────────────────────────────────────────────────────────
   {
     file: 'site/content/docs/settings.md',
-    placeholder: 'Settings — full Settings page showing the tab navigation bar with all six tabs visible',
+    placeholder: 'Settings — full Settings page showing the tab navigation bar with all eight tabs visible (Conductor, Tones, System Prompts, Providers, Encryption, General, Logs, About)',
     output: 'images/screenshots/settings/settings-overview.webp',
-    alt: 'Full Settings page showing the tab navigation bar with all six tabs',
+    alt: 'Full Settings page showing the tab navigation bar with all eight tabs',
   },
   {
     file: 'site/content/docs/settings.md',
@@ -568,12 +616,6 @@ const MANIFEST: ScreenshotSpec[] = [
     placeholder: 'Settings — Anthropic provider card expanded showing the voice type selector, API key field, and Fetch Models button',
     output: 'images/screenshots/settings/providers-tab-anthropic-expanded.webp',
     alt: 'Anthropic provider card expanded showing voice type selector, API key field, and Fetch Models button',
-  },
-  {
-    file: 'site/content/docs/settings.md',
-    placeholder: 'Settings — About tab showing the version badge, channel badge (e.g. Beta), waveform animation, and build expiry countdown',
-    output: 'images/screenshots/settings/about-page.webp',
-    alt: 'Settings About tab showing version badge, channel badge, waveform animation, and build expiry countdown',
   },
   // ── system-prompt-templates ────────────────────────────────────────────────
   {
@@ -593,6 +635,13 @@ const MANIFEST: ScreenshotSpec[] = [
     placeholder: 'Compositions — voice configuration panel with the "Security Reviewer" template attached; "Template attached" badge visible, system prompt textarea pre-filled with template content',
     output: 'images/screenshots/compositions/builder-template-attached.webp',
     alt: 'Voice configuration panel with Security Reviewer template attached and textarea pre-filled',
+  },
+  // ── tools ──────────────────────────────────────────────────────────────────
+  {
+    file: 'site/content/docs/tools.md',
+    placeholder: 'Tools — voice configuration panel in the Composition Builder showing the Tools section with checkboxes for each tool; read-only tools (Read File, List Directory, Search Files, Search File Contents, Fetch URL) checked; write-capable tools (Write File, Move / Rename File, Copy File, Delete File, Run Command) unchecked; amber write-capable warning visible below the toggles',
+    output: 'images/screenshots/compositions/builder-voice-tools.webp',
+    alt: 'Voice configuration panel showing Tools section with read-only tools checked and write-capable tools unchecked',
   },
   // ── tones ──────────────────────────────────────────────────────────────────
   {
@@ -875,6 +924,27 @@ async function runTrack3(window: Page): Promise<void> {
 
   await captureWebP(window, 'images/screenshots/compositions/builder-voice-config-full.webp');
 
+  // 3c-tools: Scroll to Tools section, enable read-only tools, capture
+  try {
+    // Find and scroll to the Tools heading inside the voice config panel
+    const toolsHeading = window.getByText('Tools', { exact: true }).last();
+    await toolsHeading.scrollIntoViewIfNeeded();
+    await window.waitForTimeout(300);
+    // Enable read-only tool toggles (checkboxes or switches)
+    for (const label of ['Read File', 'List Directory', 'Search Files', 'Search File Contents', 'Fetch URL']) {
+      const toggle = window.getByLabel(new RegExp(`^${label}$`, 'i'));
+      const isVisible = await toggle.isVisible({ timeout: 500 }).catch(() => false);
+      if (isVisible) {
+        await toggle.check().catch(() => {});
+        await window.waitForTimeout(100);
+      }
+    }
+    await window.waitForTimeout(200);
+    await captureWebP(window, 'images/screenshots/compositions/builder-voice-tools.webp');
+  } catch {
+    console.warn('  WARN: Tools section capture failed — skipping builder-voice-tools.webp');
+  }
+
   // 3e: Attach Security Reviewer template
   try {
     const templateSelect = window.locator('select').filter({ hasText: 'No template (inline)' }).first();
@@ -993,6 +1063,58 @@ async function runTrack4(window: Page): Promise<void> {
   await window.waitForTimeout(300);
   await captureWebP(window, 'images/screenshots/sessions/new-panel.webp');
 
+  // 4b-sandbox: Mock directory picker and capture sandbox-related panels
+  try {
+    // Inject a mock for the directory picker IPC call
+    await window.evaluate(() => {
+      const p = (window as any).polyphon;
+      if (p?.dialog?.openDirectory) {
+        p.dialog.openDirectory = async () => '/Users/demo/my-project';
+      } else if (p?.session?.pickWorkingDirectory) {
+        p.session.pickWorkingDirectory = async () => '/Users/demo/my-project';
+      }
+    });
+    const browseBtn = window.getByRole('button', { name: /browse/i });
+    await browseBtn.waitFor({ state: 'visible', timeout: 3_000 });
+    await browseBtn.click();
+    await window.waitForTimeout(500);
+    // If the working directory was set, the sandbox checkbox should appear
+    const sandboxCheckbox = window.getByRole('checkbox', { name: /sandbox/i });
+    const sandboxVisible = await sandboxCheckbox.isVisible({ timeout: 2_000 }).catch(() => false);
+    if (sandboxVisible) {
+      await captureWebP(window, 'images/screenshots/sessions/new-panel-sandbox-checkbox.webp');
+      // Check the sandbox box to trigger CLI warning (if composition has CLI voices)
+      await sandboxCheckbox.check();
+      await window.waitForTimeout(300);
+      await captureWebP(window, 'images/screenshots/sessions/new-panel-sandbox-cli-warning.webp');
+
+      // Start a sandboxed session to capture the session header with the Sandboxed badge
+      let sandboxedSessionStarted = false;
+      try {
+        await window.getByRole('button', { name: /session demo/i }).first().click();
+        await window.getByPlaceholder('My session').fill('Sandboxed Session');
+        await window.getByRole('button', { name: 'Start Session' }).click();
+        await window.getByPlaceholder('Message the ensemble\u2026').waitFor({ state: 'visible', timeout: 20_000 });
+        await window.waitForTimeout(300);
+        const sessionHeader = window.locator('header').first();
+        await captureClippedWebP(window, sessionHeader, 'images/screenshots/sessions/session-header-sandboxed.webp');
+        sandboxedSessionStarted = true;
+        await goToSessions(window);
+        await window.waitForTimeout(300);
+      } catch {
+        console.warn('  WARN: Sandboxed session header capture failed — skipping session-header-sandboxed.webp');
+      }
+
+      if (sandboxedSessionStarted) {
+        // Re-open the new session panel for the main session demo flow below
+        await window.getByRole('button', { name: 'New Session', exact: true }).click();
+        await window.waitForTimeout(300);
+      }
+    }
+  } catch {
+    console.warn('  WARN: Sandbox panel capture failed — skipping sandbox panel screenshots');
+  }
+
   // 4c-4d: Start session, send message, wait for completion
   await window.getByRole('button', { name: /session demo/i }).first().click();
   await window.getByPlaceholder('My session').fill('Demo Session');
@@ -1016,12 +1138,39 @@ async function runTrack4(window: Page): Promise<void> {
   await captureWebP(window, 'images/screenshots/home/live-session.webp');
   await captureWebP(window, 'images/screenshots/sessions/concepts-active-session.webp');
 
+  // 4d-export: Click Export button to show export modal
+  try {
+    const exportBtn = window.getByRole('button', { name: /export/i });
+    await exportBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await exportBtn.click();
+    await window.waitForTimeout(500);
+    await captureWebP(window, 'images/screenshots/sessions/export-modal.webp');
+    // Dismiss modal
+    await window.keyboard.press('Escape');
+    await window.waitForTimeout(300);
+  } catch {
+    console.warn('  WARN: Export modal capture failed — skipping export-modal.webp');
+  }
+
   // 4f: Conductor mode — create a conductor-mode composition
   await buildComposition(window, 'Directed Session Demo', ['Anthropic', 'OpenAI'], { mode: 'conductor' });
   await startSession(window, 'Directed Session Demo', 'Conductor Session');
 
   // Capture conductor mode input area (shows "Directed" badge)
   await captureWebP(window, 'images/screenshots/sessions/conductor-mode-voice-panel.webp');
+
+  // 4f-atmention: Type @ to open voice picker dropdown
+  try {
+    const conductorInput = window.getByPlaceholder('Message the ensemble\u2026');
+    await conductorInput.fill('@');
+    await window.waitForTimeout(600);
+    // Dropdown should appear — capture it
+    await captureWebP(window, 'images/screenshots/sessions/at-mention-dropdown.webp');
+    await conductorInput.clear();
+    await window.waitForTimeout(200);
+  } catch {
+    console.warn('  WARN: @ mention dropdown capture failed — skipping at-mention-dropdown.webp');
+  }
 
   // 4i: Session context menu — go to sessions list, hover over session card
   await goToSessions(window);
@@ -1054,6 +1203,9 @@ async function runTrack4(window: Page): Promise<void> {
     await window.waitForTimeout(300);
     await captureWebP(window, 'images/screenshots/home/continuation-session.webp');
     await waitForSessionIdle(window);
+    await window.waitForTimeout(500);
+    // Round 2 complete — capture the feed showing the round divider
+    await captureWebP(window, 'images/screenshots/sessions/continuation-round2.webp');
   } catch {
     // nudge banner may not appear in mock mode — skip these captures
     console.warn('  WARN: Continuation nudge banner not found — skipping continuation-nudge.webp');
@@ -1120,6 +1272,36 @@ async function main(): Promise<void> {
       continue;
     }
     replacePlaceholder(spec.file, spec.placeholder, spec.output, spec.alt);
+  }
+
+  // ── Post-run placeholder validation ────────────────────────────────────────
+
+  console.log('\n── Validating placeholder coverage ──────────────────────────────');
+  const DOCS_DIR = path.join(REPO_ROOT, 'site', 'content');
+  let unmatchedCount = 0;
+  function scanForRemainingPlaceholders(dir: string): void {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        scanForRemainingPlaceholders(full);
+      } else if (entry.name.endsWith('.md')) {
+        const rel = path.relative(REPO_ROOT, full);
+        for (const line of fs.readFileSync(full, 'utf8').split('\n')) {
+          if (line.startsWith('> **Screenshot placeholder:**')) {
+            console.warn(`  UNMATCHED: ${rel}`);
+            console.warn(`    ${line.slice(0, 120)}`);
+            unmatchedCount++;
+          }
+        }
+      }
+    }
+  }
+  scanForRemainingPlaceholders(DOCS_DIR);
+  if (unmatchedCount === 0) {
+    console.log('  All placeholders replaced.');
+  } else {
+    console.error(`\n  ERROR: ${unmatchedCount} placeholder(s) still present — add MANIFEST entries and capture code.`);
+    process.exit(1);
   }
 
   // ── Summary ───────────────────────────────────────────────────────────────

@@ -16,3 +16,4 @@ sprint_id	title	status	created_at	updated_at
 015	Dead Code Audit and Cleanup	completed	2026-03-19T16:04:32Z	2026-03-19T16:33:39Z
 016	Markdown Rendering for Voice Responses	completed	2026-03-20T18:29:15Z	2026-03-20T19:03:08Z
 017	Voice Filesystem Tools	completed	2026-03-21T19:07:05Z	2026-03-21T20:41:16Z
+018	Docs Screenshot Refresh and New Screenshot Coverage	completed	2026-03-22T04:55:41Z	2026-03-22T05:39:05Z

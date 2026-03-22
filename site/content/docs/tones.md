@@ -22,7 +22,7 @@ Polyphon ships five built-in tone presets:
 
 Built-in tones can be edited and deleted just like custom tones — changes take effect in new sessions.
 
-![Tones settings tab showing five built-in tone cards with names, descriptions, and Edit / Delete buttons](/images/screenshots/settings/tones-tab-builtins.webp)
+> **Screenshot placeholder:** Tones — Settings → Tones tab showing the five built-in tone cards with names, descriptions, and Edit / Delete buttons
 <!-- Prerequisites: Settings → Tones tab open | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -39,7 +39,7 @@ To create a custom tone:
    - **Instructions** — the behavioral directive injected into the voice's system prompt
 4. Click **Save**.
 
-![Custom tone creation form with Socratic name and question-first reasoning description](/images/screenshots/settings/tones-add-form.webp)
+> **Screenshot placeholder:** Tones — custom tone creation form with "Socratic" as name and a question-first reasoning description filled in
 <!-- Prerequisites: Settings → Tones tab, Add Tone form open | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -48,7 +48,7 @@ To create a custom tone:
 
 On any tone card in **Settings → Tones**, click **Edit** to modify its name, description, or instructions, or **Delete** to remove it. Changes to a tone do not affect sessions that are already in progress — they apply to new sessions only.
 
-![Tones tab showing five built-in tones plus custom Socratic tone with Edit and Delete buttons](/images/screenshots/settings/tones-tab-with-custom.webp)
+> **Screenshot placeholder:** Tones — Tones tab showing the five built-in tones plus a custom "Socratic" tone, all with Edit and Delete buttons
 <!-- Prerequisites: at least one custom tone created | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -61,7 +61,7 @@ Tones can be set at two levels:
 
 When adding or configuring a voice in the Composition Builder, the **Tone** dropdown lets you select a specific tone for that voice. Select any built-in or custom tone from the list, or leave it at **Use conductor default** to inherit the default from your Conductor Profile.
 
-![Voice configuration tone dropdown open showing all built-in and custom tones](/images/screenshots/compositions/builder-tone-dropdown.webp)
+> **Screenshot placeholder:** Compositions — voice configuration tone dropdown open showing all built-in and custom tones, with "Use conductor default" at the top
 <!-- Prerequisites: Composition Builder open, voice added, Tone dropdown open, at least one custom tone in the list | Platform: any | Theme: any | Window: default -->
 
 ### Conductor default (Conductor Profile)
