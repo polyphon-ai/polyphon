@@ -56,3 +56,9 @@ coverage/
 
 # Blog drafts (internal working documents)
 drafts/
+
+# SQLCipher amalgamation (committed deliberately — needed by CI build)
+!deps/
+!deps/sqlcipher/
+!deps/sqlcipher/sqlite3.c
+!deps/sqlcipher/sqlite3.h
