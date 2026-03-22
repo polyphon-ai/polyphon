@@ -1,0 +1,35 @@
+diff --git a/node_modules/better-sqlite3/binding.gyp b/node_modules/better-sqlite3/binding.gyp
+index 81a1238..e7f9652 100644
+--- a/node_modules/better-sqlite3/binding.gyp
++++ b/node_modules/better-sqlite3/binding.gyp
+@@ -27,6 +27,14 @@
+             '-Wl,--exclude-libs,ALL',
+           ],
+         }],
++        ['sqlite3 != ""', {
++          'link_settings': {
++            'libraries': [
++              '-framework Security',
++              '-framework CoreFoundation',
++            ],
++          },
++        }],
+       ],
+     },
+diff --git a/node_modules/better-sqlite3/deps/sqlite3.gyp b/node_modules/better-sqlite3/deps/sqlite3.gyp
+index 62f4f02..95c0e01 100644
+--- a/node_modules/better-sqlite3/deps/sqlite3.gyp
++++ b/node_modules/better-sqlite3/deps/sqlite3.gyp
+@@ -62,6 +62,12 @@
+           'defines': [
+             # This is currently required by better-sqlite3.
+             'SQLITE_ENABLE_COLUMN_METADATA',
++            # SQLCipher: enable codec and use macOS CommonCrypto backend.
++            'SQLITE_HAS_CODEC',
++            'SQLCIPHER_CRYPTO_CC',
++            'SQLITE_TEMP_STORE=2',
++            'SQLITE_EXTRA_INIT=sqlcipher_extra_init',
++            'SQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown',
+           ],
+         }]
+       ],

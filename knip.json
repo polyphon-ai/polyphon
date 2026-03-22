@@ -21,6 +21,7 @@
     "@electron-forge/plugin-fuses",
     "@electron-forge/plugin-vite",
     "@electron/fuses",
+    "@electron/rebuild",
     "@vitest/coverage-v8"
   ]
 }

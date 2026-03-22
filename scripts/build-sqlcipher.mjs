@@ -1,0 +1,66 @@
+#!/usr/bin/env node
+/**
+ * Build better-sqlite3 with the SQLCipher 4.14.0 amalgamation.
+ *
+ * Modes:
+ *   --mode=node      Build for system Node.js (used by Vitest integration tests).
+ *                    Output: node_modules/better-sqlite3/build/Release/better_sqlite3.node
+ *   --mode=electron  Build for Electron (used by the packaged app).
+ *                    Output: node_modules/better-sqlite3/build/Release/better_sqlite3.node
+ *                    Also copies to: node_modules/better-sqlite3/prebuilt-electron/better_sqlite3.node
+ *
+ * The SQLCipher amalgamation lives at deps/sqlcipher/sqlite3.{c,h} — SQLCipher 4.14.0
+ * based on SQLite 3.51.3, compiled with SQLCIPHER_CRYPTO_CC (macOS CommonCrypto, no
+ * external deps). The patches/better-sqlite3+12.8.0.patch file adds the necessary
+ * gyp defines and framework links.
+ *
+ * Why two modes?
+ *   Electron uses a different ABI (NODE_MODULE_VERSION) than system Node.js, so the
+ *   same .node binary cannot be used for both Vitest tests and the Electron app.
+ *   The Node.js build is the default (lives in build/Release/) and is used by Vitest.
+ *   electron-rebuild overwrites it with the Electron build before the app starts.
+ *   The electron build is also saved to prebuilt-electron/ for the make install flow.
+ */
+
+import { execSync } from 'node:child_process';
+import { existsSync, mkdirSync, copyFileSync } from 'node:fs';
+import { resolve, join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const root = resolve(__dirname, '..');
+const sqlcipherDir = join(root, 'deps', 'sqlcipher');
+const nodeGypBin = join(root, 'node_modules', '.bin', 'node-gyp');
+const bsqliteDir = join(root, 'node_modules', 'better-sqlite3');
+const electronBuildDir = join(bsqliteDir, 'prebuilt-electron');
+
+const mode = process.argv.find(a => a.startsWith('--mode='))?.split('=')[1] ?? 'node';
+
+if (!existsSync(join(sqlcipherDir, 'sqlite3.c'))) {
+  console.error('ERROR: SQLCipher amalgamation not found at deps/sqlcipher/sqlite3.c');
+  console.error('Run the following to regenerate it:');
+  console.error('  cd /tmp && tar -xzf sqlcipher-4.14.0.tar.gz && cd sqlcipher-4.14.0');
+  console.error('  CFLAGS="-DSQLITE_HAS_CODEC -DSQLITE_ENABLE_COLUMN_METADATA" ./configure --with-tempstore=yes');
+  console.error('  make sqlite3.c && cp sqlite3.{c,h} <project>/deps/sqlcipher/');
+  process.exit(1);
+}
+
+const exec = (cmd, opts) => execSync(cmd, { stdio: 'inherit', cwd: root, ...opts });
+
+if (mode === 'node') {
+  console.log('Building better-sqlite3 + SQLCipher for system Node.js (Vitest)...');
+  exec(`"${nodeGypBin}" rebuild --sqlite3="${sqlcipherDir}" --directory="${bsqliteDir}"`);
+  console.log('✓ Node.js build complete');
+} else if (mode === 'electron') {
+  console.log('Building better-sqlite3 + SQLCipher for Electron...');
+  exec(`npx electron-rebuild -f -w better-sqlite3 --extra-args="--sqlite3=${sqlcipherDir}"`);
+  mkdirSync(electronBuildDir, { recursive: true });
+  copyFileSync(
+    join(bsqliteDir, 'build', 'Release', 'better_sqlite3.node'),
+    join(electronBuildDir, 'better_sqlite3.node'),
+  );
+  console.log(`✓ Electron build complete (also saved to prebuilt-electron/)`);
+} else {
+  console.error(`Unknown mode: ${mode}. Use --mode=node or --mode=electron`);
+  process.exit(1);
+}
