@@ -146,7 +146,7 @@ export const PROVIDER_NAMES = {
 
 export type VoiceType = 'api' | 'cli';
 
-export interface ProviderMetadata {
+interface ProviderMetadata {
   name: string;
   supportedTypes: ReadonlyArray<VoiceType>;
   defaultModels: ReadonlyArray<string>;

@@ -199,7 +199,7 @@ export async function fetchModelsForProvider(provider: string): Promise<ModelsRe
 
 export type ProbeModelResult = { ok: true } | { ok: false; error: string };
 
-export async function probeModel(provider: string, model: string): Promise<ProbeModelResult> {
+async function probeModel(provider: string, model: string): Promise<ProbeModelResult> {
   let apiKey: string;
   try {
     apiKey = resolveApiKey(provider);
@@ -271,11 +271,11 @@ function resolveCustomProviderStatus(cp: CustomProvider): CustomProviderWithStat
   return { ...cp, apiKeyStatus: { status: 'none', specificVar: cp.apiKeyEnvVar, fallbackVar: cp.apiKeyEnvVar } };
 }
 
-export function listCustomProvidersWithStatus(db: DatabaseSync): CustomProviderWithStatus[] {
+function listCustomProvidersWithStatus(db: DatabaseSync): CustomProviderWithStatus[] {
   return listCustomProviders(db).map(resolveCustomProviderStatus);
 }
 
-export async function fetchModelsForCustomProvider(
+async function fetchModelsForCustomProvider(
   db: DatabaseSync,
   customProviderId: string,
 ): Promise<ModelsResult> {

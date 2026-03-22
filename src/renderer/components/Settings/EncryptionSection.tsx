@@ -103,6 +103,34 @@ function StatusBadge({ status }: { status: EncryptionStatus }) {
   );
 }
 
+// ── Password form shell ────────────────────────────────────────────────────
+
+function PasswordFormShell({
+  title,
+  onSubmit,
+  error,
+  onCancel,
+  children,
+}: {
+  title: string;
+  onSubmit: (e: React.FormEvent) => void;
+  error: string;
+  onCancel: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{title}</p>
+      <div className="space-y-2">{children}</div>
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      <div className="flex gap-2">
+        <button type="submit" className="text-xs px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">Save</button>
+        <button type="button" onClick={onCancel} className="text-xs px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+      </div>
+    </form>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 export default function EncryptionSection() {
@@ -235,71 +263,23 @@ export default function EncryptionSection() {
 
       {/* Set password form */}
       {formMode === 'set-password' && (
-        <form onSubmit={handleSetPassword} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Set a password</p>
-          <div className="space-y-2">
-            <input
-              type="password"
-              placeholder="New password"
-              value={pw}
-              onChange={(e) => setPw(e.target.value)}
-              className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              autoFocus
-            />
-            <PasswordStrengthGauge password={pw} />
-            <input
-              type="password"
-              placeholder="Confirm password"
-              value={pw2}
-              onChange={(e) => setPw2(e.target.value)}
-              className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <PasswordMatchIndicator pw={pw} pw2={pw2} />
-          </div>
-          {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-          <div className="flex gap-2">
-            <button type="submit" className="text-xs px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">Save</button>
-            <button type="button" onClick={resetForm} className="text-xs px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
-          </div>
-        </form>
+        <PasswordFormShell title="Set a password" onSubmit={handleSetPassword} error={error} onCancel={resetForm}>
+          <input type="password" placeholder="New password" value={pw} onChange={(e) => setPw(e.target.value)} className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" autoFocus />
+          <PasswordStrengthGauge password={pw} />
+          <input type="password" placeholder="Confirm password" value={pw2} onChange={(e) => setPw2(e.target.value)} className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <PasswordMatchIndicator pw={pw} pw2={pw2} />
+        </PasswordFormShell>
       )}
 
       {/* Change password form */}
       {formMode === 'change-password' && (
-        <form onSubmit={handleChangePassword} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Change password</p>
-          <div className="space-y-2">
-            <input
-              type="password"
-              placeholder="Current password"
-              value={pwOld}
-              onChange={(e) => setPwOld(e.target.value)}
-              className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              autoFocus
-            />
-            <input
-              type="password"
-              placeholder="New password"
-              value={pw}
-              onChange={(e) => setPw(e.target.value)}
-              className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <PasswordStrengthGauge password={pw} />
-            <input
-              type="password"
-              placeholder="Confirm new password"
-              value={pw2}
-              onChange={(e) => setPw2(e.target.value)}
-              className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <PasswordMatchIndicator pw={pw} pw2={pw2} />
-          </div>
-          {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-          <div className="flex gap-2">
-            <button type="submit" className="text-xs px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">Save</button>
-            <button type="button" onClick={resetForm} className="text-xs px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
-          </div>
-        </form>
+        <PasswordFormShell title="Change password" onSubmit={handleChangePassword} error={error} onCancel={resetForm}>
+          <input type="password" placeholder="Current password" value={pwOld} onChange={(e) => setPwOld(e.target.value)} className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" autoFocus />
+          <input type="password" placeholder="New password" value={pw} onChange={(e) => setPw(e.target.value)} className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <PasswordStrengthGauge password={pw} />
+          <input type="password" placeholder="Confirm new password" value={pw2} onChange={(e) => setPw2(e.target.value)} className="w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <PasswordMatchIndicator pw={pw} pw2={pw2} />
+        </PasswordFormShell>
       )}
 
       {/* Remove password form */}

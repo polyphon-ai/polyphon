@@ -36,7 +36,7 @@ export function listProviderConfigs(db: DatabaseSync): ProviderConfig[] {
   return rows.map(rowToConfig);
 }
 
-export function getProviderConfigByType(
+function getProviderConfigByType(
   db: DatabaseSync,
   provider: string,
   voiceType: string,

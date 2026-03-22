@@ -37,7 +37,7 @@ export interface UserProfile {
   updatedAt: number;
 }
 
-export interface Voice {
+interface Voice {
   id: string;
   name: string;
   type: 'api' | 'cli';

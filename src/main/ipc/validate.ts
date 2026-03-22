@@ -23,14 +23,14 @@ export const MAX_NAME = 200;
 export const MAX_SHORT_NAME = 100;
 export const MAX_PROVIDER = 50;
 export const MAX_MODEL = 200;
-export const MAX_CLI_COMMAND = 100;
-export const MAX_DESCRIPTION = 2000;
-export const MAX_CONTENT = 50000;
+const MAX_CLI_COMMAND = 100;
+const MAX_DESCRIPTION = 2000;
+const MAX_CONTENT = 50000;
 export const MAX_CONDUCTOR_CONTEXT = 10000;
 export const MAX_AVATAR = 500000;
-export const MAX_URL = 2000;
-export const MAX_MESSAGE_CONTENT = 100000;
-export const MAX_ENV_VAR_NAME = 200;
+const MAX_URL = 2000;
+const MAX_MESSAGE_CONTENT = 100000;
+const MAX_ENV_VAR_NAME = 200;
 
 // Matches POSIX-compliant environment variable names.
 export const ENV_VAR_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -194,7 +194,7 @@ export function requireMessageShape(value: unknown): Message {
   return value as Message;
 }
 
-export function requireCompositionVoiceShape(value: unknown, index: number): CompositionVoice {
+function requireCompositionVoiceShape(value: unknown, index: number): CompositionVoice {
   const obj = requireObject(value, `voices[${index}]`);
   requireNonEmptyString(obj['provider'], `voices[${index}].provider`, MAX_PROVIDER);
   requireNonEmptyString(obj['displayName'], `voices[${index}].displayName`, MAX_SHORT_NAME);

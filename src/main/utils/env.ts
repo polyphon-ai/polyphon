@@ -26,7 +26,7 @@ function ensureShellEnv(): void {
 
 export const SHELL_ENV_MAX_LEN = 512 * 1024; // JS string .length units (UTF-16 code units, ≈ bytes for ASCII)
 export const ENV_VALUE_MAX_BYTES = 8 * 1024; // same units
-export const ENV_KEY_RE = /^[A-Z0-9_]+$/;
+const ENV_KEY_RE = /^[A-Z0-9_]+$/;
 
 // Applies a list of pre-split "KEY=VALUE" entries to process.env.
 function applyEnvEntries(entries: string[]): void {
@@ -78,7 +78,7 @@ export function parseNulEnvBlock(block: string): boolean {
 //
 // Uses child_process.spawnSync so this is bundled directly into main.js and
 // works correctly in the packaged ASAR app (no external ESM dependency needed).
-export function loadShellEnv(): void {
+function loadShellEnv(): void {
   // `env -0` outputs NUL-terminated entries: immune to delimiter-collision
   // attacks where an env var value happens to contain the delimiter string.
   const cmd = `command env -0; exit`;

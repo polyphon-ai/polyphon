@@ -7,6 +7,9 @@ import wordmarkDarkUrl from '../../../../assets/wordmark-dark.svg?url';
 
 type CheckState = 'idle' | 'checking' | 'up-to-date' | 'update-available' | 'downloading' | 'ready';
 
+const onBrandBtnEnter = (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.opacity = '0.88'; };
+const onBrandBtnLeave = (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.opacity = '1'; };
+
 export default function AboutPage() {
   const version = __APP_VERSION__;
 
@@ -129,12 +132,8 @@ export default function AboutPage() {
                 color: '#fff',
                 border: '1px solid transparent',
               }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.opacity = '0.88';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.opacity = '1';
-              }}
+              onMouseEnter={onBrandBtnEnter}
+              onMouseLeave={onBrandBtnLeave}
             >
               <Download size={13} strokeWidth={1.75} />
               Update Now
@@ -162,12 +161,8 @@ export default function AboutPage() {
                 color: '#fff',
                 border: '1px solid transparent',
               }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.opacity = '0.88';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.opacity = '1';
-              }}
+              onMouseEnter={onBrandBtnEnter}
+              onMouseLeave={onBrandBtnLeave}
             >
               <RotateCcw size={13} strokeWidth={1.75} />
               Restart & Install

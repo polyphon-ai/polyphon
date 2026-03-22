@@ -101,15 +101,37 @@ export function getComposition(db: DatabaseSync, id: string): Composition | null
   return rowToComposition(comp, voices);
 }
 
+const INSERT_VOICE_SQL = `
+  INSERT INTO composition_voices (id, composition_id, provider, model, cli_command, cli_args, display_name, system_prompt, sort_order, color, avatar_icon, custom_provider_id, tone_override, system_prompt_template_id, enabled_tools)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
+function runInsertVoice(stmt: ReturnType<DatabaseSync['prepare']>, voice: CompositionVoice): void {
+  stmt.run(
+    voice.id,
+    voice.compositionId,
+    voice.provider,
+    voice.model ?? null,
+    voice.cliCommand ? encryptField(voice.cliCommand) : null,
+    voice.cliArgs ? encryptField(JSON.stringify(voice.cliArgs)) : null,
+    voice.displayName,
+    voice.systemPrompt != null ? encryptField(voice.systemPrompt) : null,
+    voice.order,
+    voice.color,
+    voice.avatarIcon,
+    voice.customProviderId ?? null,
+    voice.toneOverride ?? null,
+    voice.systemPromptTemplateId ?? null,
+    JSON.stringify(voice.enabledTools ?? []),
+  );
+}
+
 export function insertComposition(db: DatabaseSync, composition: Composition): void {
   const insertComp = db.prepare(`
     INSERT INTO compositions (id, name, mode, continuation_policy, continuation_max_rounds, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
-  const insertVoice = db.prepare(`
-    INSERT INTO composition_voices (id, composition_id, provider, model, cli_command, cli_args, display_name, system_prompt, sort_order, color, avatar_icon, custom_provider_id, tone_override, system_prompt_template_id, enabled_tools)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
+  const insertVoice = db.prepare(INSERT_VOICE_SQL);
 
   db.exec('BEGIN');
   try {
@@ -123,23 +145,7 @@ export function insertComposition(db: DatabaseSync, composition: Composition): v
       composition.updatedAt,
     );
     for (const voice of composition.voices) {
-      insertVoice.run(
-        voice.id,
-        voice.compositionId,
-        voice.provider,
-        voice.model ?? null,
-        voice.cliCommand ? encryptField(voice.cliCommand) : null,
-        voice.cliArgs ? encryptField(JSON.stringify(voice.cliArgs)) : null,
-        voice.displayName,
-        voice.systemPrompt != null ? encryptField(voice.systemPrompt) : null,
-        voice.order,
-        voice.color,
-        voice.avatarIcon,
-        voice.customProviderId ?? null,
-        voice.toneOverride ?? null,
-        voice.systemPromptTemplateId ?? null,
-        JSON.stringify(voice.enabledTools ?? []),
-      );
+      runInsertVoice(insertVoice, voice);
     }
     db.exec('COMMIT');
   } catch (err) {
@@ -199,32 +205,13 @@ export function upsertCompositionVoices(db: DatabaseSync, voices: CompositionVoi
 
   const compositionId = voices[0]!.compositionId;
   const deleteVoices = db.prepare('DELETE FROM composition_voices WHERE composition_id = ?');
-  const insertVoice = db.prepare(`
-    INSERT INTO composition_voices (id, composition_id, provider, model, cli_command, cli_args, display_name, system_prompt, sort_order, color, avatar_icon, custom_provider_id, tone_override, system_prompt_template_id, enabled_tools)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
+  const insertVoice = db.prepare(INSERT_VOICE_SQL);
 
   db.exec('BEGIN');
   try {
     deleteVoices.run(compositionId);
     for (const voice of voices) {
-      insertVoice.run(
-        voice.id,
-        voice.compositionId,
-        voice.provider,
-        voice.model ?? null,
-        voice.cliCommand ? encryptField(voice.cliCommand) : null,
-        voice.cliArgs ? encryptField(JSON.stringify(voice.cliArgs)) : null,
-        voice.displayName,
-        voice.systemPrompt != null ? encryptField(voice.systemPrompt) : null,
-        voice.order,
-        voice.color,
-        voice.avatarIcon,
-        voice.customProviderId ?? null,
-        voice.toneOverride ?? null,
-        voice.systemPromptTemplateId ?? null,
-        JSON.stringify(voice.enabledTools ?? []),
-      );
+      runInsertVoice(insertVoice, voice);
     }
     db.exec('COMMIT');
   } catch (err) {

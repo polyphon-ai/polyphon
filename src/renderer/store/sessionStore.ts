@@ -164,4 +164,4 @@ export const useSessionStore = create<SessionState & SessionActions>((set) => ({
     }),
 }));
 
-export type { Session, Message, VoiceDescriptor };
+export type { Session, Message };

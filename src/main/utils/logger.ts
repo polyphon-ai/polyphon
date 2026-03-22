@@ -25,8 +25,8 @@ function buildSensitiveKeys(): ReadonlySet<string> {
 }
 
 export const SENSITIVE_LOG_KEYS: ReadonlySet<string> = buildSensitiveKeys();
-export const ENCRYPTED_BLOB_RE = /ENC:v1:[A-Za-z0-9+/=]+/g;
-export const API_KEY_RE = /sk-\S+|sk-ant-\S+|AIza\S+|gsk_\S+|GOOG\S+|ghp_\S+|github_pat_\S+|Bearer\s+\S+/g;
+const ENCRYPTED_BLOB_RE = /ENC:v1:[A-Za-z0-9+/=]+/g;
+const API_KEY_RE = /sk-\S+|sk-ant-\S+|AIza\S+|gsk_\S+|GOOG\S+|ghp_\S+|github_pat_\S+|Bearer\s+\S+/g;
 
 function sanitizeString(s: string): string {
   return s.replace(ENCRYPTED_BLOB_RE, '[ENCRYPTED]').replace(API_KEY_RE, '[REDACTED]');

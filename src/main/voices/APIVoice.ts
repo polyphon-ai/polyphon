@@ -4,7 +4,7 @@ import { resolveApiKey } from '../utils/env';
 import { resolveTools, type ToolDefinition } from '../tools/index';
 import { logger } from '../utils/logger';
 
-export const MAX_TOOL_ROUNDS = 10;
+const MAX_TOOL_ROUNDS = 10;
 
 export interface ToolCall {
   id: string;

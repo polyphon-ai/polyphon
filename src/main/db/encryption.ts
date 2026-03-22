@@ -7,11 +7,6 @@
  */
 export type EncryptedField = string & { readonly __encrypted: unique symbol };
 
-export {
-  DECRYPTION_FAILED_SENTINEL,
-  initFieldEncryption,
-  _resetForTests,
-} from '../security/fieldEncryption';
 
 import {
   encryptField as _encryptField,
