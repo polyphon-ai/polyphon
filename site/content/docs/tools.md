@@ -37,7 +37,7 @@ When any write-capable tool is enabled (Write File, Move / Rename File, Copy Fil
 
 CLI voices do not show the tools section. They run as subprocess agents and have their own file access model.
 
-> **Screenshot placeholder:** Tools — voice configuration panel in the Composition Builder showing the Tools section with checkboxes for each tool; read-only tools (Read File, List Directory, Search Files, Search File Contents, Fetch URL) checked; write-capable tools (Write File, Move / Rename File, Copy File, Delete File, Run Command) unchecked; amber write-capable warning visible below the toggles
+![Voice configuration panel showing Tools section with read-only tools checked and write-capable tools unchecked](/images/screenshots/compositions/builder-voice-tools.webp)
 <!-- Prerequisites: API voice configured in Composition Builder, Tools section visible | Platform: any | Theme: any | Window: default -->
 
 ---

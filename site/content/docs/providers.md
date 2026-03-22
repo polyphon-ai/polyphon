@@ -26,7 +26,7 @@ To configure:
 2. In Polyphon, go to **Settings → Anthropic** and paste your API key.
 3. Click **Test** to verify the key is working.
 
-> **Screenshot placeholder:** Providers — Anthropic provider card expanded showing the API key status indicator and voice type selector (API / CLI)
+![Anthropic provider card expanded showing API key status indicator and voice type selector](/images/screenshots/settings/providers-tab-anthropic-expanded.webp)
 <!-- Prerequisites: Settings → Providers tab, Anthropic card expanded | Platform: any | Theme: any | Window: default -->
 
 Alternatively, set the key in your shell environment (`~/.zshrc` or `~/.bash_profile`) as `ANTHROPIC_API_KEY`. Polyphon reads your login shell environment at startup, so keys set there are automatically picked up.
@@ -79,7 +79,7 @@ claude --version
 
 In Polyphon, go to **Settings → Claude CLI** and click **Test** to confirm Polyphon can find and invoke it.
 
-> **Screenshot placeholder:** Providers — Claude CLI provider card with "Available" status indicator shown
+![Claude CLI provider card with Available status indicator](/images/screenshots/settings/providers-tab-cli-available.webp)
 <!-- Prerequisites: claude CLI installed and in PATH | Platform: macOS | Theme: any | Window: default -->
 
 ---
@@ -124,7 +124,7 @@ The Settings page shows the status of every configured provider at a glance:
 - **Key found (untested)** — a key is present but has not been tested
 - **Not configured** — no key or CLI tool found
 
-> **Screenshot placeholder:** Providers — Settings Providers tab showing multiple provider cards in different status states (Available, Key found, Not configured)
+![Provider settings showing multiple cards in different status states](/images/screenshots/settings/providers-status-cards.webp)
 <!-- Prerequisites: mix of configured and unconfigured providers | Platform: any | Theme: any | Window: default -->
 
 ---

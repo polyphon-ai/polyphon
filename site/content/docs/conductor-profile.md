@@ -12,7 +12,7 @@ The **Conductor Profile** is information about you that Polyphon injects into th
 
 Open **Settings** (gear icon, bottom-left) and click the **Conductor Profile** tab.
 
-> **Screenshot placeholder:** Conductor Profile — Settings → Conductor Profile tab showing avatar button, name, pronouns, default tone, and background fields in their default (empty) state
+![Conductor Profile tab showing all fields in default empty state](/images/screenshots/settings/conductor-profile-empty.webp)
 <!-- Prerequisites: Settings open on Conductor Profile tab with no profile set | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -24,9 +24,6 @@ The circular avatar button at the top of the Conductor Profile section shows you
 1. Click the avatar button.
 2. A file picker opens. Select an image file (PNG, JPG, GIF, or WebP).
 3. The **Avatar Editor** opens with your selected image.
-
-> **Screenshot placeholder:** Conductor Profile — AvatarEditor modal open with a photo loaded; circular crop preview visible with drag-to-reposition instructions, zoom slider, and rotate buttons; Cancel and Apply buttons at bottom
-<!-- Prerequisites: photo selected from file picker, AvatarEditor modal open | Platform: any | Theme: any | Window: default -->
 
 In the Avatar Editor you can:
 
@@ -101,6 +98,6 @@ Your conductor profile is stored locally in your Polyphon database. It is sent t
 
 The Conductor Profile saves automatically when you leave a field (on blur). There is no explicit save button — your changes take effect immediately for the next session you start.
 
-> **Screenshot placeholder:** Conductor Profile — Settings → Conductor Profile tab with avatar photo, name, pronouns, and background context all filled in
+![Conductor Profile tab with avatar photo, name, pronouns, and background context filled in](/images/screenshots/settings/conductor-profile.webp)
 <!-- Prerequisites: all profile fields populated, avatar photo uploaded and cropped | Platform: any | Theme: any | Window: default -->
 

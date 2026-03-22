@@ -71,19 +71,8 @@ The change takes effect immediately — no restart required. A pulsing **Active*
 
 If the app is crashing before you can reach Settings, you can enable debug logging by creating a flag file. Polyphon checks for this file on every launch before writing the first log entry.
 
-**macOS:**
 ```
 touch ~/Library/Application\ Support/polyphon/debug.flag
-```
-
-**Windows:**
-```
-type nul > "%APPDATA%\polyphon\debug.flag"
-```
-
-**Linux:**
-```
-touch ~/.config/polyphon/debug.flag
 ```
 
 To disable, delete the file. You can also disable it from the toggle in Settings — the toggle creates and removes this file automatically.
@@ -93,7 +82,7 @@ To disable, delete the file. You can also disable it from the toggle in Settings
 You can also set `POLYPHON_DEBUG=1` in your shell environment before launching the app. This takes priority over the flag file.
 
 ```sh
-POLYPHON_DEBUG=1 open -a Polyphon   # macOS
+POLYPHON_DEBUG=1 open -a Polyphon
 ```
 
 ---

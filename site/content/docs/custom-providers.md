@@ -35,10 +35,10 @@ For built-in providers (Anthropic, OpenAI, Google, Claude CLI, Codex, Copilot), 
 4. Click **Fetch Models** to retrieve the list of available models from the endpoint (requires the endpoint to be running).
 5. Click **Save**.
 
-> **Screenshot placeholder:** Custom Providers — Add Custom Provider form filled in with Local Ollama name, base URL set to http://localhost:11434/v1, API key env var left blank
+![Add Custom Provider form filled with Local Ollama details and base URL](/images/screenshots/settings/custom-providers-add-form.webp)
 <!-- Prerequisites: Settings → Custom Providers tab, Add Custom Provider form open | Platform: any | Theme: any | Window: default -->
 
-> **Screenshot placeholder:** Custom Providers — Custom Providers tab showing a saved "Local Ollama" provider card with the auth-less badge ("No API key required (auth-less endpoint)") and Edit / Delete buttons
+![Custom Providers tab showing saved Local Ollama provider with auth-less badge and Edit / Delete buttons](/images/screenshots/settings/custom-providers-tab.webp)
 <!-- Prerequisites: Local Ollama custom provider saved with no API key env var | Platform: any | Theme: any | Window: default -->
 
 ---
@@ -92,7 +92,7 @@ Once a custom provider is added in Settings, it appears in the provider grid ins
 
 Custom provider voices are labelled **CUSTOM · API** in the provider grid.
 
-> **Screenshot placeholder:** Compositions — Composition Builder provider grid showing built-in providers alongside a custom "Local Ollama" provider with CUSTOM · API label
+![Composition Builder provider grid with built-in providers and Local Ollama custom provider](/images/screenshots/compositions/builder-custom-provider-voice.webp)
 <!-- Prerequisites: Local Ollama custom provider saved; Composition Builder open | Platform: any | Theme: any | Window: default -->
 
 ---
