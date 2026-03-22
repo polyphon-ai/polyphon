@@ -14,6 +14,9 @@ features:
   - icon: user
     title: Conductor profile
     body: Set your name, pronouns, and context. Every voice receives this in its system prompt.
+  - icon: folder-open
+    title: File system tools
+    body: API voices get host-brokered file tools — read, write, list — with optional sandboxing to the session working directory. CLI voices run as autonomous agents in the same directory.
   - icon: shield
     title: Local-first, no telemetry
     body: Conversations and API keys stay on your machine. No account, no cloud sync.
