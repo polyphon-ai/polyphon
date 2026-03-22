@@ -26,6 +26,10 @@ run: ## Start the Electron app in development mode (hot reload)
 build: ## Package the Electron app with Electron Forge (no installer)
 	npm run package
 
+.PHONY: build-e2e
+build-e2e: ## Build Vite bundles for e2e testing (no Forge packaging)
+	npm run build:e2e
+
 .PHONY: dist
 dist: ## Build macOS arm64 DMG; output to out/make/
 	npm run make -- --arch arm64
@@ -44,16 +48,16 @@ test-integration: ## Run integration tests
 	npm run test:integration
 
 .PHONY: test-e2e
-test-e2e: ## Run e2e tests with mocked voices
-	npm run test:e2e
+test-e2e: build-e2e ## Run e2e tests with mocked voices
+	npx playwright test
 
 .PHONY: test-e2e-live
-test-e2e-live: ## Run live e2e tests against real providers — opt-in, never CI
-	npm run build:e2e && npx playwright test --config=playwright.config.e2e-live.ts && npx playwright test --config=playwright.config.openai-compatible.ts
+test-e2e-live: build-e2e ## Run live e2e tests against real providers — opt-in, never CI
+	npx playwright test --config=playwright.config.e2e-live.ts && npx playwright test --config=playwright.config.openai-compatible.ts
 
 .PHONY: test-openai-compatible-live
-test-openai-compatible-live: ## Run live e2e tests against Ollama in Docker — requires Docker
-	npm run build:e2e && npx playwright test --config=playwright.config.openai-compatible.ts
+test-openai-compatible-live: build-e2e ## Run live e2e tests against Ollama in Docker — requires Docker
+	npx playwright test --config=playwright.config.openai-compatible.ts
 
 .PHONY: test-watch
 test-watch: ## Run Vitest in watch mode
@@ -105,8 +109,8 @@ site-search: site-build ## Build Hugo site + generate Pagefind search index (run
 	cd site && npm run pagefind
 
 .PHONY: screenshots
-screenshots: ## Build a clean e2e bundle then capture site screenshots
-	npm run build:e2e && npx tsx scripts/take-screenshots.ts
+screenshots: build-e2e ## Capture site screenshots
+	npx tsx scripts/take-screenshots.ts
 
 ##@ Clean
 
