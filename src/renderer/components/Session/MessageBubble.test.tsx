@@ -105,7 +105,7 @@ describe('MessageBubble', () => {
     expect(screen.getByText('Session started')).toBeTruthy();
   });
 
-  it('isStreaming badge appears during streaming', () => {
+  it('isStreaming indicator appears during streaming', () => {
     render(
       <MessageBubble
         message={makeVoiceMsg()}
@@ -113,7 +113,7 @@ describe('MessageBubble', () => {
         streamingContent="typing..."
       />,
     );
-    expect(screen.getByText('streaming')).toBeTruthy();
+    expect(screen.getByLabelText('streaming')).toBeTruthy();
   });
 
   it('left alignment is default (no flex-row-reverse on voice bubble)', () => {

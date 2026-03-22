@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, PanelRightClose, PanelRightOpen, Square, X, Pencil, Check, FolderOpen, Lock } from 'lucide-react';
+import { ArrowLeft, PanelRightClose, PanelRightOpen, Square, X, Pencil, Check, FolderOpen, Lock, Download } from 'lucide-react';
 import type { Session, Message, VoiceDescriptor } from '../../../shared/types';
 import { PROVIDER_METADATA } from '../../../shared/constants';
 import { useSessionStore } from '../../store/sessionStore';
@@ -7,6 +7,7 @@ import MessageFeed from './MessageFeed';
 import VoicePanel from './VoicePanel';
 import ConductorPanel from './ConductorPanel';
 import ConductorInput from './ConductorInput';
+import { ExportModal } from './ExportModal';
 
 interface SessionViewProps {
   session: Session;
@@ -51,6 +52,7 @@ export default function SessionView({
 
   const [ensemble, setEnsemble] = useState<VoiceDescriptor[]>([]);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [exportOpen, setExportOpen] = useState(false);
   const [voiceErrors, setVoiceErrors] = useState<Record<string, string>>({});
   const [noTargetHint, setNoTargetHint] = useState<string[] | null>(null);
   const [continuationNudge, setContinuationNudge] = useState<{
@@ -209,6 +211,9 @@ export default function SessionView({
   }
 
   const voiceMap = Object.fromEntries(ensemble.map((v) => [v.id, v]));
+  const workingDirLabel = session.workingDir
+    ? (session.workingDir.split('/').filter(Boolean).pop() ?? session.workingDir)
+    : null;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -216,12 +221,13 @@ export default function SessionView({
       <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shrink-0">
         <button
           onClick={onBack}
-          className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
           aria-label="Back to sessions"
         >
           <ArrowLeft size={16} strokeWidth={1.75} />
         </button>
 
+        {/* Left: title + pills */}
         <div className="group flex-1 min-w-0 flex items-center gap-2">
           {isRenaming ? (
             <>
@@ -294,26 +300,58 @@ export default function SessionView({
           )}
         </div>
 
-        {session.workingDir && (
-          <span
-            title={session.workingDir}
-            className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 font-mono min-w-0 shrink truncate"
-          >
-            <FolderOpen size={12} strokeWidth={1.75} className="shrink-0" />
-            {session.workingDir}
+        {/* Right: controls */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {session.workingDir && (
+            <span className="relative group/wdpill shrink-0 mr-1">
+              <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-md cursor-default">
+                <FolderOpen size={11} strokeWidth={1.75} className="shrink-0" />
+                {workingDirLabel}
+              </span>
+              <span className="pointer-events-none absolute top-full right-0 mt-1.5 w-max px-2.5 py-1.5 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded-lg opacity-0 group-hover/wdpill:opacity-100 transition-opacity z-20 font-mono whitespace-nowrap">
+                {session.workingDir}
+              </span>
+            </span>
+          )}
+          {!isRenaming && (
+            <span className="relative group/export shrink-0">
+              <button
+                onClick={() => setExportOpen(true)}
+                aria-label="Export transcript"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <Download size={15} strokeWidth={1.75} />
+              </button>
+              <span className="pointer-events-none absolute top-full right-0 mt-1.5 w-max px-2.5 py-1.5 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded-lg opacity-0 group-hover/export:opacity-100 transition-opacity z-20">
+                Export transcript
+              </span>
+            </span>
+          )}
+          {(isAnyStreaming || isAnyPending) && (
+            <button
+              onClick={() => window.polyphon.voice.abort(session.id)}
+              aria-label="Stop generating"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors font-medium"
+            >
+              <Square size={14} strokeWidth={1.75} />
+              Stop
+            </button>
+          )}
+          <span className="relative group/paneltoggle shrink-0">
+            <button
+              onClick={() => setSidebarExpanded((v) => !v)}
+              aria-label={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              {sidebarExpanded
+                ? <PanelRightClose size={15} strokeWidth={1.75} />
+                : <PanelRightOpen size={15} strokeWidth={1.75} />}
+            </button>
+            <span className="pointer-events-none absolute top-full right-0 mt-1.5 w-max px-2.5 py-1.5 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded-lg opacity-0 group-hover/paneltoggle:opacity-100 transition-opacity z-20">
+              {sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            </span>
           </span>
-        )}
-
-        {(isAnyStreaming || isAnyPending) && (
-          <button
-            onClick={() => window.polyphon.voice.abort(session.id)}
-            aria-label="Stop generating"
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors font-medium shrink-0"
-          >
-            <Square size={16} strokeWidth={1.75} />
-            Stop
-          </button>
-        )}
+        </div>
       </header>
 
       {/* Banners */}
@@ -322,7 +360,7 @@ export default function SessionView({
         {Object.entries(voiceErrors).map(([voiceId, error]) => (
           <div
             key={voiceId}
-            className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/30 border-b border-red-200 dark:border-red-900 text-red-700 dark:text-red-400 text-sm shrink-0"
+            className="flex items-center gap-2 px-4 py-2.5 bg-red-50 dark:bg-red-950/30 border-b border-red-200 dark:border-red-900 text-red-700 dark:text-red-400 text-sm shrink-0"
           >
             <span className="font-medium">
               {voiceId === '_ipc' ? 'Error' : (voiceMap[voiceId]?.name ?? voiceId)}:
@@ -402,16 +440,10 @@ export default function SessionView({
         </div>
 
         <div className="shrink-0 border-l border-gray-200 dark:border-gray-800 overflow-y-auto overflow-x-hidden flex flex-col">
-          <button
-            onClick={() => setSidebarExpanded((v) => !v)}
-            aria-label={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-            className={`flex items-center py-2 px-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${sidebarExpanded ? 'justify-start' : 'justify-center'}`}
-          >
-            {sidebarExpanded
-              ? <PanelRightClose size={16} strokeWidth={1.75} />
-              : <PanelRightOpen size={16} strokeWidth={1.75} />}
-          </button>
           <ConductorPanel expanded={sidebarExpanded} />
+          {ensemble.length > 0 && (
+            <div className="h-px bg-gray-200 dark:bg-gray-800 mx-2" />
+          )}
           {ensemble.map((voice) => (
             <VoicePanel
               key={voice.id}
@@ -429,6 +461,12 @@ export default function SessionView({
         onSubmit={handleSubmit}
         disabled={isAnyStreaming || isAnyPending}
         mode={session.mode}
+      />
+
+      <ExportModal
+        open={exportOpen}
+        session={session}
+        onClose={() => setExportOpen(false)}
       />
     </div>
   );

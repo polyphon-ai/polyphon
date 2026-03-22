@@ -132,26 +132,23 @@ export default function MessageBubble({
             {displayName}
           </span>
           {voiceProvider && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-              {voiceProvider}
-            </span>
-          )}
-          {voiceProvider && (
-            <span className="text-[10px] px-1 py-px rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 font-medium">
-              {voiceProvider === 'openai-compat' ? 'Custom' : voiceType === 'cli' ? 'CLI' : 'API'}
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              {voiceProvider === 'openai-compat' ? 'custom' : voiceProvider}
             </span>
           )}
           {isStreaming && (
-            <span className="flex items-center gap-1 text-xs text-indigo-500 dark:text-indigo-400">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-              streaming
-            </span>
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
+              style={{ backgroundColor: borderColor }}
+              aria-label="streaming"
+            />
           )}
           {isThinking && (
-            <span className="flex items-center gap-1 text-xs text-amber-500 dark:text-amber-400">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              thinking
-            </span>
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full animate-pulse opacity-70"
+              style={{ backgroundColor: borderColor }}
+              aria-label="thinking"
+            />
           )}
         </div>
 

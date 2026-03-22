@@ -73,7 +73,7 @@ describe('MessageFeed', () => {
       />,
     );
     expect(screen.getByText('Partial response...')).toBeTruthy();
-    expect(screen.getByText('streaming')).toBeTruthy();
+    expect(screen.getByLabelText('streaming')).toBeTruthy();
   });
 
   it('shows streaming indicator text when streaming', () => {
@@ -86,7 +86,7 @@ describe('MessageFeed', () => {
         ensemble={ensemble}
       />,
     );
-    expect(screen.getByText('streaming')).toBeTruthy();
+    expect(screen.getByLabelText('streaming')).toBeTruthy();
     expect(screen.getByText('live content')).toBeTruthy();
   });
 
@@ -100,7 +100,7 @@ describe('MessageFeed', () => {
         ensemble={ensemble}
       />,
     );
-    expect(screen.getByText('thinking')).toBeTruthy();
+    expect(screen.getByLabelText('thinking')).toBeTruthy();
     expect(screen.getByLabelText('Thinking')).toBeTruthy();
   });
 
