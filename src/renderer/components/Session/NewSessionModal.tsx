@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, TriangleAlert } from 'lucide-react';
 import { HelpTooltip } from '../Shared';
 import type { Composition, Session } from '../../../shared/types';
 
@@ -193,18 +193,28 @@ export function NewSessionModal({
               )}
             </div>
             {workingDir.status === 'valid' && (
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={sandboxed}
-                  onChange={(e) => setSandboxed(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 shrink-0"
-                />
-                <span className="text-xs text-gray-700 dark:text-gray-300">
-                  Sandbox API voices to this directory
-                </span>
-                <HelpTooltip text="Restricts all file system tool calls from API voices to this directory. Voices cannot read, write, or list files outside of it." />
-              </label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={sandboxed}
+                    onChange={(e) => setSandboxed(e.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 shrink-0"
+                  />
+                  <span className="text-xs text-gray-700 dark:text-gray-300">
+                    Sandbox API voices to this directory
+                  </span>
+                  <HelpTooltip text="Restricts all file system tool calls from API voices to this directory. Voices cannot read, write, or list files outside of it." />
+                </label>
+                {sandboxed && pickerComp && pickerComp.voices.some((v) => v.cliCommand) && (
+                  <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 px-3 py-2.5">
+                    <TriangleAlert size={14} strokeWidth={1.75} className="shrink-0 mt-0.5 text-amber-500 dark:text-amber-400" />
+                    <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                      This composition includes CLI voices that will not be sandboxed. CLI voices run as autonomous subprocess agents and can access any file your account can.
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
             <button
               onClick={handleCreate}

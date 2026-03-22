@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, PanelRightClose, PanelRightOpen, Square, X, Pencil, Check, FolderOpen } from 'lucide-react';
+import { ArrowLeft, PanelRightClose, PanelRightOpen, Square, X, Pencil, Check, FolderOpen, Lock } from 'lucide-react';
 import type { Session, Message, VoiceDescriptor } from '../../../shared/types';
 import { PROVIDER_METADATA } from '../../../shared/constants';
 import { useSessionStore } from '../../store/sessionStore';
@@ -265,15 +265,33 @@ export default function SessionView({
               </button>
             </>
           )}
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
-              session.mode === 'conductor'
-                ? 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400'
-                : 'bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-400'
-            }`}
-          >
-            {session.mode === 'conductor' ? 'Directed' : 'Broadcast'}
+          <span className="relative group/modepill shrink-0">
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium cursor-default ${
+                session.mode === 'conductor'
+                  ? 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400'
+                  : 'bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-400'
+              }`}
+            >
+              {session.mode === 'conductor' ? 'Directed' : 'Broadcast'}
+            </span>
+            <span className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-52 px-2.5 py-1.5 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded-lg opacity-0 group-hover/modepill:opacity-100 transition-opacity z-20 text-center leading-snug">
+              {session.mode === 'conductor'
+                ? 'Voices respond to each conductor message in turn.'
+                : 'All voices respond to every conductor message simultaneously.'}
+            </span>
           </span>
+          {session.sandboxedToWorkingDir && (
+            <span className="relative group/sandboxpill shrink-0">
+              <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium cursor-default bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400">
+                <Lock size={10} strokeWidth={2} />
+                Sandboxed
+              </span>
+              <span className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-56 px-2.5 py-1.5 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded-lg opacity-0 group-hover/sandboxpill:opacity-100 transition-opacity z-20 text-center leading-snug">
+                API voice file system tools are restricted to the working directory. CLI voices are not affected.
+              </span>
+            </span>
+          )}
         </div>
 
         {session.workingDir && (

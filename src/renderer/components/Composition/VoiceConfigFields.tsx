@@ -371,6 +371,16 @@ export function VoiceConfigFields({
           </p>
         </div>
       )}
+
+      {/* CLI voice filesystem access note */}
+      {voiceType === 'cli' && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3 py-2.5">
+          <Terminal size={14} strokeWidth={1.75} className="shrink-0 mt-0.5 text-gray-400 dark:text-gray-500" />
+          <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+            CLI voices run as autonomous subprocess agents with unrestricted filesystem access. Tool toggles and sandbox restrictions apply only to API voices.
+          </p>
+        </div>
+      )}
     </>
   );
 }
