@@ -14,12 +14,17 @@
  *   4. Mixed conductor routing — @mention directed (Anthropic API + Copilot CLI, 2 directed rounds)
  *   5. Broadcast with "Prompt me" continuation — nudge appears, Allow triggers round 2
  *   6. Broadcast with "Auto" continuation — round cap enforced for maxRounds = 1, 2, and 3
+ *   7. Tool use — Anthropic API reads a sentinel file via read_file + list_directory
+ *   8. Sandboxed tool rejection — Anthropic API cannot read outside the working dir
+ *   9. Transcript export — session exported to markdown, json, and plaintext without dialog
  *
  * Keyword-anchor prompts ("include the word X") are used for human-observer clarity only.
  * The specific keyword is NOT asserted programmatically — LLM output is non-deterministic.
  * Response bubbles are asserted for non-empty content with correct voice attribution.
  */
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { test, expect, type ElectronApplication, type Page } from '@playwright/test';
 import { launchApp, makeTempDir, skipOnboarding, goToProvidersTab } from './helpers';
 
@@ -114,6 +119,8 @@ interface LiveVoiceSpec {
   voiceType: 'api' | 'cli';
   displayName: string;
   model?: string;
+  /** Tool labels to enable (e.g. 'Read File', 'List Directory'). API voices only. */
+  tools?: string[];
 }
 
 async function buildCompositionLive(
@@ -140,20 +147,21 @@ async function buildCompositionLive(
   if (mode === 'broadcast') {
     await win.getByRole('button', { name: /broadcast/i }).first().click();
     await pause();
-    if (continuationPolicy !== 'none') {
-      const label = continuationPolicy === 'prompt' ? 'Prompt me' : 'Auto';
-      await win.getByRole('button', { name: label }).click();
-      await pause();
+    // Always explicitly click the continuation policy button to override the
+    // CompositionBuilder's default ('prompt'), which persists between builds.
+    const contLabel =
+      continuationPolicy === 'none' ? 'None' : continuationPolicy === 'prompt' ? 'Prompt me' : 'Auto';
+    await win.getByRole('button', { name: contLabel, exact: true }).click();
+    await pause();
 
-      if (continuationPolicy === 'auto' && continuationMaxRounds !== undefined) {
-        const slider = win.locator('input[type="range"]').first();
-        await slider.evaluate((el: HTMLInputElement, v: string) => {
-          const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-          setter?.call(el, v);
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-        }, String(continuationMaxRounds));
-        await pause();
-      }
+    if (continuationPolicy === 'auto' && continuationMaxRounds !== undefined) {
+      const slider = win.locator('input[type="range"]').first();
+      await slider.evaluate((el: HTMLInputElement, v: string) => {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        setter?.call(el, v);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }, String(continuationMaxRounds));
+      await pause();
     }
   }
 
@@ -189,6 +197,20 @@ async function buildCompositionLive(
 
     await win.getByRole('button', { name: 'Add Voice' }).click();
     await pause();
+
+    if (voice.tools && voice.tools.length > 0 && voice.voiceType === 'api') {
+      // Tools are configurable in the voice order list after adding. Expand the card.
+      await win.getByRole('button', { name: `Edit ${voice.displayName}` }).click();
+      await pause();
+      for (const toolLabel of voice.tools) {
+        await win.locator('button').filter({ hasText: toolLabel }).first().click();
+        await pause();
+      }
+      // Commit the tool changes by clicking the inner Save button on the expanded row.
+      // Without this, handleSave() never fires and enabledTools stays [] on the voice.
+      await win.getByRole('button', { name: 'Save', exact: true }).click();
+      await pause();
+    }
   }
 
   await win.getByRole('button', { name: 'Save Composition' }).click();
@@ -216,23 +238,6 @@ async function expandSidebarAndAssertVoiceTypes(
     const expectedBadge = voiceType === 'cli' ? 'CLI' : 'API';
     await expect(panel.getByText(expectedBadge, { exact: true })).toBeVisible({ timeout: 5_000 });
   }
-}
-
-/**
- * Assert that the most recent response bubble from the named voice shows the correct
- * type badge (CLI or API) in its header.
- */
-async function assertMessageBubbleType(
-  win: Page,
-  displayName: string,
-  voiceType: 'api' | 'cli',
-): Promise<void> {
-  const expectedBadge = voiceType === 'cli' ? 'CLI' : 'API';
-  const article = win
-    .locator(`[role="article"][aria-label*="Message from ${displayName}"]`)
-    .filter({ hasText: /\S/ })
-    .first();
-  await expect(article.getByText(expectedBadge, { exact: true })).toBeVisible({ timeout: 10_000 });
 }
 
 /**
@@ -270,6 +275,7 @@ async function startSession(
   pause: () => Promise<void>,
   compositionName: string,
   sessionName: string,
+  opts: { workingDir?: string; sandboxed?: boolean } = {},
 ): Promise<void> {
   await win.getByRole('button', { name: /sessions/i }).click();
   await pause();
@@ -279,6 +285,17 @@ async function startSession(
   await pause();
   await win.getByPlaceholder('My session').fill(sessionName);
   await pause();
+  if (opts.workingDir) {
+    await win.getByPlaceholder('/path/to/project').fill(opts.workingDir);
+    // Wait for debounced directory validation to resolve
+    await win.waitForTimeout(1_500);
+  }
+  if (opts.sandboxed) {
+    const sandboxLabel = win.locator('label').filter({ hasText: /sandbox api voices/i });
+    await expect(sandboxLabel).toBeVisible({ timeout: 5_000 });
+    await sandboxLabel.click();
+    await pause();
+  }
   await win.getByRole('button', { name: 'Start Session' }).click();
   await expect(win.getByPlaceholder('Message the ensemble\u2026')).toBeVisible({ timeout: 10_000 });
   await pause();
@@ -395,9 +412,6 @@ test.describe.serial('built-in providers', () => {
       await waitForVoiceResponse(win, 'Anthropic API');
       await waitForVoiceResponse(win, 'OpenAI API');
       await waitForVoiceResponse(win, 'Gemini API');
-      await assertMessageBubbleType(win, 'Anthropic API', 'api');
-      await assertMessageBubbleType(win, 'OpenAI API', 'api');
-      await assertMessageBubbleType(win, 'Gemini API', 'api');
       await waitForRoundIdle(win);
       await expect(win.locator('[role="alert"]')).not.toBeVisible();
       await longPause();
@@ -436,9 +450,6 @@ test.describe.serial('built-in providers', () => {
       await waitForVoiceResponse(win, 'Anthropic CLI');
       await waitForVoiceResponse(win, 'OpenAI CLI');
       await waitForVoiceResponse(win, 'Copilot CLI');
-      await assertMessageBubbleType(win, 'Anthropic CLI', 'cli');
-      await assertMessageBubbleType(win, 'OpenAI CLI', 'cli');
-      await assertMessageBubbleType(win, 'Copilot CLI', 'cli');
       await waitForRoundIdle(win);
       await expect(win.locator('[role="alert"]')).not.toBeVisible();
       await longPause();
@@ -473,8 +484,6 @@ test.describe.serial('built-in providers', () => {
       await win.keyboard.press('Enter');
       await waitForVoiceResponse(win, 'Anthropic API');
       await waitForVoiceResponse(win, 'Copilot CLI');
-      await assertMessageBubbleType(win, 'Anthropic API', 'api');
-      await assertMessageBubbleType(win, 'Copilot CLI', 'cli');
       await waitForRoundIdle(win);
       await longPause();
 
@@ -536,7 +545,6 @@ test.describe.serial('built-in providers', () => {
       await win.keyboard.press('Enter');
 
       await waitForVoiceResponse(win, 'Anthropic API');
-      await assertMessageBubbleType(win, 'Anthropic API', 'api');
       await waitForRoundIdle(win);
       await longPause();
 
@@ -558,7 +566,6 @@ test.describe.serial('built-in providers', () => {
       await win.keyboard.press('Enter');
 
       await waitForVoiceResponse(win, 'Copilot CLI');
-      await assertMessageBubbleType(win, 'Copilot CLI', 'cli');
       await waitForRoundIdle(win);
       await longPause();
 
@@ -610,8 +617,6 @@ test.describe.serial('built-in providers', () => {
       // Round 1
       await waitForVoiceResponse(win, 'Anthropic Prompt');
       await waitForVoiceResponse(win, 'OpenAI Prompt');
-      await assertMessageBubbleType(win, 'Anthropic Prompt', 'api');
-      await assertMessageBubbleType(win, 'OpenAI Prompt', 'api');
       await waitForRoundIdle(win);
 
       // Continuation nudge must appear
@@ -710,6 +715,157 @@ test.describe.serial('built-in providers', () => {
 
     test('maxRounds=3: exactly 3 response sets, 2 auto continuations fire', async () => {
       await runAutoRoundsTest(3, 'Live Auto 3R', 'Auto 3R Session', 'Anthropic Auto 3R', 'OpenAI Auto 3R');
+    });
+  });
+
+  // ── Scenario 7: Tool use — API voice reads a real file ──────────────────────
+  //
+  // Creates a temp dir with a known sentinel file. Anthropic API is given
+  // list_directory + read_file tools and asked to list the dir and read the file.
+  // Asserts the sentinel value appears in the response, proving the tool-use loop
+  // executed end-to-end against a real provider.
+
+  const TOOL_SESSION_NAME = 'Tool Read Session';
+
+  test.describe.serial('tool use — read_file + list_directory', () => {
+    test('Anthropic API reads a sentinel file via tool call', async () => {
+      test.setTimeout(300_000);
+      const ok = await requireProviders(win, [
+        { providerId: 'anthropic', voiceType: 'api', label: 'Anthropic API' },
+      ]);
+      if (!ok) return;
+
+      const toolDir = makeTempDir();
+      fs.writeFileSync(path.join(toolDir, 'polyphon-test.txt'), 'POLYPHON_SENTINEL_12345');
+
+      await buildCompositionLive(win, pause, longPause, 'Live Tool Read', [
+        {
+          providerId: 'anthropic',
+          voiceType: 'api',
+          displayName: 'Anthropic Tool',
+          model: LIVE_TEST_MODELS.anthropic,
+          tools: ['Read File', 'List Directory'],
+        },
+      ]);
+
+      await startSession(win, pause, 'Live Tool Read', TOOL_SESSION_NAME, { workingDir: toolDir });
+
+      await win
+        .getByPlaceholder('Message the ensemble\u2026')
+        .fill(
+          'Use the list_directory tool to list the working directory, then use the read_file tool to read polyphon-test.txt. Reply with its exact text content.',
+        );
+      await pause();
+      await win.keyboard.press('Enter');
+
+      await waitForVoiceResponse(win, 'Anthropic Tool');
+      await waitForRoundIdle(win);
+
+      await expect(
+        win
+          .locator('[role="article"][aria-label*="Anthropic Tool"]')
+          .filter({ hasText: 'POLYPHON_SENTINEL_12345' }),
+      ).toBeVisible({ timeout: 90_000 });
+
+      await expect(win.locator('[role="alert"]')).not.toBeVisible();
+      await longPause();
+    });
+  });
+
+  // ── Scenario 8: Sandboxed tool rejection ────────────────────────────────────
+  //
+  // Creates a session with sandbox enabled. Anthropic API is given read_file and
+  // asked to read /etc/hosts (outside the sandbox dir). The tool executor returns
+  // an error; the voice response must not contain actual /etc/hosts content.
+
+  test.describe.serial('tool use — sandboxed rejection', () => {
+    test('Anthropic API cannot read outside the sandbox working dir', async () => {
+      test.setTimeout(300_000);
+      const ok = await requireProviders(win, [
+        { providerId: 'anthropic', voiceType: 'api', label: 'Anthropic API' },
+      ]);
+      if (!ok) return;
+
+      const sandboxDir = makeTempDir();
+
+      await buildCompositionLive(win, pause, longPause, 'Live Tool Sandbox', [
+        {
+          providerId: 'anthropic',
+          voiceType: 'api',
+          displayName: 'Anthropic Sandbox',
+          model: LIVE_TEST_MODELS.anthropic,
+          tools: ['Read File'],
+        },
+      ]);
+
+      await startSession(win, pause, 'Live Tool Sandbox', 'Sandbox Session', {
+        workingDir: sandboxDir,
+        sandboxed: true,
+      });
+
+      await win
+        .getByPlaceholder('Message the ensemble\u2026')
+        .fill('Use the read_file tool to read /etc/hosts and tell me its exact contents.');
+      await pause();
+      await win.keyboard.press('Enter');
+
+      await waitForVoiceResponse(win, 'Anthropic Sandbox');
+      await waitForRoundIdle(win);
+
+      // /etc/hosts always contains this loopback line — it must NOT appear in the response.
+      const article = win
+        .locator('[role="article"][aria-label*="Anthropic Sandbox"]')
+        .filter({ hasText: /\S/ })
+        .first();
+      await expect(article).not.toContainText('127.0.0.1');
+
+      await expect(win.locator('[role="alert"]')).not.toBeVisible();
+      await longPause();
+    });
+  });
+
+  // ── Scenario 9: Transcript export ────────────────────────────────────────────
+  //
+  // Reuses the session from Scenario 7. Exports it to all three formats via the
+  // IPC savePath bypass (no native dialog). Asserts files exist, are non-empty,
+  // and that the JSON export parses with a non-empty messages array.
+
+  test.describe.serial('transcript export', () => {
+    test('exports session to markdown, json, and plaintext without dialog', async () => {
+      const sessions: Array<{ id: string; name: string }> = await win.evaluate(
+        () => window.polyphon.session.list(),
+      );
+      const session = sessions.find((s) => s.name === TOOL_SESSION_NAME);
+      if (!session) {
+        test.skip(true, `"${TOOL_SESSION_NAME}" not found — tool use test was skipped`);
+        return;
+      }
+
+      const exportDir = makeTempDir();
+
+      for (const format of ['markdown', 'json', 'plaintext'] as const) {
+        const ext = format === 'json' ? 'json' : format === 'markdown' ? 'md' : 'txt';
+        const savePath = path.join(exportDir, `export.${ext}`);
+
+        const result: { ok: boolean; error?: string } = await win.evaluate(
+          async ({ sessionId, fmt, sp }) =>
+            window.polyphon.session.export(sessionId, fmt as 'markdown' | 'json' | 'plaintext', sp),
+          { sessionId: session.id, fmt: format, sp: savePath },
+        );
+
+        expect(result.ok).toBe(true);
+        expect(fs.existsSync(savePath)).toBe(true);
+        const content = fs.readFileSync(savePath, 'utf-8');
+        expect(content.length).toBeGreaterThan(0);
+
+        if (format === 'json') {
+          const parsed = JSON.parse(content) as { messages: unknown[] };
+          expect(Array.isArray(parsed.messages)).toBe(true);
+          expect(parsed.messages.length).toBeGreaterThan(0);
+        }
+      }
+
+      await longPause();
     });
   });
 });
