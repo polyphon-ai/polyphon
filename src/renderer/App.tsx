@@ -10,6 +10,7 @@ import { useCompositionStore } from './store/compositionStore';
 import { useSettingsStore } from './store/settingsStore';
 import SettingsPage from './components/Settings/SettingsPage';
 import SessionView from './components/Session/SessionView';
+import { NewSessionModal } from './components/Session/NewSessionModal';
 import CompositionBuilder from './components/Composition/CompositionBuilder';
 import type { Session, Composition } from '../shared/types';
 import { PROVIDER_METADATA, SETTINGS_PROVIDERS } from '../shared/constants';
@@ -236,42 +237,6 @@ function SessionRow({
   );
 }
 
-type WorkingDirStatus = 'idle' | 'checking' | 'valid' | 'invalid';
-
-function useWorkingDirField() {
-  const [input, setInput] = useState('');
-  const [status, setStatus] = useState<WorkingDirStatus>('idle');
-  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleChange(value: string) {
-    setInput(value);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (!value.trim()) { setStatus('idle'); return; }
-    setStatus('checking');
-    timerRef.current = setTimeout(async () => {
-      const ok = await window.polyphon.session.validateWorkingDir(value.trim());
-      setStatus(ok ? 'valid' : 'invalid');
-    }, 1500);
-  }
-
-  function setFromPicker(dir: string) {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setInput(dir);
-    setStatus('valid');
-  }
-
-  function clear() {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setInput('');
-    setStatus('idle');
-  }
-
-  const resolvedDir = status === 'valid' ? input.trim() : null;
-  const isBlocking = status === 'checking' || status === 'invalid';
-
-  return { input, status, resolvedDir, isBlocking, handleChange, setFromPicker, clear };
-}
-
 function SessionsList({
   onOpenSession,
 }: {
@@ -280,12 +245,7 @@ function SessionsList({
   const { sessions, setSessions, removeSession, renameSession } = useSessionStore();
   const { compositions, setCompositions } = useCompositionStore();
   const [showPicker, setShowPicker] = useState(false);
-  const [pickerComp, setPickerComp] = useState<Composition | null>(null);
-  const [newName, setNewName] = useState('');
-  const [creating, setCreating] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const workingDir = useWorkingDirField();
-  const [sandboxed, setSandboxed] = useState(false);
 
   useEffect(() => {
     window.polyphon.session.list(showArchived).then(setSessions).catch(() => {});
@@ -303,36 +263,6 @@ function SessionsList({
   async function handleDeleteSession(id: string) {
     await window.polyphon.session.delete(id).catch(() => {});
     removeSession(id);
-  }
-
-  async function handleCreate() {
-    if (!pickerComp || !newName.trim()) return;
-    setCreating(true);
-    try {
-      const session = await window.polyphon.session.create(
-        pickerComp.id,
-        newName.trim(),
-        workingDir.resolvedDir,
-        sandboxed,
-      );
-      setSessions([session, ...sessions]);
-      setShowPicker(false);
-      setPickerComp(null);
-      setNewName('');
-      workingDir.clear();
-      setSandboxed(false);
-      onOpenSession(session);
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  function closePicker() {
-    setShowPicker(false);
-    setPickerComp(null);
-    setNewName('');
-    workingDir.clear();
-    setSandboxed(false);
   }
 
   return (
@@ -357,150 +287,16 @@ function SessionsList({
         </div>
       </div>
 
-      {/* Composition picker modal */}
-      {showPicker && (
-        <div className="absolute inset-0 bg-black/40 dark:bg-black/60 z-30 flex items-center justify-center p-6">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-              New Session
-            </h3>
-
-            {!pickerComp ? (
-              <>
-                <p className="text-sm text-gray-500">Choose a composition:</p>
-                {compositions.length === 0 ? (
-                  <div className="text-sm text-gray-400 dark:text-gray-600 text-center py-6">
-                    No compositions yet. Create one in{' '}
-                    <span className="font-medium">Compositions</span>.
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {compositions.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => setPickerComp(c)}
-                        className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors"
-                      >
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {c.name}
-                        </div>
-                        <div className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">
-                          {c.voices.length} voice
-                          {c.voices.length !== 1 ? 's' : ''} ·{' '}
-                          {c.mode === 'conductor' ? 'Directed' : 'Broadcast'}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPickerComp(null)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    ←
-                  </button>
-                  <span className="text-sm text-gray-500">
-                    Using:{' '}
-                    <span className="font-medium text-gray-700 dark:text-gray-300">
-                      {pickerComp.name}
-                    </span>
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                    Session name
-                  </label>
-                  <input
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                    placeholder="My session"
-                    autoFocus
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                    Working directory <span className="font-normal text-gray-400 dark:text-gray-600">(optional)</span>
-                    <HelpTooltip text="CLI voices (claude, codex, copilot) will be spawned in this directory." />
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={workingDir.input}
-                      onChange={(e) => workingDir.handleChange(e.target.value)}
-                      placeholder="/path/to/project"
-                      className="flex-1 min-w-0 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-                    />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const dir = await window.polyphon.session.pickWorkingDir();
-                        if (dir) workingDir.setFromPicker(dir);
-                      }}
-                      className="shrink-0 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl transition-colors text-gray-700 dark:text-gray-300"
-                    >
-                      Browse
-                    </button>
-                    {workingDir.input && (
-                      <button
-                        type="button"
-                        onClick={workingDir.clear}
-                        aria-label="Clear working directory"
-                        className="shrink-0 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                      >
-                        <X size={14} strokeWidth={1.75} />
-                      </button>
-                    )}
-                  </div>
-                  {workingDir.status === 'checking' && (
-                    <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Checking…</p>
-                  )}
-                  {workingDir.status === 'valid' && (
-                    <p className="mt-1.5 text-xs text-green-600 dark:text-green-400">Valid directory</p>
-                  )}
-                  {workingDir.status === 'invalid' && (
-                    <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">Directory not found</p>
-                  )}
-                </div>
-                {workingDir.status === 'valid' && (
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={sandboxed}
-                      onChange={(e) => setSandboxed(e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 shrink-0"
-                    />
-                    <span className="text-xs text-gray-700 dark:text-gray-300">
-                      Sandbox API voices to this directory
-                    </span>
-                    <HelpTooltip text="Restricts all file system tool calls from API voices to this directory. Voices cannot read, write, or list files outside of it." />
-                  </label>
-                )}
-                <button
-                  onClick={handleCreate}
-                  disabled={creating || !newName.trim() || workingDir.isBlocking}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-xl transition-colors text-sm"
-                >
-                  {creating ? 'Creating…' : 'Start Session'}
-                </button>
-              </>
-            )}
-
-            <button
-              onClick={closePicker}
-              className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      <NewSessionModal
+        open={showPicker}
+        compositions={compositions}
+        onClose={() => setShowPicker(false)}
+        onCreated={(session) => {
+          setSessions([session, ...sessions]);
+          setShowPicker(false);
+          onOpenSession(session);
+        }}
+      />
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {sessions.length === 0 ? (
@@ -715,11 +511,7 @@ function Dashboard({
   const { compositions, setCompositions } = useCompositionStore();
   const { providerStatuses, cliTestStates, customProviders } = useSettingsStore();
   const [showPicker, setShowPicker] = useState(false);
-  const [pickerComp, setPickerComp] = useState<Composition | null>(null);
-  const [newName, setNewName] = useState('');
-  const [creating, setCreating] = useState(false);
-  const workingDir = useWorkingDirField();
-  const [sandboxed, setSandboxed] = useState(false);
+  const [pickerInitComp, setPickerInitComp] = useState<Composition | null>(null);
 
   useEffect(() => {
     window.polyphon.session.list(false).then(setSessions).catch(() => {});
@@ -729,31 +521,6 @@ function Dashboard({
   const recentSessions = sessions.slice(0, 5);
   const recentCompositions = compositions.slice(0, 3);
   const compMap = Object.fromEntries(compositions.map((c) => [c.id, c]));
-
-  async function handleCreate() {
-    if (!pickerComp || !newName.trim()) return;
-    setCreating(true);
-    try {
-      const session = await window.polyphon.session.create(pickerComp.id, newName.trim(), workingDir.resolvedDir, sandboxed);
-      setSessions([session, ...sessions]);
-      setShowPicker(false);
-      setPickerComp(null);
-      setNewName('');
-      workingDir.clear();
-      setSandboxed(false);
-      onOpenSession(session);
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  function closePicker() {
-    setShowPicker(false);
-    setPickerComp(null);
-    setNewName('');
-    workingDir.clear();
-    setSandboxed(false);
-  }
 
   return (
     <div className="h-full overflow-y-auto py-12 px-8 relative">
@@ -767,7 +534,7 @@ function Dashboard({
             </h2>
             <div className="relative group">
               <button
-                onClick={() => setShowPicker(true)}
+                onClick={() => { setPickerInitComp(null); setShowPicker(true); }}
                 aria-label="+ New Session"
                 className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
@@ -858,7 +625,7 @@ function Dashboard({
                   <div
                     key={c.id}
                     onClick={() => {
-                      setPickerComp(c);
+                      setPickerInitComp(c);
                       setShowPicker(true);
                     }}
                     className="flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
@@ -972,148 +739,17 @@ function Dashboard({
         </div>
       </div>
 
-      {/* Composition picker modal */}
-      {showPicker && (
-        <div className="absolute inset-0 bg-black/40 dark:bg-black/60 z-30 flex items-center justify-center p-6">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">New Session</h3>
-
-            {!pickerComp ? (
-              <>
-                <p className="text-sm text-gray-500">Choose a composition:</p>
-                {compositions.length === 0 ? (
-                  <div className="text-sm text-gray-400 dark:text-gray-600 text-center py-6">
-                    No compositions yet. Create one in{' '}
-                    <span className="font-medium">Compositions</span>.
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {compositions.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => setPickerComp(c)}
-                        className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors"
-                      >
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {c.name}
-                        </div>
-                        <div className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">
-                          {c.voices.length} voice
-                          {c.voices.length !== 1 ? 's' : ''} ·{' '}
-                          {c.mode === 'conductor' ? 'Directed' : 'Broadcast'}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPickerComp(null)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    ←
-                  </button>
-                  <span className="text-sm text-gray-500">
-                    Using:{' '}
-                    <span className="font-medium text-gray-700 dark:text-gray-300">
-                      {pickerComp.name}
-                    </span>
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                    Session name
-                  </label>
-                  <input
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                    placeholder="My session"
-                    autoFocus
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                    Working directory <span className="font-normal text-gray-400 dark:text-gray-600">(optional)</span>
-                    <HelpTooltip text="CLI voices (claude, codex, copilot) will be spawned in this directory." />
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={workingDir.input}
-                      onChange={(e) => workingDir.handleChange(e.target.value)}
-                      placeholder="/path/to/project"
-                      className="flex-1 min-w-0 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-                    />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const dir = await window.polyphon.session.pickWorkingDir();
-                        if (dir) workingDir.setFromPicker(dir);
-                      }}
-                      className="shrink-0 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl transition-colors text-gray-700 dark:text-gray-300"
-                    >
-                      Browse
-                    </button>
-                    {workingDir.input && (
-                      <button
-                        type="button"
-                        onClick={workingDir.clear}
-                        aria-label="Clear working directory"
-                        className="shrink-0 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                      >
-                        <X size={14} strokeWidth={1.75} />
-                      </button>
-                    )}
-                  </div>
-                  {workingDir.status === 'checking' && (
-                    <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Checking…</p>
-                  )}
-                  {workingDir.status === 'valid' && (
-                    <p className="mt-1.5 text-xs text-green-600 dark:text-green-400">Valid directory</p>
-                  )}
-                  {workingDir.status === 'invalid' && (
-                    <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">Directory not found</p>
-                  )}
-                </div>
-                {workingDir.status === 'valid' && (
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={sandboxed}
-                      onChange={(e) => setSandboxed(e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 shrink-0"
-                    />
-                    <span className="text-xs text-gray-700 dark:text-gray-300">
-                      Sandbox API voices to this directory
-                    </span>
-                    <HelpTooltip text="Restricts all file system tool calls from API voices to this directory. Voices cannot read, write, or list files outside of it." />
-                  </label>
-                )}
-                <button
-                  onClick={handleCreate}
-                  disabled={creating || !newName.trim() || workingDir.isBlocking}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-xl transition-colors text-sm"
-                >
-                  {creating ? 'Creating…' : 'Start Session'}
-                </button>
-              </>
-            )}
-
-            <button
-              onClick={closePicker}
-              className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      <NewSessionModal
+        open={showPicker}
+        compositions={compositions}
+        initialComposition={pickerInitComp}
+        onClose={() => setShowPicker(false)}
+        onCreated={(session) => {
+          setSessions([session, ...sessions]);
+          setShowPicker(false);
+          onOpenSession(session);
+        }}
+      />
     </div>
   );
 }
@@ -1149,11 +785,6 @@ export default function App(): React.JSX.Element {
 
   // Sidebar "new session" modal
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
-  const [newSessionPickerComp, setNewSessionPickerComp] = useState<Composition | null>(null);
-  const [newSessionName, setNewSessionName] = useState('');
-  const [newSessionCreating, setNewSessionCreating] = useState(false);
-  const sidebarWorkingDir = useWorkingDirField();
-  const [sidebarSandboxed, setSidebarSandboxed] = useState(false);
 
 
   // First-run onboarding modal
@@ -1267,36 +898,6 @@ export default function App(): React.JSX.Element {
     }
     openSession(session.id);
     setView('session');
-  }
-
-  async function handleSidebarCreateSession() {
-    if (!newSessionPickerComp || !newSessionName.trim()) return;
-    setNewSessionCreating(true);
-    try {
-      const session = await window.polyphon.session.create(
-        newSessionPickerComp.id,
-        newSessionName.trim(),
-        sidebarWorkingDir.resolvedDir,
-        sidebarSandboxed,
-      );
-      setSessions([session, ...sessions]);
-      setShowNewSessionModal(false);
-      setNewSessionPickerComp(null);
-      setNewSessionName('');
-      sidebarWorkingDir.clear();
-      setSidebarSandboxed(false);
-      handleOpenSession(session);
-    } finally {
-      setNewSessionCreating(false);
-    }
-  }
-
-  function closeNewSessionModal() {
-    setShowNewSessionModal(false);
-    setNewSessionPickerComp(null);
-    setNewSessionName('');
-    sidebarWorkingDir.clear();
-    setSidebarSandboxed(false);
   }
 
   async function handleSaveComposition(
@@ -1631,146 +1232,16 @@ export default function App(): React.JSX.Element {
       </aside>
 
       {/* Sidebar: New Session modal */}
-      {showNewSessionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">New Session</h3>
-
-            {!newSessionPickerComp ? (
-              <>
-                <p className="text-sm text-gray-500">Choose a composition:</p>
-                {compositions.length === 0 ? (
-                  <div className="text-sm text-gray-400 dark:text-gray-600 text-center py-6">
-                    No compositions yet. Create one in{' '}
-                    <span className="font-medium">Compositions</span>.
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {compositions.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => setNewSessionPickerComp(c)}
-                        className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors"
-                      >
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {c.name}
-                        </div>
-                        <div className="text-xs text-gray-400 dark:text-gray-600 mt-0.5">
-                          {c.voices.length} voice{c.voices.length !== 1 ? 's' : ''} ·{' '}
-                          {c.mode === 'conductor' ? 'Directed' : 'Broadcast'}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setNewSessionPickerComp(null)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    ←
-                  </button>
-                  <span className="text-sm text-gray-500">
-                    Using:{' '}
-                    <span className="font-medium text-gray-700 dark:text-gray-300">
-                      {newSessionPickerComp.name}
-                    </span>
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                    Session name
-                  </label>
-                  <input
-                    type="text"
-                    value={newSessionName}
-                    onChange={(e) => setNewSessionName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSidebarCreateSession()}
-                    placeholder="My session"
-                    autoFocus
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                    Working directory <span className="font-normal text-gray-400 dark:text-gray-600">(optional)</span>
-                    <HelpTooltip text="CLI voices (claude, codex, copilot) will be spawned in this directory." />
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={sidebarWorkingDir.input}
-                      onChange={(e) => sidebarWorkingDir.handleChange(e.target.value)}
-                      placeholder="/path/to/project"
-                      className="flex-1 min-w-0 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-                    />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const dir = await window.polyphon.session.pickWorkingDir();
-                        if (dir) sidebarWorkingDir.setFromPicker(dir);
-                      }}
-                      className="shrink-0 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl transition-colors text-gray-700 dark:text-gray-300"
-                    >
-                      Browse
-                    </button>
-                    {sidebarWorkingDir.input && (
-                      <button
-                        type="button"
-                        onClick={sidebarWorkingDir.clear}
-                        aria-label="Clear working directory"
-                        className="shrink-0 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                      >
-                        <X size={14} strokeWidth={1.75} />
-                      </button>
-                    )}
-                  </div>
-                  {sidebarWorkingDir.status === 'checking' && (
-                    <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">Checking…</p>
-                  )}
-                  {sidebarWorkingDir.status === 'valid' && (
-                    <p className="mt-1.5 text-xs text-green-600 dark:text-green-400">Valid directory</p>
-                  )}
-                  {sidebarWorkingDir.status === 'invalid' && (
-                    <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">Directory not found</p>
-                  )}
-                </div>
-                {sidebarWorkingDir.status === 'valid' && (
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={sidebarSandboxed}
-                      onChange={(e) => setSidebarSandboxed(e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 shrink-0"
-                    />
-                    <span className="text-xs text-gray-700 dark:text-gray-300">
-                      Sandbox API voices to this directory
-                    </span>
-                    <HelpTooltip text="Restricts all file system tool calls from API voices to this directory. Voices cannot read, write, or list files outside of it." />
-                  </label>
-                )}
-                <button
-                  onClick={handleSidebarCreateSession}
-                  disabled={newSessionCreating || !newSessionName.trim() || sidebarWorkingDir.isBlocking}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-xl transition-colors text-sm"
-                >
-                  {newSessionCreating ? 'Creating…' : 'Start Session'}
-                </button>
-              </>
-            )}
-
-            <button
-              onClick={closeNewSessionModal}
-              className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      <NewSessionModal
+        open={showNewSessionModal}
+        compositions={compositions}
+        onClose={() => setShowNewSessionModal(false)}
+        onCreated={(session) => {
+          setSessions([session, ...sessions]);
+          setShowNewSessionModal(false);
+          handleOpenSession(session);
+        }}
+      />
 
       {/* First-run onboarding modal */}
       {showOnboarding && (
