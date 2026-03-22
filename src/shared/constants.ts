@@ -197,3 +197,69 @@ export const PROVIDER_METADATA: Readonly<Record<string, ProviderMetadata>> = {
 
 // Ordered list of providers shown in Settings
 export const SETTINGS_PROVIDERS = ['anthropic', 'openai', 'gemini', 'copilot'] as const;
+
+// Available filesystem tools for API voices.
+// This is the single source of truth for tool names, labels, and descriptions
+// used by the renderer for display AND by IPC validation for allowed names.
+export const AVAILABLE_TOOLS: ReadonlyArray<{ name: string; label: string; description: string; isWritable: boolean }> = [
+  {
+    name: 'read_file',
+    label: 'Read File',
+    description: 'Read the contents of a file as text (up to 50 KB).',
+    isWritable: false,
+  },
+  {
+    name: 'write_file',
+    label: 'Write File',
+    description: 'Write or overwrite a file.',
+    isWritable: true,
+  },
+  {
+    name: 'list_directory',
+    label: 'List Directory',
+    description: 'List the contents of a directory recursively (depth 3, max 500 entries).',
+    isWritable: false,
+  },
+  {
+    name: 'run_command',
+    label: 'Run Command',
+    description: 'Run an executable and return its output.',
+    isWritable: true,
+  },
+  {
+    name: 'search_files',
+    label: 'Search Files',
+    description: 'Search for files by name pattern within a directory tree.',
+    isWritable: false,
+  },
+  {
+    name: 'grep_files',
+    label: 'Search File Contents',
+    description: 'Search for a text pattern across files in a directory.',
+    isWritable: false,
+  },
+  {
+    name: 'move_file',
+    label: 'Move / Rename File',
+    description: 'Move or rename a file.',
+    isWritable: true,
+  },
+  {
+    name: 'copy_file',
+    label: 'Copy File',
+    description: 'Copy a file to a new location.',
+    isWritable: true,
+  },
+  {
+    name: 'delete_file',
+    label: 'Delete File',
+    description: 'Permanently delete a file.',
+    isWritable: true,
+  },
+  {
+    name: 'fetch_url',
+    label: 'Fetch URL',
+    description: 'Fetch the content of an HTTP or HTTPS URL and return it as text.',
+    isWritable: false,
+  },
+] as const;

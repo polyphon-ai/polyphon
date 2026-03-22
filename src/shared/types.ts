@@ -89,6 +89,7 @@ export interface CompositionVoice {
   color: string;
   avatarIcon: string;
   customProviderId?: string; // for 'openai-compat' provider voices
+  enabledTools?: string[]; // tool names from AVAILABLE_TOOLS; API voices only
 }
 
 export interface CustomProvider {
@@ -119,6 +120,7 @@ export interface Session {
   updatedAt: number;
   archived: boolean;
   workingDir: string | null;
+  sandboxedToWorkingDir: boolean;
 }
 
 // Settings — provider configuration persisted to SQLite
