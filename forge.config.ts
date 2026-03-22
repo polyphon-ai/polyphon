@@ -7,7 +7,11 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true,
+    asar: {
+      // Unpack better-sqlite3 so its native .node binary is not inside the ASAR
+      // archive (native addons cannot be loaded from within an ASAR).
+      unpack: '**/node_modules/better-sqlite3/**',
+    },
     icon: 'assets/icons/icon',
     extraResource: ['app-update.yml'],
     appBundleId: 'ai.polyphon.app',
@@ -32,7 +36,12 @@ const config: ForgeConfig = {
       },
     }),
   },
-  rebuildConfig: {},
+  // Skip Forge's built-in native module rebuild. better-sqlite3 is built with
+  // the SQLCipher amalgamation in the postinstall script (build-sqlcipher.mjs
+  // --mode=electron) using electron-rebuild with the --sqlite3 extra arg.
+  // Letting Forge rebuild it here would overwrite the SQLCipher binary with a
+  // stock SQLite build.
+  rebuildConfig: { onlyModules: [] },
   makers: [
     new MakerZIP({}, ['darwin']),
     new MakerDMG({
