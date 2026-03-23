@@ -1,7 +1,7 @@
 {
   "name": "Polyphon",
   "productName": "Polyphon",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "One chat. Many voices.",
   "main": ".vite/build/main.js",
   "scripts": {
