@@ -44,10 +44,9 @@ items:
 
   - title: "Full Text Search"
     pricing: free
-    status: planned
-    description: "Search across all your sessions and messages instantly. Find any conversation, code snippet, or answer from past sessions without scrolling through history."
-    discussion:
-    feature_request:
+    status: released
+    release_date: 2026-03-22
+    description: "Search across all your sessions and messages instantly. A global search view finds matches across every session; per-session Cmd+F search highlights matches inline. Powered by FTS5 for fast, accurate results."
 
   - title: "Plugins"
     pricing: free

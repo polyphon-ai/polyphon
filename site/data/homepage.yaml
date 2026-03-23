@@ -17,6 +17,9 @@ features:
   - icon: folder-open
     title: File system tools
     body: API voices get host-brokered file tools — read, write, list — with optional sandboxing to the session working directory. CLI voices run as autonomous agents in the same directory.
+  - icon: search
+    title: Full text search
+    body: Search every message across all sessions instantly. Global search finds anything; per-session Cmd+F highlights matches inline.
   - icon: shield
     title: Local-first, no telemetry
     body: Conversations and API keys stay on your machine. No account, no cloud sync.
