@@ -26,8 +26,26 @@ export const SENSITIVE_LOG_KEYS: ReadonlySet<string> = new Set([
 
 const API_KEY_RE = /sk-\S+|sk-ant-\S+|AIza\S+|gsk_\S+|GOOG\S+|ghp_\S+|github_pat_\S+|Bearer\s+\S+/g;
 
+// Runtime-registered sensitive values (e.g. DB passphrase from env).
+// Checked as literal substrings — do not add short/common strings.
+const _sensitiveValues: Set<string> = new Set();
+
+export function addSensitiveValue(value: string): void {
+  const trimmed = value.trim();
+  if (trimmed.length >= 4) _sensitiveValues.add(trimmed);
+}
+
 function sanitizeString(s: string): string {
-  return s.replace(API_KEY_RE, '[REDACTED]');
+  let result = s.replace(API_KEY_RE, '[REDACTED]');
+  for (const v of _sensitiveValues) {
+    result = result.replaceAll(v, '[REDACTED]');
+  }
+  return result;
+}
+
+// Suppress console log output (used in MCP server mode to avoid stdout contamination).
+export function suppressConsoleTransport(): void {
+  log.transports.console.level = false;
 }
 
 export function sanitizeValue(value: unknown, visited?: WeakSet<object>, depth?: number): unknown {
