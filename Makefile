@@ -56,8 +56,20 @@ test-e2e-live: build-e2e ## Run all live e2e tests (providers + search + encrypt
 	npx playwright test --config=playwright.config.e2e-live.ts && npx playwright test --config=playwright.config.openai-compatible.ts
 
 .PHONY: test-e2e-providers-live
-test-e2e-providers-live: build-e2e ## Run live provider e2e tests only (Anthropic, OpenAI, Gemini, Copilot)
-	npx playwright test --config=playwright.config.e2e-live.ts e2e/providers.e2e-live.test.ts
+test-e2e-providers-live: build-e2e ## Run all live provider e2e tests (API + CLI + mixed)
+	npx playwright test --config=playwright.config.e2e-live.ts e2e/providers-api.e2e-live.test.ts e2e/providers-cli.e2e-live.test.ts e2e/providers-mixed.e2e-live.test.ts
+
+.PHONY: test-e2e-api-live
+test-e2e-api-live: build-e2e ## Run live API voice e2e tests only (Anthropic, OpenAI, Gemini)
+	npx playwright test --config=playwright.config.e2e-live.ts e2e/providers-api.e2e-live.test.ts
+
+.PHONY: test-e2e-cli-live
+test-e2e-cli-live: build-e2e ## Run live CLI voice e2e tests only (Anthropic CLI, OpenAI CLI, Copilot CLI)
+	npx playwright test --config=playwright.config.e2e-live.ts e2e/providers-cli.e2e-live.test.ts
+
+.PHONY: test-e2e-mixed-live
+test-e2e-mixed-live: build-e2e ## Run live mixed API+CLI voice e2e tests only
+	npx playwright test --config=playwright.config.e2e-live.ts e2e/providers-mixed.e2e-live.test.ts
 
 .PHONY: test-e2e-search-live
 test-e2e-search-live: build-e2e ## Run live search e2e tests only (requires Anthropic API key)
@@ -66,6 +78,10 @@ test-e2e-search-live: build-e2e ## Run live search e2e tests only (requires Anth
 .PHONY: test-e2e-encryption-live
 test-e2e-encryption-live: build-e2e ## Run live encryption e2e tests only
 	npx playwright test --config=playwright.config.e2e-live.ts e2e/encryption.e2e-live.test.ts
+
+.PHONY: test-e2e-mcp-live
+test-e2e-mcp-live: build-e2e ## Run live MCP server e2e tests only (requires claude CLI)
+	npx playwright test --config=playwright.config.e2e-live.ts e2e/mcp.e2e-live.test.ts
 
 .PHONY: test-openai-compatible-live
 test-openai-compatible-live: build-e2e ## Run live e2e tests against Ollama in Docker — requires Docker
