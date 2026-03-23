@@ -94,6 +94,30 @@ icons: ## Generate macOS .icns from icon-dark.svg (requires rsvg-convert; uses b
 	iconutil -c icns assets/icons/icon.iconset -o assets/icons/icon.icns
 	rm -rf assets/icons/icon.iconset
 
+##@ Release
+
+.PHONY: publish
+publish: ## Build, sign, notarize, and publish to GitHub releases — requires Apple creds (see .env.release.example)
+	@set -e; \
+	[ -f .env.release ] && set -a && . ./.env.release && set +a || true; \
+	[ -z "$$APPLE_SIGNING_IDENTITY" ] && echo "ERROR: APPLE_SIGNING_IDENTITY not set" && exit 1 || true; \
+	[ -z "$$APPLE_ID" ]               && echo "ERROR: APPLE_ID not set"               && exit 1 || true; \
+	[ -z "$$APPLE_APP_SPECIFIC_PASSWORD" ] && echo "ERROR: APPLE_APP_SPECIFIC_PASSWORD not set" && exit 1 || true; \
+	[ -z "$$APPLE_TEAM_ID" ]          && echo "ERROR: APPLE_TEAM_ID not set"          && exit 1 || true; \
+	npm run make -- --arch arm64; \
+	VERSION=$$(node -p "require('./package.json').version"); \
+	ZIP_PATH=$$(find out/make/zip/darwin/arm64 -name "*.zip" | head -1); \
+	node scripts/generate-update-metadata.mjs "$$ZIP_PATH" "$$VERSION"; \
+	DMG_PATH=$$(find out/make -maxdepth 1 -name "*.dmg" | head -1); \
+	gh release create "v$$VERSION" \
+	  --repo polyphon-ai/releases \
+	  --title "v$$VERSION" \
+	  --notes-file RELEASE_NOTES.md \
+	  --prerelease \
+	  "$$DMG_PATH" \
+	  "$$ZIP_PATH" \
+	  "out/make/zip/darwin/arm64/latest-mac.yml"
+
 ##@ Site
 
 .PHONY: site-dev
