@@ -14,6 +14,7 @@ import {
   requireCompositionData,
   requirePartialCompositionData,
   requireMessageShape,
+  requireSearchQuery,
   coerceBoolean,
   MAX_NAME,
 } from './validate';
@@ -32,6 +33,7 @@ import {
   listMessages,
   insertMessage,
 } from '../db/queries/messages';
+import { searchMessages } from '../db/queries/search';
 import {
   listCompositions,
   getComposition,
@@ -496,5 +498,11 @@ export function registerIpcHandlers(
       logger.warn('Session export failed', err);
       return { ok: false, error: String(err) };
     }
+  });
+
+  ipcMain.handle(IPC.SEARCH_MESSAGES, (_event, query: unknown, sessionId?: unknown) => {
+    const q = requireSearchQuery(query);
+    const sid = sessionId != null ? requireId(sessionId, 'sessionId') : undefined;
+    return searchMessages(db, q, sid);
   });
 }

@@ -272,6 +272,13 @@ export function requireAvatarValue(value: unknown, name: string): string {
   return str;
 }
 
+const MAX_SEARCH_QUERY = 200;
+
+export function requireSearchQuery(value: unknown): string {
+  const str = requireString(value, 'query', MAX_SEARCH_QUERY);
+  return str.trim();
+}
+
 export function requireUserProfileShape(value: unknown): Omit<UserProfile, 'updatedAt'> {
   const obj = requireObject(value, 'profile');
   requireString(obj['conductorName'], 'conductorName', MAX_NAME);

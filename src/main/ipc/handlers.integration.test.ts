@@ -725,4 +725,39 @@ describe('IPC handlers integration', () => {
       expect(row.dismissed_update_version).toBe('1.2.3');
     });
   });
+
+  describe('SEARCH_MESSAGES', () => {
+    beforeEach(() => {
+      insertComposition(db, makeComposition());
+      insertSession(db, makeSession());
+    });
+
+    it('returns empty array for short query', async () => {
+      const result = await handlers.get(IPC.SEARCH_MESSAGES)!({}, 'a');
+      expect(result).toEqual([]);
+    });
+
+    it('returns matching results for a valid query', async () => {
+      insertMessage(db, makeMessage({ id: MSG_ID, content: 'polyphon search integration' }));
+      const result = await handlers.get(IPC.SEARCH_MESSAGES)!({}, 'polyphon');
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result[0].messageId).toBe(MSG_ID);
+    });
+
+    it('accepts optional sessionId to scope results', async () => {
+      insertMessage(db, makeMessage({ id: MSG_ID, content: 'scoped search result' }));
+      const result = await handlers.get(IPC.SEARCH_MESSAGES)!({}, 'scoped', SESS_ID);
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('throws for non-string query', () => {
+      expect(() => handlers.get(IPC.SEARCH_MESSAGES)!({}, 123)).toThrow();
+    });
+
+    it('throws for invalid sessionId UUID', () => {
+      expect(() => handlers.get(IPC.SEARCH_MESSAGES)!({}, 'hello', 'not-a-uuid')).toThrow();
+    });
+  });
 });
