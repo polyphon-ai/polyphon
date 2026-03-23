@@ -196,7 +196,7 @@ describe('SQLCipher — runMigrations on encrypted database', () => {
     runMigrations(db);
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
     db.close();
-    expect(row.version).toBe(11);
+    expect(row.version).toBe(12);
   });
 
   it('seed data is accessible after encrypted migration', () => {

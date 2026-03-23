@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 export const CREATE_TABLES_SQL = `
   CREATE TABLE IF NOT EXISTS schema_version (
@@ -118,5 +118,29 @@ export const CREATE_TABLES_SQL = `
     prefer_markdown INTEGER NOT NULL DEFAULT 1,
     updated_at INTEGER NOT NULL
   );
+
+  CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
+    content,
+    voice_name,
+    content='messages',
+    content_rowid='rowid'
+  );
+
+  CREATE TRIGGER IF NOT EXISTS messages_fts_ai AFTER INSERT ON messages BEGIN
+    INSERT INTO messages_fts(rowid, content, voice_name)
+    VALUES (new.rowid, new.content, new.voice_name);
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS messages_fts_ad AFTER DELETE ON messages BEGIN
+    INSERT INTO messages_fts(messages_fts, rowid, content, voice_name)
+    VALUES ('delete', old.rowid, old.content, old.voice_name);
+  END;
+
+  CREATE TRIGGER IF NOT EXISTS messages_fts_au AFTER UPDATE ON messages BEGIN
+    INSERT INTO messages_fts(messages_fts, rowid, content, voice_name)
+    VALUES ('delete', old.rowid, old.content, old.voice_name);
+    INSERT INTO messages_fts(rowid, content, voice_name)
+    VALUES (new.rowid, new.content, new.voice_name);
+  END;
 
 `;

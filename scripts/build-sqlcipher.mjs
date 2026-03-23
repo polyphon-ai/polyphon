@@ -63,6 +63,13 @@ function patchGypFiles() {
     writeFileSync(sqlite3GypPath, sqlite3Gyp.replace(marker, marker + '\n' + sqlcipherDefines));
   }
 
+  // Add SQLITE_ENABLE_FTS5 if not already present (idempotent, separate patch)
+  const sqlite3GypCurrent = readFileSync(sqlite3GypPath, 'utf8');
+  if (!sqlite3GypCurrent.includes('SQLITE_ENABLE_FTS5')) {
+    const fts5Marker = "            'SQLITE_ENABLE_COLUMN_METADATA',";
+    writeFileSync(sqlite3GypPath, sqlite3GypCurrent.replace(fts5Marker, fts5Marker + "\n            'SQLITE_ENABLE_FTS5',"));
+  }
+
   // 2. binding.gyp — add Security and CoreFoundation framework links for macOS CommonCrypto
   const bindingGypPath = join(bsqliteDir, 'binding.gyp');
   const bindingGyp = readFileSync(bindingGypPath, 'utf8');

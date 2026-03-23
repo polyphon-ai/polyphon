@@ -114,7 +114,21 @@ describe('runMigrations (fresh install)', () => {
     }
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(11);
+    expect(row.version).toBe(12);
+
+    // FTS5 virtual table must be present after fresh install
+    const vtabs = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='messages_fts'")
+      .all() as { name: string }[];
+    expect(vtabs).toHaveLength(1);
+  });
+
+  it('FTS5 backfill via rebuild succeeds on empty messages table', () => {
+    const db = new Database(':memory:');
+    db.exec('PRAGMA journal_mode = WAL');
+    runMigrations(db);
+    // rebuild on empty table is a no-op — should not throw
+    expect(() => db.exec(`INSERT INTO messages_fts(messages_fts) VALUES ('rebuild')`)).not.toThrow();
   });
 
   it('seeds built-in tones', () => {
@@ -161,7 +175,7 @@ describe('runMigrations (fresh install)', () => {
     expect(templates).toHaveLength(5);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(11);
+    expect(row.version).toBe(12);
   });
 });
 
@@ -171,7 +185,7 @@ describe('incremental migration from v6', () => {
     const db = makeV6Database();
     runMigrations(db);
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(11);
+    expect(row.version).toBe(12);
   });
 
   it('adds working_dir column to sessions', () => {
@@ -217,7 +231,7 @@ describe('crash-recovery: DDL already applied but schema_version not updated', (
     runMigrations(db);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(11);
+    expect(row.version).toBe(12);
   });
 
   it('does not throw and leaves data intact during recovery', () => {
