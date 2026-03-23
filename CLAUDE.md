@@ -154,10 +154,12 @@ db.prepare('SELECT count(*) FROM sqlite_master').get()
 db.pragma('journal_mode = WAL')
 ```
 
-### Schema (SCHEMA_VERSION = 11)
+### Schema (SCHEMA_VERSION = 12)
 
 Tables: `schema_version`, `compositions`, `composition_voices`, `sessions`, `messages`,
-`provider_configs`, `custom_providers`, `tones`, `system_prompt_templates`, `user_profile`
+`provider_configs`, `custom_providers`, `tones`, `system_prompt_templates`, `user_profile`,
+`messages_fts` (FTS5 virtual content table over `messages`; kept in sync via three triggers:
+`messages_fts_ai` / `messages_fts_ad` / `messages_fts_au`)
 
 Key constraints:
 - `messages.role` CHECK: `('conductor', 'voice', 'system')`
@@ -299,6 +301,7 @@ suffixed with `:${sessionId}` at runtime to scope them to a single session.
 | Encryption | `settings:encryption:getStatus`, `settings:encryption:setPassword`, `settings:encryption:changePassword`, `settings:encryption:removePassword`, `settings:encryption:unlock-attempt`, `settings:encryption:key-regenerated-warning` |
 | Logs | `logs:getRecent`, `logs:getDebugEnabled`, `logs:setDebugEnabled`, `logs:export`, `logs:getPaths` |
 | Shell | `shell:openExternal` |
+| Search | `search:messages` |
 
 All IPC handlers validate their arguments using `src/main/ipc/validate.ts` before touching the DB or voice system. New handlers must apply validation — see the file for available helpers. `CONTINUATION_MAX_ROUNDS_LIMIT` in `shared/constants.ts` is the authoritative cap for `continuationMaxRounds` validation.
 

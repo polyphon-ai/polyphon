@@ -52,8 +52,20 @@ test-e2e: build-e2e ## Run e2e tests with mocked voices
 	npx playwright test
 
 .PHONY: test-e2e-live
-test-e2e-live: build-e2e ## Run live e2e tests against real providers — opt-in, never CI
+test-e2e-live: build-e2e ## Run all live e2e tests (providers + search + encryption + openai-compat) — opt-in, never CI
 	npx playwright test --config=playwright.config.e2e-live.ts && npx playwright test --config=playwright.config.openai-compatible.ts
+
+.PHONY: test-e2e-providers-live
+test-e2e-providers-live: build-e2e ## Run live provider e2e tests only (Anthropic, OpenAI, Gemini, Copilot)
+	npx playwright test --config=playwright.config.e2e-live.ts e2e/providers.e2e-live.test.ts
+
+.PHONY: test-e2e-search-live
+test-e2e-search-live: build-e2e ## Run live search e2e tests only (requires Anthropic API key)
+	npx playwright test --config=playwright.config.e2e-live.ts e2e/search.e2e-live.test.ts
+
+.PHONY: test-e2e-encryption-live
+test-e2e-encryption-live: build-e2e ## Run live encryption e2e tests only
+	npx playwright test --config=playwright.config.e2e-live.ts e2e/encryption.e2e-live.test.ts
 
 .PHONY: test-openai-compatible-live
 test-openai-compatible-live: build-e2e ## Run live e2e tests against Ollama in Docker — requires Docker

@@ -42,6 +42,13 @@ items:
     release_date: 2026-03-22
     description: "Export full conversation transcripts in multiple formats — Markdown, JSON, or plain text."
 
+  - title: "Full Text Search"
+    pricing: free
+    status: planned
+    description: "Search across all your sessions and messages instantly. Find any conversation, code snippet, or answer from past sessions without scrolling through history."
+    discussion:
+    feature_request:
+
   - title: "Plugins"
     pricing: free
     status: planned
