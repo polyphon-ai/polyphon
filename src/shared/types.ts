@@ -188,6 +188,17 @@ export interface DebugInfo {
 }
 
 // Serializable voice descriptor — sent over IPC, not the full Voice instance
+export interface SearchResult {
+  messageId: string;
+  sessionId: string;
+  sessionName: string;
+  role: 'conductor' | 'voice' | 'system';
+  voiceName: string | null;
+  snippet: string;
+  timestamp: number;
+  archived: boolean;
+}
+
 export interface VoiceDescriptor {
   id: string;
   name: string;

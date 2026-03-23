@@ -18,6 +18,7 @@ import type {
   UpdateChannel,
   EncryptionStatus,
   DebugInfo,
+  SearchResult,
 } from '../shared/types';
 import type { ProbeModelResult } from './ipc/settingsHandlers';
 import { IPC } from '../shared/constants';
@@ -251,6 +252,11 @@ const api = {
     deleteSystemPromptTemplate: (id: string): Promise<void> =>
       ipcRenderer.invoke(IPC.SETTINGS_SYSTEM_PROMPT_TEMPLATE_DELETE, id),
   },
+  search: {
+    messages: (query: string, sessionId?: string): Promise<SearchResult[]> =>
+      ipcRenderer.invoke(IPC.SEARCH_MESSAGES, query, sessionId),
+  },
+
   logs: {
     getPaths: (): Promise<{ appLog: string }> =>
       ipcRenderer.invoke(IPC.LOGS_GET_PATHS),
@@ -271,4 +277,4 @@ contextBridge.exposeInMainWorld('polyphon', api);
 export type PolyphonAPI = typeof api;
 
 // Suppress unused import warning — these types are used in the api shape
-export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, UpdateInfo, UpdateDownloadProgress, UpdateChannel, EncryptionStatus, ProbeModelResult };
+export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, UpdateInfo, UpdateDownloadProgress, UpdateChannel, EncryptionStatus, ProbeModelResult, SearchResult };

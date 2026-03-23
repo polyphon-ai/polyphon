@@ -134,6 +134,8 @@ export const IPC = {
   LOGS_GET_PATHS: 'logs:getPaths',
 
   SESSION_EXPORT: 'session:export',
+
+  SEARCH_MESSAGES: 'search:messages',
 } as const;
 
 export const CONTINUATION_MAX_ROUNDS_LIMIT = 10;
