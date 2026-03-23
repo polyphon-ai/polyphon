@@ -1164,6 +1164,44 @@ async function runTrack4(window: Page): Promise<void> {
   } catch {
     console.warn('  WARN: Continuation nudge banner not found — skipping continuation-nudge.webp');
   }
+
+  // ── Search screenshots ─────────────────────────────────────────────────────
+  console.log('\n── Search screenshots ─────────────────────────────────────────────');
+
+  // Navigate to Demo Session so Cmd+F has messages to search
+  try {
+    await goToSessions(window);
+    await window.getByText('Demo Session').first().click();
+    await window.getByPlaceholder('Message the ensemble\u2026').waitFor({ state: 'visible', timeout: 15_000 });
+    // Defocus the input so Cmd+F is not swallowed by the textarea
+    await window.locator('[role="log"]').click();
+    await window.waitForTimeout(300);
+
+    // Per-session search bar
+    await window.keyboard.press('Meta+f');
+    const sessionSearchInput = window.getByPlaceholder('Search session\u2026');
+    await sessionSearchInput.waitFor({ state: 'visible', timeout: 3_000 });
+    await sessionSearchInput.fill('software');
+    await window.waitForTimeout(800);
+    await captureWebP(window, 'images/screenshots/search/session-search-bar.webp');
+    await window.keyboard.press('Escape');
+    await window.waitForTimeout(200);
+  } catch {
+    console.warn('  WARN: Per-session search screenshot failed — skipping session-search-bar.webp');
+  }
+
+  // Global search with results
+  try {
+    await window.getByRole('button', { name: 'Search', exact: true }).click();
+    await window.getByPlaceholder('Search across all sessions\u2026').waitFor({ state: 'visible', timeout: 5_000 });
+    await window.waitForTimeout(300);
+    await window.getByPlaceholder('Search across all sessions\u2026').fill('software');
+    await window.locator('.search-result-card').first().waitFor({ state: 'visible', timeout: 5_000 });
+    await window.waitForTimeout(300);
+    await captureWebP(window, 'images/screenshots/search/global-results.webp');
+  } catch {
+    console.warn('  WARN: Global search results screenshot failed — skipping global-results.webp');
+  }
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
