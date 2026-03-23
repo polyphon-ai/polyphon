@@ -17,6 +17,9 @@ export interface MessageBubbleProps {
   voiceProvider?: string;
   voiceType?: 'api' | 'cli';
   voiceSide?: 'left' | 'right';
+  isSearchMatch?: boolean;
+  isActiveSearchMatch?: boolean;
+  searchQuery?: string;
 }
 
 
@@ -37,6 +40,9 @@ export default function MessageBubble({
   voiceProvider,
   voiceType,
   voiceSide = 'left',
+  isSearchMatch = false,
+  isActiveSearchMatch = false,
+  searchQuery,
 }: MessageBubbleProps): React.JSX.Element {
   const conductorColor = useSettingsStore((s) => s.userProfile.conductorColor);
   const conductorName = useSettingsStore((s) => s.userProfile.conductorName);
@@ -50,7 +56,7 @@ export default function MessageBubble({
 
   if (message.role === 'system') {
     return (
-      <div className="flex items-center gap-3 my-3 select-none">
+      <div data-message-id={message.id} className="flex items-center gap-3 my-3 select-none">
         <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
         <span className="text-xs text-gray-400 dark:text-gray-500 px-2 shrink-0">
           {message.content}
@@ -66,7 +72,16 @@ export default function MessageBubble({
     const displayConductorName = conductorName || 'Conductor';
 
     return (
-      <div role="article" aria-label="Your message" className="flex flex-row-reverse gap-3 mb-4">
+      <div
+        data-message-id={message.id}
+        role="article"
+        aria-label="Your message"
+        className={`flex flex-row-reverse gap-3 mb-4 rounded-lg transition-colors ${
+          isActiveSearchMatch
+            ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30'
+            : ''
+        }`}
+      >
         {/* Conductor avatar */}
         <div
           className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shrink-0 mt-1"
@@ -95,7 +110,7 @@ export default function MessageBubble({
             className="rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-gray-900 dark:text-gray-100 break-words"
             style={{ borderRight: `3px solid ${color}`, backgroundColor: bgColor }}
           >
-            <MarkdownContent content={displayContent} isStreaming={isStreaming} />
+            <MarkdownContent content={displayContent} isStreaming={isStreaming} searchQuery={isSearchMatch ? searchQuery : undefined} />
           </div>
 
           <div className="text-xs text-gray-400 dark:text-gray-600 mt-1 text-right">
@@ -113,9 +128,14 @@ export default function MessageBubble({
 
   return (
     <div
+      data-message-id={message.id}
       role="article"
       aria-label={`Message from ${displayName}`}
-      className={`flex gap-3 mb-4${isRight ? ' flex-row-reverse' : ''}`}
+      className={`flex gap-3 mb-4 rounded-lg transition-colors${isRight ? ' flex-row-reverse' : ''} ${
+        isActiveSearchMatch
+          ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30'
+          : ''
+      }`}
     >
       {/* Avatar */}
       <div
@@ -172,7 +192,7 @@ export default function MessageBubble({
               ))}
             </span>
           ) : (
-            <MarkdownContent content={displayContent} isStreaming={isStreaming} />
+            <MarkdownContent content={displayContent} isStreaming={isStreaming} searchQuery={isSearchMatch ? searchQuery : undefined} />
           )}
         </div>
 

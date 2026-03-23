@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { UpdateInfo, UpdateDownloadProgress } from '../../shared/types';
 
-type View = 'home' | 'session' | 'composition-builder' | 'settings';
+type View = 'home' | 'session' | 'composition-builder' | 'settings' | 'search';
 export type Theme = 'light' | 'dark' | 'system';
 
 interface UIState {

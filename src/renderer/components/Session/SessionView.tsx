@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, PanelRightClose, PanelRightOpen, Square, X, Pencil, Check, FolderOpen, Lock, Download } from 'lucide-react';
+import { ArrowLeft, PanelRightClose, PanelRightOpen, Square, X, Pencil, Check, FolderOpen, Lock, Download, Search } from 'lucide-react';
 import type { Session, Message, VoiceDescriptor } from '../../../shared/types';
 import { PROVIDER_METADATA } from '../../../shared/constants';
 import { useSessionStore } from '../../store/sessionStore';
+import { useSearchStore } from '../../store/searchStore';
 import MessageFeed from './MessageFeed';
 import VoicePanel from './VoicePanel';
 import ConductorPanel from './ConductorPanel';
 import ConductorInput from './ConductorInput';
 import { ExportModal } from './ExportModal';
+import { SessionSearchBar } from '../Search/SessionSearchBar';
 
 interface SessionViewProps {
   session: Session;
@@ -59,6 +61,20 @@ export default function SessionView({
     roundIndex: number;
     voiceResponses: Message[];
   } | null>(null);
+
+  const {
+    sessionSearchOpen,
+    sessionQuery,
+    sessionResultIds,
+    sessionMatchIndex,
+    openSessionSearch,
+    closeSessionSearch,
+    pendingNavigation,
+    clearPendingNavigation,
+  } = useSearchStore();
+
+  const searchMatchIds = new Set(sessionResultIds);
+  const activeMatchId = sessionResultIds[sessionMatchIndex] ?? null;
 
   // Ref so streaming callbacks always see the latest ensemble without re-subscribing
   const ensembleRef = useRef<VoiceDescriptor[]>([]);
@@ -162,6 +178,38 @@ export default function SessionView({
       unsubNoTarget();
     };
   }, [session.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cmd+F: open per-session search overlay (scoped to session view, not active in text inputs)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.metaKey && e.key === 'f') {
+        const target = e.target as HTMLElement;
+        const tag = target.tagName.toLowerCase();
+        const isTextInput = (tag === 'input' || tag === 'textarea') && !target.closest('[data-search-input]');
+        if (!isTextInput) {
+          e.preventDefault();
+          openSessionSearch();
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [openSessionSearch]);
+
+  // Scroll to pending navigation target after messages load
+  useEffect(() => {
+    if (!pendingNavigation || pendingNavigation.sessionId !== session.id) return;
+    const el = document.querySelector(`[data-message-id="${pendingNavigation.messageId}"]`);
+    if (el) {
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el.classList.add('ring-2', 'ring-indigo-400', 'dark:ring-indigo-500');
+      const t = setTimeout(() => {
+        el.classList.remove('ring-2', 'ring-indigo-400', 'dark:ring-indigo-500');
+        clearPendingNavigation();
+      }, 2000);
+      return () => clearTimeout(t);
+    }
+  }, [sessionMessages, pendingNavigation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSubmit(content: string) {
     const state = useSessionStore.getState();
@@ -314,18 +362,37 @@ export default function SessionView({
             </span>
           )}
           {!isRenaming && (
-            <span className="relative group/export shrink-0">
-              <button
-                onClick={() => setExportOpen(true)}
-                aria-label="Export transcript"
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <Download size={15} strokeWidth={1.75} />
-              </button>
-              <span className="pointer-events-none absolute top-full right-0 mt-1.5 w-max px-2.5 py-1.5 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded-lg opacity-0 group-hover/export:opacity-100 transition-opacity z-20">
-                Export transcript
+            <>
+              <span className="relative group/search shrink-0">
+                <button
+                  onClick={openSessionSearch}
+                  aria-label="Search session"
+                  aria-pressed={sessionSearchOpen}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    sessionSearchOpen
+                      ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40'
+                      : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <Search size={15} strokeWidth={1.75} />
+                </button>
+                <span className="pointer-events-none absolute top-full right-0 mt-1.5 w-max px-2.5 py-1.5 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded-lg opacity-0 group-hover/search:opacity-100 transition-opacity z-20">
+                  Search session (⌘F)
+                </span>
               </span>
-            </span>
+              <span className="relative group/export shrink-0">
+                <button
+                  onClick={() => setExportOpen(true)}
+                  aria-label="Export transcript"
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <Download size={15} strokeWidth={1.75} />
+                </button>
+                <span className="pointer-events-none absolute top-full right-0 mt-1.5 w-max px-2.5 py-1.5 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded-lg opacity-0 group-hover/export:opacity-100 transition-opacity z-20">
+                  Export transcript
+                </span>
+              </span>
+            </>
           )}
           {(isAnyStreaming || isAnyPending) && (
             <button
@@ -353,6 +420,14 @@ export default function SessionView({
           </span>
         </div>
       </header>
+
+      {/* Per-session search overlay */}
+      {sessionSearchOpen && (
+        <SessionSearchBar
+          sessionId={session.id}
+          onClose={closeSessionSearch}
+        />
+      )}
 
       {/* Banners */}
       <div aria-live="polite">
@@ -436,6 +511,12 @@ export default function SessionView({
             streamingContent={sessionStreamingContent}
             pendingVoices={sessionPendingVoices}
             ensemble={ensemble}
+            searchMatchIds={searchMatchIds}
+            activeMatchId={activeMatchId}
+            searchActive={sessionSearchOpen}
+            searchQuery={sessionSearchOpen ? sessionQuery : undefined}
+            navHighlightMessageId={pendingNavigation?.sessionId === session.id ? pendingNavigation.messageId : null}
+            navHighlightQuery={pendingNavigation?.sessionId === session.id ? pendingNavigation.query : undefined}
           />
         </div>
 

@@ -14,7 +14,7 @@ import rust from 'react-syntax-highlighter/dist/esm/languages/prism/rust';
 import go from 'react-syntax-highlighter/dist/esm/languages/prism/go';
 import darkTheme from 'react-syntax-highlighter/dist/esm/styles/prism/tomorrow';
 import lightTheme from 'react-syntax-highlighter/dist/esm/styles/prism/one-light';
-import { visit } from 'unist-util-visit';
+import { visit, SKIP } from 'unist-util-visit';
 import type { Root } from 'mdast';
 
 SyntaxHighlighter.registerLanguage('tsx', tsx);
@@ -50,11 +50,13 @@ function remarkLinkDataHref() {
 
 // Custom sanitize schema: strips href from <a> elements so the sanitizer never
 // passes it through as a fallback. Our custom <a> renderer manages the URL
-// via data-href set by remarkLinkDataHref.
+// via data-href set by remarkLinkDataHref. Also allows <mark> for search highlights.
 const sanitizeSchema = {
   ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames ?? []), 'mark'],
   attributes: {
     ...defaultSchema.attributes,
+    mark: ['className'],
     a: [
       ...(defaultSchema.attributes?.a ?? []).filter(
         (attr) => attr !== 'href' && !(Array.isArray(attr) && attr[0] === 'href'),
@@ -63,6 +65,47 @@ const sanitizeSchema = {
     ],
   },
 };
+
+// Rehype plugin: wraps occurrences of `query` in text nodes with <mark class="search-highlight">.
+// Skips text nodes inside <code> or <pre> to avoid breaking syntax highlighting.
+function makeRehypeHighlight(query: string) {
+  return function rehypeHighlight() {
+    return (tree: Parameters<typeof visit>[0]) => {
+      if (!query.trim()) return;
+      const lowerQuery = query.toLowerCase();
+      const queryLen = query.length;
+      visit(tree, 'text', (node, index, parent) => {
+        if (!parent || index == null) return;
+        const p = parent as { tagName?: string; children: unknown[] };
+        if (p.tagName === 'code' || p.tagName === 'pre') return;
+        const text = (node as { value: string }).value;
+        const lowerText = text.toLowerCase();
+        if (!lowerText.includes(lowerQuery)) return;
+        const newNodes: unknown[] = [];
+        let pos = 0;
+        let matchIdx = lowerText.indexOf(lowerQuery, pos);
+        while (matchIdx !== -1) {
+          if (matchIdx > pos) {
+            newNodes.push({ type: 'text', value: text.slice(pos, matchIdx) });
+          }
+          newNodes.push({
+            type: 'element',
+            tagName: 'mark',
+            properties: { className: ['search-highlight'] },
+            children: [{ type: 'text', value: text.slice(matchIdx, matchIdx + queryLen) }],
+          });
+          pos = matchIdx + queryLen;
+          matchIdx = lowerText.indexOf(lowerQuery, pos);
+        }
+        if (pos < text.length) {
+          newNodes.push({ type: 'text', value: text.slice(pos) });
+        }
+        (p.children as unknown[]).splice(index, 1, ...newNodes);
+        return [SKIP, index + newNodes.length];
+      });
+    };
+  };
+}
 
 function useIsDark(): boolean {
   const [isDark, setIsDark] = useState(
@@ -132,11 +175,13 @@ function CustomLink({
 export interface MarkdownContentProps {
   content: string;
   isStreaming?: boolean;
+  searchQuery?: string;
 }
 
 export default function MarkdownContent({
   content,
   isStreaming = false,
+  searchQuery,
 }: MarkdownContentProps): React.JSX.Element {
   const isDark = useIsDark();
 
@@ -144,11 +189,15 @@ export default function MarkdownContent({
     return <span className="whitespace-pre-wrap break-words">{content}</span>;
   }
 
+  const rehypePlugins: Parameters<typeof ReactMarkdown>[0]['rehypePlugins'] = searchQuery
+    ? [makeRehypeHighlight(searchQuery), [rehypeSanitize, sanitizeSchema]]
+    : [[rehypeSanitize, sanitizeSchema]];
+
   return (
     <div className="prose-voice">
       <ReactMarkdown
         remarkPlugins={[remarkLinkDataHref]}
-        rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
+        rehypePlugins={rehypePlugins}
         components={{
           a: ({ children, ...props }) => {
             const dataHref = (props as Record<string, unknown>)['data-href'] as

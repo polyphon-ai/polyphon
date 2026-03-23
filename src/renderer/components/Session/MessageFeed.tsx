@@ -9,6 +9,12 @@ export interface MessageFeedProps {
   streamingContent: Record<string, string>;
   pendingVoices: Set<string>;
   ensemble: VoiceDescriptor[];
+  searchMatchIds?: Set<string>;
+  activeMatchId?: string | null;
+  searchActive?: boolean;
+  searchQuery?: string;
+  navHighlightMessageId?: string | null;
+  navHighlightQuery?: string;
 }
 
 export default function MessageFeed({
@@ -17,6 +23,12 @@ export default function MessageFeed({
   streamingContent,
   pendingVoices,
   ensemble,
+  searchMatchIds,
+  activeMatchId,
+  searchActive = false,
+  searchQuery,
+  navHighlightMessageId,
+  navHighlightQuery,
 }: MessageFeedProps): React.JSX.Element {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -25,8 +37,15 @@ export default function MessageFeed({
   const streamingContentSize = Object.values(streamingContent).join('').length;
 
   useEffect(() => {
+    if (searchActive) return;
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, streamingVoices.size, pendingVoices.size, streamingContentSize]);
+  }, [messages.length, streamingVoices.size, pendingVoices.size, streamingContentSize, searchActive]);
+
+  useEffect(() => {
+    if (!activeMatchId) return;
+    const el = document.querySelector(`[data-message-id="${activeMatchId}"]`);
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [activeMatchId]);
 
   const voiceMap = Object.fromEntries(ensemble.map((v) => [v.id, v]));
 
@@ -98,6 +117,9 @@ export default function MessageFeed({
             voiceProvider={voice?.provider}
             voiceType={voice?.type}
             voiceSide={voice?.side}
+            isSearchMatch={searchMatchIds ? searchMatchIds.has(msg.id) : msg.id === navHighlightMessageId}
+            isActiveSearchMatch={activeMatchId === msg.id}
+            searchQuery={searchMatchIds ? searchQuery : (msg.id === navHighlightMessageId ? navHighlightQuery : undefined)}
           />
         );
       })}

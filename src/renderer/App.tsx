@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MessageSquare, Music2, Settings2, Archive, Plus, PanelLeftClose, PanelLeftOpen, Pencil, Check, X, Camera, Wand2, BookOpen, AlertTriangle, Trash2 } from 'lucide-react';
+import { MessageSquare, Music2, Settings2, Archive, Plus, PanelLeftClose, PanelLeftOpen, Pencil, Check, X, Camera, Wand2, BookOpen, AlertTriangle, Trash2, Search } from 'lucide-react';
 import wordmarkLightUrl from '../../assets/wordmark-light.svg?url';
 import wordmarkDarkUrl from '../../assets/wordmark-dark.svg?url';
 import iconLightUrl from '../../assets/icon-light-transparent.svg?url';
@@ -19,6 +19,7 @@ import { HelpTooltip, ColorPicker } from './components/Shared';
 import UpdateBanner from './components/Shared/UpdateBanner';
 import DebugBanner from './components/Shared/DebugBanner';
 import PasswordPromptView from './components/PasswordPrompt/PasswordPromptView';
+import SearchView from './components/Search/SearchView';
 import { PasswordStrengthGauge, PasswordMatchIndicator } from './components/Settings/EncryptionSection';
 
 
@@ -1013,6 +1014,18 @@ export default function App(): React.JSX.Element {
             </nav>
 
             <button
+              onClick={() => setView('search')}
+              aria-label="Search"
+              aria-current={activeView === 'search' ? 'page' : undefined}
+              className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
+                activeView === 'search'
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <Search size={18} strokeWidth={1.75} />
+            </button>
+            <button
               onClick={() => setView('settings')}
               aria-label="Settings"
               aria-current={activeView === 'settings' ? 'page' : undefined}
@@ -1207,6 +1220,18 @@ export default function App(): React.JSX.Element {
             </nav>
 
             <div className="px-2 py-3 border-t border-gray-200 dark:border-gray-800 space-y-0.5">
+              <button
+                onClick={() => setView('search')}
+                aria-current={activeView === 'search' ? 'page' : undefined}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  activeView === 'search'
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                <Search size={18} strokeWidth={1.75} />
+                Search
+              </button>
               <button
                 onClick={() => window.polyphon.shell.openExternal('https://polyphon.ai/docs/')}
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -1457,6 +1482,8 @@ export default function App(): React.JSX.Element {
         )}
 
         {activeView === 'settings' && <SettingsPage />}
+
+        {activeView === 'search' && <SearchView />}
 
         {activeView === 'session' && (
           <>
