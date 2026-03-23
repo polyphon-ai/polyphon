@@ -502,3 +502,89 @@ describe('SessionManager.runDirectedRound', () => {
     expect(bob.send).not.toHaveBeenCalled();
   });
 });
+
+// ── Headless round methods ────────────────────────────────────────────────────
+
+describe('SessionManager.runHeadlessBroadcastRound', () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = makeTestDb();
+  });
+
+  it('calls send() on every voice without requiring BrowserWindow', async () => {
+    const alice = makeVoiceMock('v-alice', 'Alice', 'Alice headless');
+    const bob = makeVoiceMock('v-bob', 'Bob', 'Bob headless');
+    const sm = new SessionManager(makeVoiceManager([alice, bob]));
+
+    const msg = makeConductorMessage('Headless broadcast');
+    insertMessage(db, msg);
+
+    const responses = await sm.runHeadlessBroadcastRound(db, makeSession(), msg);
+
+    expect(alice.send).toHaveBeenCalledOnce();
+    expect(bob.send).toHaveBeenCalledOnce();
+    expect(responses.length).toBeGreaterThan(0);
+  });
+
+  it('returns message objects with content', async () => {
+    const alice = makeVoiceMock('v-alice', 'Alice', 'Alice says hi');
+    const sm = new SessionManager(makeVoiceManager([alice]));
+
+    const msg = makeConductorMessage('Hi');
+    insertMessage(db, msg);
+
+    const responses = await sm.runHeadlessBroadcastRound(db, makeSession(), msg);
+
+    expect(responses[0]?.content).toBe('Alice says hi');
+    expect(responses[0]?.role).toBe('voice');
+  });
+
+  it('persists voice messages to DB', async () => {
+    const alice = makeVoiceMock('v-alice', 'Alice', 'Persisted');
+    const sm = new SessionManager(makeVoiceManager([alice]));
+
+    const msg = makeConductorMessage('Persist?');
+    insertMessage(db, msg);
+
+    await sm.runHeadlessBroadcastRound(db, makeSession(), msg);
+
+    const saved = listMessages(db, 'sess-1').filter((m) => m.role === 'voice');
+    expect(saved).toHaveLength(1);
+    expect(saved[0]!.content).toBe('Persisted');
+  });
+});
+
+describe('SessionManager.runHeadlessDirectedRound', () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = makeTestDb();
+  });
+
+  it('returns a single voice response without BrowserWindow', async () => {
+    const alice = makeVoiceMock('v-alice', 'Alice', 'Directed response');
+    const bob = makeVoiceMock('v-bob', 'Bob', 'Not called');
+    const sm = new SessionManager(makeVoiceManager([alice, bob]));
+
+    const msg = makeConductorMessage('@Alice hi');
+    insertMessage(db, msg);
+
+    const response = await sm.runHeadlessDirectedRound(db, makeSession(), msg, 'v-alice');
+
+    expect(alice.send).toHaveBeenCalledOnce();
+    expect(bob.send).not.toHaveBeenCalled();
+    expect(response?.content).toBe('Directed response');
+  });
+
+  it('returns null when the target voice is not found', async () => {
+    const alice = makeVoiceMock('v-alice', 'Alice', 'Alice');
+    const sm = new SessionManager(makeVoiceManager([alice]));
+
+    const msg = makeConductorMessage('@Ghost hi');
+    insertMessage(db, msg);
+
+    const response = await sm.runHeadlessDirectedRound(db, makeSession(), msg, 'v-ghost');
+    expect(response).toBeNull();
+  });
+});
