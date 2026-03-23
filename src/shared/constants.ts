@@ -136,6 +136,14 @@ export const IPC = {
   SESSION_EXPORT: 'session:export',
 
   SEARCH_MESSAGES: 'search:messages',
+
+  MCP_GET_STATUS: 'mcp:getStatus',
+  MCP_SET_ENABLED: 'mcp:setEnabled',
+  MCP_STATUS_CHANGED: 'mcp:statusChanged',
+} as const;
+
+export const APP_SETTING_KEYS = {
+  MCP_ENABLED: 'mcp_enabled',
 } as const;
 
 export const CONTINUATION_MAX_ROUNDS_LIMIT = 10;

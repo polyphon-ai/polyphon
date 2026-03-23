@@ -199,6 +199,13 @@ export interface SearchResult {
   archived: boolean;
 }
 
+export interface McpStatus {
+  enabled: boolean;   // persisted desired state (from app_settings)
+  running: boolean;   // is the server currently active?
+  headless: boolean;  // was the app launched with --headless?
+  transport: 'stdio';
+}
+
 export interface VoiceDescriptor {
   id: string;
   name: string;
