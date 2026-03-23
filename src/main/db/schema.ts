@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 export const CREATE_TABLES_SQL = `
   CREATE TABLE IF NOT EXISTS schema_version (
@@ -116,6 +116,12 @@ export const CREATE_TABLES_SQL = `
     update_remind_after INTEGER NOT NULL DEFAULT 0,
     update_channel TEXT NOT NULL DEFAULT 'stable',
     prefer_markdown INTEGER NOT NULL DEFAULT 1,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS app_settings (
+    key        TEXT PRIMARY KEY NOT NULL,
+    value      TEXT NOT NULL,
     updated_at INTEGER NOT NULL
   );
 

@@ -21,6 +21,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { runMigrations } from './migrations';
+import { SCHEMA_VERSION } from './schema';
 
 const KEY_HEX = 'a'.repeat(64); // 32-byte all-0xAA key
 const WRONG_KEY_HEX = 'b'.repeat(64);
@@ -196,7 +197,7 @@ describe('SQLCipher — runMigrations on encrypted database', () => {
     runMigrations(db);
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
     db.close();
-    expect(row.version).toBe(12);
+    expect(row.version).toBe(SCHEMA_VERSION);
   });
 
   it('seed data is accessible after encrypted migration', () => {

@@ -12,6 +12,7 @@ import { up as migration009 } from './009_add_enabled_tools';
 import { up as migration010 } from './010_add_session_sandbox';
 import { up as migration011 } from './011_sqlcipher_transition';
 import { up as migration012 } from './012_add_messages_fts';
+import { up as migration013 } from './013_add_app_settings';
 
 const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
   [
@@ -133,4 +134,5 @@ export function runMigrations(db: Database.Database): void {
   apply(10, migration010);
   apply(11, migration011);
   apply(12, migration012);
+  apply(13, migration013);
 }

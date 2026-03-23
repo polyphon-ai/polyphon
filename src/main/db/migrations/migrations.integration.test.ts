@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { runMigrations, applyMigration } from './index';
+import { SCHEMA_VERSION } from '../schema';
 import { up as migration002 } from './002_add_update_preferences';
 
 // Builds an in-memory DB that looks like a v6 production database:
@@ -114,7 +115,7 @@ describe('runMigrations (fresh install)', () => {
     }
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(12);
+    expect(row.version).toBe(SCHEMA_VERSION);
 
     // FTS5 virtual table must be present after fresh install
     const vtabs = db
@@ -175,7 +176,7 @@ describe('runMigrations (fresh install)', () => {
     expect(templates).toHaveLength(5);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(12);
+    expect(row.version).toBe(SCHEMA_VERSION);
   });
 });
 
@@ -185,7 +186,7 @@ describe('incremental migration from v6', () => {
     const db = makeV6Database();
     runMigrations(db);
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(12);
+    expect(row.version).toBe(SCHEMA_VERSION);
   });
 
   it('adds working_dir column to sessions', () => {
@@ -231,7 +232,7 @@ describe('crash-recovery: DDL already applied but schema_version not updated', (
     runMigrations(db);
 
     const row = db.prepare('SELECT version FROM schema_version').get() as { version: number };
-    expect(row.version).toBe(12);
+    expect(row.version).toBe(SCHEMA_VERSION);
   });
 
   it('does not throw and leaves data intact during recovery', () => {
