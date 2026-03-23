@@ -102,11 +102,17 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: npm run make -- --arch arm64
 
-      - name: Generate latest-mac.yml for electron-updater
+      - name: Repackage update ZIP with ditto (preserves macOS code signature)
         run: |
           VERSION="${{ github.ref_name }}"
           VERSION="${VERSION#v}"
-          ZIP_PATH=$(find out/make/zip/darwin/arm64 -name "*.zip" | head -1)
+          APP_PATH="out/Polyphon-darwin-arm64/Polyphon.app"
+          ZIP_DIR="out/make/zip/darwin/arm64"
+          ZIP_PATH="${ZIP_DIR}/Polyphon-${VERSION}-arm64.zip"
+          # Replace Forge's ZIP (which breaks symlinks) with a ditto ZIP so that
+          # ShipIt's signature validation passes when installing the update.
+          rm -f "${ZIP_DIR}"/*.zip
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
           node scripts/generate-update-metadata.mjs "$ZIP_PATH" "$VERSION"
 
       - name: Remove signing keychain
