@@ -20,6 +20,9 @@ features:
   - icon: search
     title: Full text search
     body: Search every message across all sessions instantly. Global search finds anything; per-session Cmd+F highlights matches inline.
+  - icon: server
+    title: MCP Server
+    body: Use Polyphon as a tool inside your agent workflows. Claude Code, Cursor, Codex CLI, and GitHub Copilot can list compositions, create sessions, and broadcast questions to your full ensemble — synchronously, over stdio.
   - icon: shield
     title: Local-first, no telemetry
     body: Conversations and API keys stay on your machine. No account, no cloud sync.

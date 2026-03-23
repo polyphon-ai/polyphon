@@ -1,6 +1,12 @@
 items:
   # ── Active / upcoming ──────────────────────────────────────
 
+  - title: "MCP Server"
+    pricing: free
+    status: released
+    release_date: 2026-03-23
+    description: "Expose Polyphon as an MCP tool server. Any MCP-compatible agent — Claude Code, Cursor, Codex CLI, GitHub Copilot, Windsurf, Gemini CLI — can list compositions, create sessions, broadcast to the full ensemble, and retrieve transcripts via standard MCP tool calls. Runs over stdio with a Settings toggle to auto-start on launch."
+
   - title: "Sync"
     pricing: paid
     status: planned

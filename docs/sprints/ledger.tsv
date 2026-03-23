@@ -19,3 +19,4 @@ sprint_id	title	status	created_at	updated_at
 018	Docs Screenshot Refresh and New Screenshot Coverage	completed	2026-03-22T04:55:41Z	2026-03-22T05:39:05Z
 019	SQLCipher Whole-Database Encryption	completed	2026-03-22T20:24:29Z	2026-03-22T21:59:03Z
 020	FTS5 Full-Text Search	completed	2026-03-23T00:52:01Z	2026-03-23T01:23:33Z
+021	MCP Server Support	completed	2026-03-23T21:34:33Z	2026-03-23T22:39:10Z
