@@ -623,6 +623,8 @@ a:hover {
 .feature-card:nth-child(4) { --fc: oklch(50% 0.18 148); --fc-bg: oklch(95% 0.05 148); --fc-dk: oklch(68% 0.16 148); --fc-dk-bg: oklch(20% 0.06 148); }
 .feature-card:nth-child(5) { --fc: oklch(58% 0.18 58);  --fc-bg: oklch(95% 0.05 58);  --fc-dk: oklch(78% 0.16 58);  --fc-dk-bg: oklch(22% 0.06 58);  }
 .feature-card:nth-child(6) { --fc: oklch(50% 0.22 340); --fc-bg: oklch(95% 0.05 340); --fc-dk: oklch(70% 0.18 340); --fc-dk-bg: oklch(20% 0.06 340); }
+.feature-card:nth-child(7) { --fc: oklch(52% 0.18 25);  --fc-bg: oklch(95% 0.05 25);  --fc-dk: oklch(72% 0.16 25);  --fc-dk-bg: oklch(20% 0.06 25);  }
+.feature-card:nth-child(8) { --fc: oklch(50% 0.14 180); --fc-bg: oklch(95% 0.04 180); --fc-dk: oklch(70% 0.14 180); --fc-dk-bg: oklch(20% 0.05 180); }
 
 .feature-card {
   padding: 1.5rem;
