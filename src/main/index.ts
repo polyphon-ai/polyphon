@@ -4,15 +4,17 @@ import os from 'node:os';
 import { registerIpcHandlers } from './ipc';
 import type { EncryptionContext } from './ipc/settingsHandlers';
 import { getDb, closeDb } from './db';
-import { logger, initDebugFromFlag } from './utils/logger';
+import { logger, initDebugFromFlag, addSensitiveValue, suppressConsoleTransport } from './utils/logger';
 import { VoiceManager } from './managers/VoiceManager';
 import { SessionManager } from './managers/SessionManager';
 import { setupAutoUpdater } from './utils/updateChecker';
 import { loadOrCreateKey } from './security/keyManager';
 import { createUnlockWindow } from './security/unlockWindow';
 import { installCsp } from './security/csp';
-import { IPC } from '../shared/constants';
+import { IPC, APP_SETTING_KEYS } from '../shared/constants';
 import { SCHEMA_VERSION } from './db/schema';
+import { getBooleanSetting } from './db/queries/appSettings';
+import { createMcpController } from './mcp/index';
 
 process.on('uncaughtException', (err) => {
   logger.error('Uncaught exception', err);
@@ -20,6 +22,16 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason) => {
   logger.error('Unhandled rejection', reason);
 });
+
+// Parse CLI flags
+const argv = process.argv.slice(1);
+const isMcpServer = argv.includes('--mcp-server');
+const isHeadless = argv.includes('--headless');
+
+// In MCP server mode, suppress console log transport to avoid stdout contamination.
+if (isMcpServer) {
+  suppressConsoleTransport();
+}
 
 // In test mode, isolate all Electron storage (localStorage, session data, etc.)
 // to the same temp directory used for the SQLite DB, preventing state leaks between tests.
@@ -86,14 +98,74 @@ app.whenReady().then(async () => {
   app: { version: app.getVersion(), schemaVersion: SCHEMA_VERSION },
   system: { os: `${os.type()} ${process.getSystemVersion()}`, platform: process.platform, arch: process.arch, electron: process.versions.electron },
   hardware: { cpu: `${cpus[0]?.model ?? 'unknown'} (${cpus.length} cores)`, memoryGb: (os.totalmem() / 1024 ** 3).toFixed(1) },
+  flags: { mcpServer: isMcpServer, headless: isHeadless },
 });
+
+  const e2e = process.env.POLYPHON_E2E === '1';
+  const userDataPath = app.getPath('userData');
+
+  // Headless mode: if DB is password-protected, require POLYPHON_DB_PASSWORD env var.
+  if (isHeadless) {
+    const dbPassword = process.env.POLYPHON_DB_PASSWORD ?? '';
+    if (dbPassword) {
+      addSensitiveValue(dbPassword);
+    }
+    // Key loading in headless mode — on failure, exit immediately.
+    const { key, keyWasAbsent } = await loadOrCreateKey(
+      userDataPath,
+      e2e,
+      async () => {
+        // Headless mode: no interactive unlock. Check env var.
+        if (!dbPassword) {
+          process.stderr.write(
+            'polyphon: database is password-protected. Set POLYPHON_DB_PASSWORD to the database password.\n',
+          );
+          process.exit(1);
+        }
+        return Buffer.from(dbPassword);
+      },
+    );
+
+    if (keyWasAbsent) {
+      logger.warn('[headless] Encryption key was absent; new key generated. Previously encrypted data is unrecoverable.');
+    }
+
+    const keyHex = key.toString('hex');
+    const db = getDb(keyHex);
+    const voiceManager = new VoiceManager(db);
+    const sessionManager = new SessionManager(voiceManager);
+
+    const mcpEnabled = getBooleanSetting(db, APP_SETTING_KEYS.MCP_ENABLED, false);
+    const mcpController = createMcpController({
+      db,
+      voiceManager,
+      sessionManager,
+      enabled: true,
+      headless: true,
+      onClose: () => {
+        logger.info('[headless] MCP stdio closed, quitting');
+        app.quit();
+      },
+    });
+
+    await mcpController.start();
+    logger.info('Polyphon headless MCP server started');
+
+    app.on('before-quit', () => {
+      logger.info('Polyphon headless shutting down');
+      voiceManager.disposeAll();
+    });
+    app.on('will-quit', () => {
+      closeDb();
+    });
+    return;
+  }
+
+  // GUI mode startup (including optional MCP server)
 
   // Install CSP once, before any window is created, so the policy is in place
   // before the renderer loads any content.
   installCsp();
-
-  const e2e = process.env.POLYPHON_E2E === '1';
-  const userDataPath = app.getPath('userData');
 
   // Resolve the database key before opening the DB. For password-wrapped keys
   // this shows an unlock window and awaits the user's password.
@@ -109,16 +181,43 @@ app.whenReady().then(async () => {
     },
   );
 
+  // Register DB passphrase value for log redaction (derived from password-wrap).
+  const dbPassword = process.env.POLYPHON_DB_PASSWORD ?? '';
+  if (dbPassword) addSensitiveValue(dbPassword);
+
   const keyHex = key.toString('hex');
   const db = getDb(keyHex);
   const voiceManager = new VoiceManager(db);
   const sessionManager = new SessionManager(voiceManager);
 
+  // MCP controller for GUI mode (optional)
+  const mcpEnabled = getBooleanSetting(db, APP_SETTING_KEYS.MCP_ENABLED, false);
+  const shouldStartMcp = isMcpServer || mcpEnabled;
+
+  const mcpController = createMcpController({
+    db,
+    voiceManager,
+    sessionManager,
+    enabled: mcpEnabled,
+    headless: false,
+    onStatusChanged: (status) => {
+      const wins = BrowserWindow.getAllWindows();
+      for (const w of wins) {
+        w.webContents.send(IPC.MCP_STATUS_CHANGED, status);
+      }
+    },
+  });
+
   const encCtx: EncryptionContext = { userDataPath, dbKey: key, e2e };
-  registerIpcHandlers(db, voiceManager, sessionManager, encCtx);
+  registerIpcHandlers(db, voiceManager, sessionManager, encCtx, mcpController);
   const win = createWindow();
   logger.info('Main window created');
   setupAutoUpdater(db, win);
+
+  if (shouldStartMcp) {
+    await mcpController.start();
+    logger.info('MCP server started in GUI mode');
+  }
 
   // After the renderer finishes loading, send any one-time push notifications.
   win.webContents.once('did-finish-load', () => {

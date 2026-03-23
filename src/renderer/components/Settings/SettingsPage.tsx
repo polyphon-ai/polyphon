@@ -23,6 +23,7 @@ import {
   Lock,
   ScrollText,
   Download,
+  Server,
 } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useUIStore, type Theme } from '../../store/uiStore';
@@ -38,6 +39,7 @@ import { ColorPicker } from '../Shared';
 import { AvatarEditor } from './AvatarEditor';
 import AboutPage from './AboutPage';
 import EncryptionSection from './EncryptionSection';
+import McpSection from './McpSection';
 
 // ── API Key Status badge ────────────────────────────────────────────────────
 
@@ -1614,7 +1616,7 @@ function GeneralSection() {
 
 // ── Section nav ─────────────────────────────────────────────────────────────
 
-type Section = 'conductor' | 'tones' | 'system-prompts' | 'providers' | 'encryption' | 'general' | 'logs' | 'about';
+type Section = 'conductor' | 'tones' | 'system-prompts' | 'providers' | 'encryption' | 'mcp' | 'general' | 'logs' | 'about';
 
 const SECTION_ITEMS: { id: Section; label: string; Icon: React.ElementType }[] = [
   { id: 'conductor', label: 'Conductor', Icon: Wand2 },
@@ -1622,6 +1624,7 @@ const SECTION_ITEMS: { id: Section; label: string; Icon: React.ElementType }[] =
   { id: 'system-prompts', label: 'System Prompts', Icon: FileText },
   { id: 'providers', label: 'Providers', Icon: Plug },
   { id: 'encryption', label: 'Encryption', Icon: Lock },
+  { id: 'mcp', label: 'MCP Server', Icon: Server },
   { id: 'general', label: 'General', Icon: SlidersHorizontal },
   { id: 'logs', label: 'Logs', Icon: ScrollText },
   { id: 'about', label: 'About', Icon: Info },
@@ -1830,6 +1833,24 @@ export default function SettingsPage() {
                 </div>
               </div>
               <p className="text-gray-400 dark:text-gray-500 pt-1">Names and labels are left unencrypted so they can be queried directly in the database — for example, to list and search your sessions and compositions. They contain no message content or credentials.</p>
+            </div>
+          </div>
+        )}
+
+        {!loading && activeSection === 'mcp' && (
+          <div
+            role="tabpanel"
+            id="mcp-panel"
+            aria-labelledby="tab-mcp"
+            tabIndex={0}
+            className="max-w-2xl space-y-6"
+          >
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">MCP Server</h2>
+              <p className="text-sm text-gray-500 mt-1">Expose Polyphon as an MCP tool server for agent workflows.</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+              <McpSection />
             </div>
           </div>
         )}

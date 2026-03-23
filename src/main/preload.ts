@@ -19,6 +19,7 @@ import type {
   EncryptionStatus,
   DebugInfo,
   SearchResult,
+  McpStatus,
 } from '../shared/types';
 import type { ProbeModelResult } from './ipc/settingsHandlers';
 import { IPC } from '../shared/constants';
@@ -257,6 +258,18 @@ const api = {
       ipcRenderer.invoke(IPC.SEARCH_MESSAGES, query, sessionId),
   },
 
+  mcp: {
+    getStatus: (): Promise<McpStatus> =>
+      ipcRenderer.invoke(IPC.MCP_GET_STATUS),
+    setEnabled: (enabled: boolean): Promise<McpStatus> =>
+      ipcRenderer.invoke(IPC.MCP_SET_ENABLED, enabled),
+    onStatusChanged: (handler: (status: McpStatus) => void) => {
+      const listener = (_: Electron.IpcRendererEvent, status: McpStatus) => handler(status);
+      ipcRenderer.on(IPC.MCP_STATUS_CHANGED, listener);
+      return () => ipcRenderer.off(IPC.MCP_STATUS_CHANGED, listener);
+    },
+  },
+
   logs: {
     getPaths: (): Promise<{ appLog: string }> =>
       ipcRenderer.invoke(IPC.LOGS_GET_PATHS),
@@ -277,4 +290,4 @@ contextBridge.exposeInMainWorld('polyphon', api);
 export type PolyphonAPI = typeof api;
 
 // Suppress unused import warning — these types are used in the api shape
-export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, UpdateInfo, UpdateDownloadProgress, UpdateChannel, EncryptionStatus, ProbeModelResult, SearchResult };
+export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, UpdateInfo, UpdateDownloadProgress, UpdateChannel, EncryptionStatus, ProbeModelResult, SearchResult, McpStatus };

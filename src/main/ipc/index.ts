@@ -8,6 +8,8 @@ import { IPC } from '../../shared/constants';
 import { logger, isDebugEnabled, setDebugEnabled, writeDebugFlag } from '../utils/logger';
 import { registerSettingsHandlers } from './settingsHandlers';
 import type { EncryptionContext } from './settingsHandlers';
+import { registerMcpHandlers } from './mcpHandlers';
+import type { McpServerController } from '../mcp/server';
 import {
   requireId,
   requireString,
@@ -53,6 +55,7 @@ export function registerIpcHandlers(
   voiceManager: VoiceManager,
   sessionManager: SessionManager,
   encCtx?: EncryptionContext,
+  mcpController?: McpServerController,
 ): void {
   // --- Session handlers ---
 
@@ -505,4 +508,10 @@ export function registerIpcHandlers(
     const sid = sessionId != null ? requireId(sessionId, 'sessionId') : undefined;
     return searchMessages(db, q, sid);
   });
+
+  // --- MCP handlers (GUI mode only) ---
+  if (mcpController) {
+    const win = BrowserWindow.getAllWindows()[0] ?? null;
+    registerMcpHandlers(db, mcpController, win);
+  }
 }
