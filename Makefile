@@ -20,6 +20,16 @@ install-hooks: ## Install git hooks (pre-commit via pre-commit; pre-push via scr
 run: ## Start the Electron app in development mode (hot reload)
 	POLYPHON_TEST_USER_DATA=$(CURDIR)/.dev-data ELECTRON_DISABLE_SECURITY_WARNINGS=true npm start
 
+.PHONY: dev-poly
+dev-poly: ## Build poly and link it globally so `poly` runs the local dev build
+	cd packages/poly && npm run build && npm link
+	@echo "poly is now linked — run: poly status"
+
+.PHONY: dev-poly-unlink
+dev-poly-unlink: ## Remove the global poly dev link
+	npm unlink -g @polyphon-ai/poly
+	@echo "poly unlinked"
+
 ##@ Build
 
 .PHONY: build
