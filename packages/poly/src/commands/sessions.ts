@@ -9,6 +9,41 @@ export function registerSessionsCommand(program: Command): void {
     .description('Manage sessions');
 
   sess
+    .command('new')
+    .description('Create a new session from a composition')
+    .requiredOption('--composition <id>', 'Composition ID')
+    .option('--name <name>', 'Session name (defaults to today\'s date)')
+    .option('--working-dir <path>', 'Working directory for filesystem tools')
+    .option('--sandbox', 'Sandbox filesystem tools to the working directory', false)
+    .option('--format <format>', 'Output format: human|json', 'human')
+    .option('--remote <n>', 'Named remote connection')
+    .action(async (opts) => {
+      const format = opts.format as OutputFormat;
+      const client = new PolyClient();
+      try {
+        const config = resolveConnection({ remote: opts.remote });
+        await client.connect(config);
+        const result = await client.call('sessions.create', {
+          compositionId: opts.composition,
+          ...(opts.name ? { name: opts.name } : {}),
+          ...(opts.workingDir ? { workingDir: opts.workingDir } : {}),
+          sandboxedToWorkingDir: opts.sandbox,
+        });
+        if (format === 'json') {
+          outputResult(result, format);
+        } else {
+          const s = result as any;
+          process.stdout.write(`Created session: ${s.name}\nID: ${s.id}\n`);
+        }
+      } catch (err) {
+        outputError(err, format);
+        process.exit(1);
+      } finally {
+        client.close();
+      }
+    });
+
+  sess
     .command('list')
     .description('List all sessions')
     .option('--archived', 'Include archived sessions', false)
