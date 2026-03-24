@@ -188,7 +188,8 @@ jobs:
         working-directory: packages/poly
 
       - name: Verify shebang
-        run: head -1 dist/index.js | grep -q '#!' || (echo "ERROR: dist/index.js missing shebang" && exit 1)
+        run: |
+          head -1 dist/index.js | grep -q '#!' || (echo "ERROR: dist/index.js missing shebang" && exit 1)
         working-directory: packages/poly
 
       - name: Publish to npm
