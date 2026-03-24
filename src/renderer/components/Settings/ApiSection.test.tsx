@@ -16,6 +16,7 @@ const makeStatus = (overrides: Partial<ApiStatus> = {}): ApiStatus => ({
   host: '127.0.0.1',
   tokenFingerprint: 'abcd1234',
   version: '0.0.0-test',
+  activeConnections: 0,
   ...overrides,
 });
 
