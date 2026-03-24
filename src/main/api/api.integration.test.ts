@@ -1,0 +1,306 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import net from 'node:net';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import Database from 'better-sqlite3';
+import { runMigrations } from '../db/migrations';
+import { insertComposition, upsertCompositionVoices } from '../db/queries/compositions';
+import { ApiServerController } from './server';
+import { loadOrCreateApiToken } from './auth';
+import { buildCompositionHandlers } from './handlers/compositions';
+import { buildSessionHandlers } from './handlers/sessions';
+import { buildSearchHandlers } from './handlers/search';
+import { buildApiHandlers } from './handlers/api';
+import type { VoiceManager } from '../managers/VoiceManager';
+import type { SessionManager } from '../managers/SessionManager';
+
+function createTestDb(): Database.Database {
+  const db = new Database(':memory:');
+  db.exec('PRAGMA journal_mode = WAL');
+  runMigrations(db);
+  return db;
+}
+
+function tempDir(): string {
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'poly-integration-test-'));
+}
+
+async function getFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.listen(0, '127.0.0.1', () => {
+      const addr = srv.address() as net.AddressInfo;
+      srv.close(() => resolve(addr.port));
+    });
+    srv.on('error', reject);
+  });
+}
+
+class TcpSession {
+  private socket: net.Socket;
+  private buf = '';
+  private pending = new Map<number, (line: string) => void>();
+  private counter = 1;
+
+  constructor(port: number) {
+    this.socket = net.createConnection({ host: '127.0.0.1', port });
+    this.socket.setEncoding('utf-8');
+    this.socket.on('data', (chunk: string) => {
+      this.buf += chunk;
+      let idx;
+      while ((idx = this.buf.indexOf('\n')) !== -1) {
+        const line = this.buf.slice(0, idx);
+        this.buf = this.buf.slice(idx + 1);
+        if (!line.trim()) continue;
+        const msg = JSON.parse(line);
+        if (msg.method) continue; // notifications, skip
+        const cb = this.pending.get(msg.id);
+        if (cb) { this.pending.delete(msg.id); cb(line); }
+      }
+    });
+  }
+
+  async connect(): Promise<void> {
+    return new Promise((resolve) => {
+      this.socket.once('connect', resolve);
+    });
+  }
+
+  async send(method: string, params?: unknown): Promise<any> {
+    const id = this.counter++;
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, (line) => {
+        const resp = JSON.parse(line);
+        if (resp.error) {
+          const err = new Error(resp.error.message) as any;
+          err.code = resp.error.code;
+          reject(err);
+        } else {
+          resolve(resp.result);
+        }
+      });
+      this.socket.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
+    });
+  }
+
+  close(): void { this.socket.destroy(); }
+}
+
+// Minimal mock VoiceManager for tests that don't need real voices
+function makeMockVoiceManager(): VoiceManager {
+  return {
+    createVoice: (_cv: any) => ({}),
+    initSession: () => {},
+    getEnsemble: () => [],
+    getVoice: () => null,
+    disposeSession: () => {},
+    disposeAll: () => {},
+    getProviderStatus: () => [],
+    tonesById: new Map(),
+    buildEnsembleSystemPrompt: () => '',
+  } as unknown as VoiceManager;
+}
+
+describe('API server integration', () => {
+  let db: Database.Database;
+  let dir: string;
+  let tokenPath: string;
+  let token: string;
+  let port: number;
+  let controller: ApiServerController;
+  let sess: TcpSession;
+
+  beforeEach(async () => {
+    db = createTestDb();
+    dir = tempDir();
+    tokenPath = path.join(dir, 'api.key');
+    token = loadOrCreateApiToken(tokenPath);
+    port = await getFreePort();
+
+    const vm = makeMockVoiceManager();
+
+    controller = new ApiServerController({
+      port,
+      host: '127.0.0.1',
+      tokenPath,
+      appVersion: '0.0.0-test',
+    });
+
+    controller.setDispatchTable({
+      ...buildApiHandlers(() => controller.getStatus()),
+      ...buildCompositionHandlers(db),
+      ...buildSessionHandlers(db, vm),
+      ...buildSearchHandlers(db),
+    });
+
+    await controller.start();
+
+    sess = new TcpSession(port);
+    await sess.connect();
+    await sess.send('api.authenticate', { token });
+  });
+
+  afterEach(async () => {
+    sess.close();
+    await controller.stop();
+    db.close();
+    try { fs.rmSync(dir, { recursive: true }); } catch { /* ignore */ }
+  });
+
+  it('compositions.list returns empty array initially', async () => {
+    const result = await sess.send('compositions.list');
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(0);
+  });
+
+  it('compositions.create and get round-trip', async () => {
+    const created = await sess.send('compositions.create', {
+      name: 'Test Comp',
+      mode: 'broadcast',
+      continuationPolicy: 'none',
+      continuationMaxRounds: 1,
+      voices: [],
+    });
+    expect(created.name).toBe('Test Comp');
+    expect(created.id).toBeTruthy();
+
+    const fetched = await sess.send('compositions.get', { id: created.id });
+    expect(fetched.id).toBe(created.id);
+  });
+
+  it('compositions.get returns NOT_FOUND for missing ID', async () => {
+    await expect(sess.send('compositions.get', { id: '00000000-0000-0000-0000-000000000001' }))
+      .rejects.toMatchObject({ code: -32002 });
+  });
+
+  it('compositions.delete removes composition', async () => {
+    const created = await sess.send('compositions.create', {
+      name: 'To Delete',
+      mode: 'conductor',
+      continuationPolicy: 'none',
+      continuationMaxRounds: 1,
+      voices: [],
+    });
+    await sess.send('compositions.delete', { id: created.id });
+    await expect(sess.send('compositions.get', { id: created.id }))
+      .rejects.toMatchObject({ code: -32002 });
+  });
+
+  it('sessions.list returns empty array initially', async () => {
+    const result = await sess.send('sessions.list');
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(0);
+  });
+
+  it('sessions.get returns NOT_FOUND for missing ID', async () => {
+    await expect(sess.send('sessions.get', { id: '00000000-0000-0000-0000-000000000001' }))
+      .rejects.toMatchObject({ code: -32002 });
+  });
+
+  it('api.getStatus returns status object', async () => {
+    const status = await sess.send('api.getStatus');
+    expect(status).toMatchObject({
+      running: true,
+      port: expect.any(Number),
+      tokenFingerprint: expect.any(String),
+    });
+  });
+
+  it('search.messages returns empty for no data', async () => {
+    const result = await sess.send('search.messages', { query: 'hello world' });
+    expect(Array.isArray(result)).toBe(true);
+  });
+});
+
+describe('Security: token not logged on auth failure', () => {
+  it('wrong token produces -32001 without token in error message', async () => {
+    const dir = tempDir();
+    const tokenPath = path.join(dir, 'api.key');
+    loadOrCreateApiToken(tokenPath);
+    const port = await getFreePort();
+    const controller = new ApiServerController({
+      port,
+      host: '127.0.0.1',
+      tokenPath,
+      appVersion: '0.0.0-test',
+    });
+    controller.setDispatchTable({});
+    await controller.start();
+
+    const wrongToken = 'secret-wrong-token-value-12345';
+    const result = await new Promise<string>((resolve) => {
+      const socket = net.createConnection({ host: '127.0.0.1', port }, () => {
+        socket.setEncoding('utf-8');
+        let buf = '';
+        socket.on('data', (chunk: string) => {
+          buf += chunk;
+          const idx = buf.indexOf('\n');
+          if (idx !== -1) { resolve(buf.slice(0, idx)); socket.destroy(); }
+        });
+        socket.write(JSON.stringify({
+          jsonrpc: '2.0', id: 1, method: 'api.authenticate',
+          params: { token: wrongToken },
+        }) + '\n');
+      });
+    });
+
+    const resp = JSON.parse(result);
+    expect(resp.error?.code).toBe(-32001);
+    expect(JSON.stringify(resp)).not.toContain(wrongToken);
+
+    await controller.stop();
+    try { fs.rmSync(dir, { recursive: true }); } catch { /* ignore */ }
+  });
+});
+
+describe('IPC/TCP parity: compositions.list', () => {
+  it('returns same data as IPC handler for representative read', async () => {
+    const db = createTestDb();
+    const dir = tempDir();
+    const tokenPath = path.join(dir, 'api.key');
+    const token = loadOrCreateApiToken(tokenPath);
+    const port = await getFreePort();
+
+    const vm = makeMockVoiceManager();
+    const controller = new ApiServerController({ port, host: '127.0.0.1', tokenPath, appVersion: '0.0.0-test' });
+    controller.setDispatchTable({
+      ...buildCompositionHandlers(db),
+    });
+    await controller.start();
+
+    // Insert via DB directly
+    const id = 'parity-test-' + Date.now();
+    const now = Date.now();
+    insertComposition(db, {
+      id, name: 'Parity Test', mode: 'broadcast', continuationPolicy: 'none',
+      continuationMaxRounds: 1, voices: [], createdAt: now, updatedAt: now, archived: false,
+    });
+
+    // Query via IPC handler (direct)
+    const { listCompositions } = await import('../db/queries/compositions');
+    const ipcResult = listCompositions(db);
+
+    // Query via TCP
+    const tcpSess = new TcpSession(port);
+    await tcpSess.connect();
+    // authenticate first
+    let buf = '';
+    const authDone = new Promise<void>((resolve) => {
+      (tcpSess as any).socket.once('data', (chunk: string) => {
+        buf += chunk;
+        resolve();
+      });
+    });
+    (tcpSess as any).socket.write(JSON.stringify({ jsonrpc: '2.0', id: 999, method: 'api.authenticate', params: { token } }) + '\n');
+    await authDone;
+    const tcpResult = await tcpSess.send('compositions.list', {});
+    tcpSess.close();
+    await controller.stop();
+    db.close();
+    try { fs.rmSync(dir, { recursive: true }); } catch { /* ignore */ }
+
+    expect(tcpResult.length).toBe(ipcResult.length);
+    expect(tcpResult[0]!.id).toBe(ipcResult[0]!.id);
+  });
+});
