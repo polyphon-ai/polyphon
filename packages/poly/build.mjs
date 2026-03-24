@@ -2,6 +2,8 @@ import { build } from 'esbuild';
 import { writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
+
 await build({
   entryPoints: ['src/index.ts'],
   bundle: true,
@@ -12,6 +14,9 @@ await build({
   external: [],
   minify: false,
   sourcemap: false,
+  define: {
+    __POLY_VERSION__: JSON.stringify(pkg.version),
+  },
 });
 
 // Inject shebang

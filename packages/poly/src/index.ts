@@ -1,3 +1,5 @@
+declare const __POLY_VERSION__: string;
+
 import { Command } from 'commander';
 import { registerStatusCommand } from './commands/status.js';
 import { registerCompositionsCommand } from './commands/compositions.js';
@@ -12,9 +14,9 @@ const program = new Command();
 program
   .name('poly')
   .description('CLI for controlling a running Polyphon instance')
-  .version('0.8.0');
+  .version(__POLY_VERSION__);
 
-registerStatusCommand(program);
+registerStatusCommand(program, __POLY_VERSION__);
 registerCompositionsCommand(program);
 registerSessionsCommand(program);
 registerRunCommand(program);
