@@ -181,13 +181,6 @@ describe('SessionManager.incrementRound', () => {
   });
 });
 
-describe('maskApiKey', () => {
-  it('is tested via env.test.ts — skipped here', () => {
-    // No-op: maskApiKey has its own test file
-    expect(true).toBe(true);
-  });
-});
-
 describe('SessionManager.parseMention edge cases', () => {
   const sm = makeSessionManager();
   const voices = ['GPT', 'Claude', 'Gemini'];

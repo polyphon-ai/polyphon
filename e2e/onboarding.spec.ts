@@ -6,11 +6,11 @@
  * and validation that "Get started" is disabled until a name is entered.
  */
 import { test, expect } from '@playwright/test';
-import { launchApp } from './helpers';
+import { launchMockApp } from './helpers';
 
 test.describe('Onboarding modal', () => {
   test('appears on first launch and is dismissed by Skip', async () => {
-    const app = await launchApp();
+    const app = await launchMockApp();
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');
 
@@ -25,7 +25,7 @@ test.describe('Onboarding modal', () => {
   });
 
   test('"Get started" is disabled until a name is entered', async () => {
-    const app = await launchApp();
+    const app = await launchMockApp();
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');
 
@@ -42,7 +42,7 @@ test.describe('Onboarding modal', () => {
   });
 
   test('saving with a name dismisses the modal', async () => {
-    const app = await launchApp();
+    const app = await launchMockApp();
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');
 
@@ -57,7 +57,7 @@ test.describe('Onboarding modal', () => {
   });
 
   test('saving with name and pronouns set dismisses the modal', async () => {
-    const app = await launchApp();
+    const app = await launchMockApp();
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');
 
@@ -73,7 +73,7 @@ test.describe('Onboarding modal', () => {
   });
 
   test('saving with all fields filled dismisses the modal', async () => {
-    const app = await launchApp();
+    const app = await launchMockApp();
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');
 
@@ -92,7 +92,7 @@ test.describe('Onboarding modal', () => {
   });
 
   test('pressing Enter submits the form when name is filled', async () => {
-    const app = await launchApp();
+    const app = await launchMockApp();
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');
 
@@ -107,7 +107,7 @@ test.describe('Onboarding modal', () => {
   });
 
   test('does not reappear after being skipped', async () => {
-    const app = await launchApp();
+    const app = await launchMockApp();
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');
 
