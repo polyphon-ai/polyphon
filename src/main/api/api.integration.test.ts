@@ -198,6 +198,132 @@ describe('API server integration', () => {
       .rejects.toMatchObject({ code: -32002 });
   });
 
+  it('sessions.create requires compositionId', async () => {
+    await expect(sess.send('sessions.create', {}))
+      .rejects.toMatchObject({ code: -32003 });
+  });
+
+  it('sessions.create returns NOT_FOUND for unknown compositionId', async () => {
+    await expect(sess.send('sessions.create', {
+      compositionId: '00000000-0000-0000-0000-000000000001',
+    })).rejects.toMatchObject({ code: -32002 });
+  });
+
+  it('sessions.create creates session from existing composition', async () => {
+    const comp = await sess.send('compositions.create', {
+      name: 'Session Test Comp',
+      mode: 'broadcast',
+      continuationPolicy: 'none',
+      continuationMaxRounds: 1,
+      voices: [],
+    }) as any;
+
+    const session = await sess.send('sessions.create', {
+      compositionId: comp.id,
+      name: 'My New Session',
+    }) as any;
+
+    expect(session.id).toBeTruthy();
+    expect(session.name).toBe('My New Session');
+    expect(session.compositionId).toBe(comp.id);
+    expect(session.mode).toBe('broadcast');
+    expect(session.archived).toBe(false);
+  });
+
+  it('sessions.create defaults name to today\'s date when omitted', async () => {
+    const comp = await sess.send('compositions.create', {
+      name: 'Unnamed Session Comp',
+      mode: 'conductor',
+      continuationPolicy: 'none',
+      continuationMaxRounds: 1,
+      voices: [],
+    }) as any;
+
+    const session = await sess.send('sessions.create', {
+      compositionId: comp.id,
+    }) as any;
+
+    expect(session.name).toBeTruthy();
+    expect(typeof session.name).toBe('string');
+    expect(session.name.length).toBeGreaterThan(0);
+  });
+
+  it('sessions.create inherits mode from composition', async () => {
+    const comp = await sess.send('compositions.create', {
+      name: 'Conductor Comp',
+      mode: 'conductor',
+      continuationPolicy: 'none',
+      continuationMaxRounds: 1,
+      voices: [],
+    }) as any;
+
+    const session = await sess.send('sessions.create', {
+      compositionId: comp.id,
+      name: 'Conductor Session',
+    }) as any;
+
+    expect(session.mode).toBe('conductor');
+  });
+
+  it('sessions.create stores workingDir when provided', async () => {
+    const comp = await sess.send('compositions.create', {
+      name: 'WorkDir Comp',
+      mode: 'broadcast',
+      continuationPolicy: 'none',
+      continuationMaxRounds: 1,
+      voices: [],
+    }) as any;
+
+    const session = await sess.send('sessions.create', {
+      compositionId: comp.id,
+      name: 'WorkDir Session',
+      workingDir: '/tmp/test-workdir',
+    }) as any;
+
+    expect(session.workingDir).toBe('/tmp/test-workdir');
+    expect(session.sandboxedToWorkingDir).toBe(false);
+  });
+
+  it('sessions.create sets sandboxedToWorkingDir when both flags provided', async () => {
+    const comp = await sess.send('compositions.create', {
+      name: 'Sandbox Comp',
+      mode: 'broadcast',
+      continuationPolicy: 'none',
+      continuationMaxRounds: 1,
+      voices: [],
+    }) as any;
+
+    const session = await sess.send('sessions.create', {
+      compositionId: comp.id,
+      name: 'Sandbox Session',
+      workingDir: '/tmp/sandbox-test',
+      sandboxedToWorkingDir: true,
+    }) as any;
+
+    expect(session.workingDir).toBe('/tmp/sandbox-test');
+    expect(session.sandboxedToWorkingDir).toBe(true);
+  });
+
+  it('sessions.create appears in sessions.list', async () => {
+    const comp = await sess.send('compositions.create', {
+      name: 'List Test Comp',
+      mode: 'broadcast',
+      continuationPolicy: 'none',
+      continuationMaxRounds: 1,
+      voices: [],
+    }) as any;
+
+    const session = await sess.send('sessions.create', {
+      compositionId: comp.id,
+      name: 'List Test Session',
+    }) as any;
+
+    const list = await sess.send('sessions.list') as any[];
+    const found = list.find((s) => s.id === session.id);
+    expect(found).toBeDefined();
+    expect(found.name).toBe('List Test Session');
+  });
+
   it('api.getStatus returns status object', async () => {
     const status = await sess.send('api.getStatus');
     expect(status).toMatchObject({
