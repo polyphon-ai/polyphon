@@ -3,14 +3,14 @@
 ##@ Setup
 
 .PHONY: install
-install: install-npm hooks-install ## Install all dependencies and git hooks
+install: install-npm install-hooks ## Install all dependencies and git hooks
 
 .PHONY: install-npm
 install-npm: ## Install npm dependencies only
 	npm install
 
-.PHONY: hooks-install
-hooks-install: ## Install git hooks (pre-commit via pre-commit; pre-push via scripts/pre-push-hook.sh)
+.PHONY: install-hooks
+install-hooks: ## Install git hooks (pre-commit via pre-commit; pre-push via scripts/pre-push-hook.sh)
 	pre-commit install
 	install -m 755 scripts/pre-push-hook.sh .git/hooks/pre-push
 
@@ -128,8 +128,20 @@ icons: ## Generate macOS .icns from icon-dark.svg (requires rsvg-convert; uses b
 
 ##@ Release
 
+.PHONY: bump-version
+bump-version: ## Bump version across all packages — usage: make bump-version VERSION=0.9.0
+	@[ -n "$(VERSION)" ] || (echo "ERROR: VERSION is required. Usage: make bump-version VERSION=0.9.0" && exit 1)
+	node scripts/bump-version.mjs $(VERSION)
+
+.PHONY: check-versions
+check-versions: ## Assert all packages share the same version
+	node scripts/check-versions.mjs
+
 .PHONY: publish
-publish: ## Build, sign, notarize, and publish to GitHub releases — requires Apple creds (see .env.release.example)
+publish: check-versions publish-polyphon publish-poly ## Publish everything — Polyphon to GitHub releases and poly to npm
+
+.PHONY: publish-polyphon
+publish-polyphon: ## Build, sign, notarize, and publish to GitHub releases — requires Apple creds (see .env.release.example)
 	@set -e; \
 	[ -f .env.release ] && set -a && . ./.env.release && set +a || true; \
 	[ -z "$$APPLE_SIGNING_IDENTITY" ] && echo "ERROR: APPLE_SIGNING_IDENTITY not set" && exit 1 || true; \
@@ -149,6 +161,14 @@ publish: ## Build, sign, notarize, and publish to GitHub releases — requires A
 	  "$$DMG_PATH" \
 	  "$$ZIP_PATH" \
 	  "out/make/zip/darwin/arm64/latest-mac.yml"
+
+.PHONY: publish-poly
+publish-poly: ## Build and publish @polyphon-ai/poly to npm — requires npm login
+	@set -e; \
+	cd packages/poly; \
+	npm run build; \
+	head -1 dist/index.js | grep -q '#!' || (echo "ERROR: dist/index.js missing shebang line" && exit 1); \
+	npm publish --access public
 
 ##@ Site
 
@@ -181,8 +201,8 @@ clean-app: ## Remove Electron Forge / Vite build output
 clean-dev-data: ## Remove local development database
 	rm -rf .dev-data
 
-.PHONY: reset-app-data
-reset-app-data: ## Delete packaged app user data for a clean first-run test — macOS only
+.PHONY: clean-app-data
+clean-app-data: ## Delete packaged app user data (Library/Application Support/Polyphon) for a clean first-run test — macOS only
 	rm -rf "$(HOME)/Library/Application Support/Polyphon"
 
 ##@ Help

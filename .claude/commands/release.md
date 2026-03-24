@@ -117,14 +117,27 @@ exact format (no version header — the tag provides that context):
 - ...
 ```
 
-### 9. Update `package.json`
+### 9. Bump versions across all packages
 
-Use the Edit tool to update the `"version"` field in `package.json` to the new version (without the leading `v`).
+Run the version bump script to update all package.json files atomically:
+
+```bash
+node scripts/bump-version.mjs <new-version-without-v>
+```
+
+This updates both `package.json` and `packages/poly/package.json` in one step.
+Verify they are in sync:
+
+```bash
+node scripts/check-versions.mjs
+```
+
+If the check fails, stop and do not continue.
 
 ### 10. Commit the version bump and release notes
 
 ```bash
-git add package.json RELEASE_NOTES.md
+git add package.json packages/poly/package.json RELEASE_NOTES.md
 git commit -m "chore(release): bump version to <new-version>
 
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
@@ -154,5 +167,6 @@ git push origin <new-version>
 ```
 
 After pushing, tell the user the tag has been pushed and that the GitHub Actions
-release workflow will now build and publish the macOS arm64 DMG installer.
+release workflow will now build and publish the macOS arm64 DMG installer and
+publish `@polyphon-ai/poly` to npm.
 Include the expected Actions URL: `https://github.com/polyphon-ai/polyphon/actions`.

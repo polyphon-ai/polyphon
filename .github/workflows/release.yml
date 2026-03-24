@@ -73,6 +73,9 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Check package versions are in sync
+        run: node scripts/check-versions.mjs
+
       - name: Import Developer ID certificate
         env:
           CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE }}
@@ -162,3 +165,34 @@ jobs:
             dist/macos/**/*.dmg
             dist/macos/**/*.zip
             dist/macos/**/latest-mac.yml
+
+  # ── 4. Publish poly to npm ────────────────────────────────────────────────
+  publish-poly:
+    name: Publish poly to npm
+    needs: [release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install poly dependencies
+        run: npm ci
+        working-directory: packages/poly
+
+      - name: Build poly
+        run: node build.mjs
+        working-directory: packages/poly
+
+      - name: Verify shebang
+        run: head -1 dist/index.js | grep -q '#!' || (echo "ERROR: dist/index.js missing shebang" && exit 1)
+        working-directory: packages/poly
+
+      - name: Publish to npm
+        run: npm publish --access public
+        working-directory: packages/poly
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
