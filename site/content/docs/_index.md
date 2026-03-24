@@ -20,3 +20,5 @@ Welcome to the Polyphon documentation. Use the navigation to explore each topic,
 - [Custom Providers](./custom-providers/) — configure custom OpenAI-compatible endpoints (Ollama, LM Studio, vLLM)
 - [Logging](./logging/) — view app logs, enable debug logging, copy log paths, and export the debug log
 - [MCP Server](./mcp/) — expose Polyphon as an MCP tool server for Claude Code, Cursor, Codex CLI, and other AI agents
+- [TCP API Server](./api/) — JSON-RPC 2.0 TCP server for scripts, CI pipelines, and headless control of a running instance
+- [poly CLI](./poly/) — command-line tool for controlling Polyphon from your terminal or CI environment
