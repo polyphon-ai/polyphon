@@ -159,8 +159,7 @@ export class ApiServerController {
 
         if (line.length > MAX_LINE_BYTES) {
           const err = makeErrorResponse(0, RPC_ERROR.PARSE_ERROR, 'Line exceeds 1 MB limit');
-          socket.write(JSON.stringify(err) + '\n');
-          socket.destroy();
+          socket.end(JSON.stringify(err) + '\n');
           return;
         }
 
@@ -238,8 +237,7 @@ export class ApiServerController {
       // Check buffer hasn't grown too large (unbounded partial line)
       if (buf.length > MAX_LINE_BYTES) {
         const err = makeErrorResponse(0, RPC_ERROR.PARSE_ERROR, 'Line exceeds 1 MB limit');
-        socket.write(JSON.stringify(err) + '\n');
-        socket.destroy();
+        socket.end(JSON.stringify(err) + '\n');
       }
     });
 

@@ -43,7 +43,14 @@ async function connectAndRead(
       }
     });
     socket.on('close', () => resolve(received));
-    socket.on('error', reject);
+    socket.on('error', (err: NodeJS.ErrnoException) => {
+      // EPIPE/ECONNRESET means the server closed the connection — treat as close
+      if (err.code === 'EPIPE' || err.code === 'ECONNRESET') {
+        resolve(received);
+      } else {
+        reject(err);
+      }
+    });
     for (const line of lines) {
       socket.write(line + '\n');
     }
