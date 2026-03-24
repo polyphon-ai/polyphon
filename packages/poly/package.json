@@ -1,6 +1,6 @@
 {
   "name": "@polyphon-ai/poly",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "CLI for controlling a running Polyphon instance",
   "main": "dist/index.js",
   "bin": {
