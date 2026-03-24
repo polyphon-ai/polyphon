@@ -68,6 +68,7 @@ export class ApiServerController {
       tokenFingerprint: tokenFingerprint(this._token),
       version: this._appVersion,
       startupError: this._startupError,
+      activeConnections: this._activeConnections.size,
     };
   }
 

@@ -225,4 +225,5 @@ export interface ApiStatus {
   tokenFingerprint: string;     // last 8 hex chars of token — never the full token
   version: string;              // app version string for poly compatibility checks
   startupError?: string;        // set when server failed to start (e.g. EADDRINUSE)
+  activeConnections: number;    // number of currently connected clients
 }
