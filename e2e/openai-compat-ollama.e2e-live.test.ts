@@ -279,7 +279,7 @@ test.describe('restart persistence', () => {
     // Open the broadcast session and verify the message history is intact
     await nav.getByText('Broadcast Session').click();
     await pause();
-    await expect(win.getByText('What is 2+2?')).toBeVisible({ timeout: 5_000 });
+    await expect(win.getByText('What is 2+2?', { exact: true }).first()).toBeVisible({ timeout: 5_000 });
     await longPause();
 
     // Custom providers should still be present in Settings
