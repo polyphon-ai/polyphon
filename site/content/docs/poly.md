@@ -117,6 +117,14 @@ poly compositions get <id> --format json
 Manage conversation sessions.
 
 ```bash
+# Create a new session from a composition
+poly sessions new --composition <id>
+poly sessions new --composition <id> --name "PR #42 review"
+poly sessions new --composition <id> --name "Repo review" --working-dir /path/to/repo
+poly sessions new --composition <id> --name "Sandboxed" --working-dir /path/to/repo --sandbox
+poly sessions new --composition <id> --format json   # returns full session object
+
+# List, inspect, export
 poly sessions list
 poly sessions list --archived
 poly sessions get <id>
@@ -127,6 +135,16 @@ poly sessions export <id> --format plaintext
 poly sessions rename <id> "New name"
 poly sessions delete <id>
 ```
+
+`sessions new` options:
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--composition <id>` | Composition to create the session from (required) | — |
+| `--name <n>` | Session name | today's date |
+| `--working-dir <path>` | Working directory passed to filesystem tools | — |
+| `--sandbox` | Restrict filesystem tools to the working directory | false |
+| `--format <format>` | `human` or `json` | `human` |
 
 ### poly run
 
@@ -209,7 +227,11 @@ On error, `poly` prints a human-readable message to stderr. With `--format json`
 # Check Polyphon is up before running further steps
 poly status --format json | jq -e '.running == true'
 
-# Run a composition and capture output
+# Create a session and immediately run prompts against it
+SESSION_ID=$(poly sessions new --composition $COMP_ID --name "CI run" --format json | jq -r '.id')
+poly run --session $SESSION_ID --prompt "$PROMPT" --format json | jq '.messages[].content'
+
+# Or use --composition shorthand on poly run (creates an ephemeral session)
 RESULT=$(poly run --composition $COMP_ID --prompt "$PROMPT" --format json)
 echo "$RESULT" | jq '.messages[].content'
 ```

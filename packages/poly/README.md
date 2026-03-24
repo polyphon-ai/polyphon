@@ -17,16 +17,30 @@ sessions, and conversations from the terminal — locally or over a network.
 npm install -g @polyphon-ai/poly
 ```
 
-## Local usage
-
-When Polyphon is running on the same machine, `poly` connects automatically —
-no configuration needed.
+## Quick start
 
 ```sh
+# Check that Polyphon is running
 poly status
+
+# Find a composition to work with
 poly compositions list
-poly sessions list
+
+# Create a session
+poly sessions new --composition <id> --name "My session"
+
+# Run a prompt against it
+poly run --session <id> --prompt "Review this approach" --stream
 ```
+
+Or as a one-liner using `jq`:
+
+```sh
+SESSION=$(poly sessions new --composition <id> --format json | jq -r '.id')
+poly run --session $SESSION --prompt "$(git diff HEAD~1)" --format json
+```
+
+---
 
 ## Commands
 
@@ -55,6 +69,30 @@ Get a single composition by ID.
 poly compositions get abc123
 poly compositions get abc123 --format json
 ```
+
+---
+
+### `poly sessions new`
+
+Create a new session from a composition.
+
+```sh
+poly sessions new --composition <id>
+poly sessions new --composition <id> --name "PR #42 review"
+poly sessions new --composition <id> --name "Code review" --working-dir /path/to/repo
+poly sessions new --composition <id> --name "Sandboxed" --working-dir /path/to/repo --sandbox
+poly sessions new --composition <id> --format json
+```
+
+**Options:**
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--composition <id>` | Composition ID (required) | — |
+| `--name <n>` | Session name | today's date |
+| `--working-dir <path>` | Working directory for filesystem tools | — |
+| `--sandbox` | Sandbox filesystem tools to working directory | false |
+| `--format <format>` | Output format: `human` or `json` | `human` |
 
 ---
 

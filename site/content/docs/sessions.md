@@ -153,3 +153,55 @@ To hide a session from the sidebar without deleting it, right-click the session 
 
 ![Right-click context menu on a session showing Archive and Delete options](/images/screenshots/sessions/context-menu.webp)
 <!-- Prerequisites: at least one session in the sidebar | Platform: any | Theme: any | Window: default -->
+
+---
+
+## Managing Sessions with `poly`
+
+If you have the [poly CLI](../poly/) installed and the API server enabled, you can manage sessions from the terminal.
+
+### Create a session
+
+```sh
+# Basic — uses today's date as the session name
+poly sessions new --composition <id>
+
+# With a name
+poly sessions new --composition <id> --name "PR #42 review"
+
+# With a working directory (passed to filesystem tools)
+poly sessions new --composition <id> --name "Repo review" --working-dir /path/to/repo
+
+# With sandboxing enabled (restricts filesystem tools to the working directory)
+poly sessions new --composition <id> --name "Sandboxed" --working-dir /path/to/repo --sandbox
+
+# Output the full session object as JSON (useful for scripting)
+poly sessions new --composition <id> --name "CI run" --format json
+```
+
+### List, inspect, export
+
+```sh
+poly sessions list
+poly sessions get <id>
+poly sessions messages <id>
+poly sessions export <id> --format-output markdown
+```
+
+### Full scripting workflow
+
+```sh
+# 1. Find your composition ID
+poly compositions list
+
+# 2. Create a session and capture the ID
+SESSION_ID=$(poly sessions new --composition <id> --name "PR review" --format json | jq -r '.id')
+
+# 3. Run prompts
+poly run --session $SESSION_ID --prompt "Review this diff" --stream
+
+# 4. Export the transcript
+poly sessions export $SESSION_ID --format-output markdown > review.md
+```
+
+See [poly CLI](../poly/) for the full command reference.
