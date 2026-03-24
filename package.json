@@ -4,6 +4,9 @@
   "version": "0.8.0",
   "description": "One chat. Many voices.",
   "main": ".vite/build/main.js",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",

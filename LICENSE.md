@@ -1,6 +1,6 @@
 # Polyphon License Agreement
 
-**Version 1.0 — Effective: [DATE]**
+**Version 1.0 — Effective: March 23, 2026**
 
 ---
 
@@ -102,8 +102,8 @@ in your possession.
 
 ## 10. Governing Law
 
-This Agreement shall be governed by the laws of [JURISDICTION], without
-regard to its conflict of law provisions.
+This Agreement shall be governed by the laws of the Commonwealth of Kentucky,
+United States of America, without regard to its conflict of law provisions.
 
 ---
 

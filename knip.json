@@ -1,18 +1,27 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
-  "entry": [
-    "src/main/index.ts",
-    "src/main/preload.ts",
-    "vite.*.config.ts",
-    "e2e/**/*.ts",
-    "src/**/*.test.{ts,tsx}",
-    "src/**/*.integration.test.{ts,tsx}"
-  ],
-  "project": [
-    "src/**/*.{ts,tsx}",
-    "e2e/**/*.ts",
-    "vite.*.config.ts"
-  ],
+  "workspaces": {
+    ".": {
+      "entry": [
+        "src/main/index.ts",
+        "src/main/preload.ts",
+        "src/shared/api.ts",
+        "vite.*.config.ts",
+        "e2e/**/*.ts",
+        "src/**/*.test.{ts,tsx}",
+        "src/**/*.integration.test.{ts,tsx}"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}",
+        "e2e/**/*.ts",
+        "vite.*.config.ts"
+      ]
+    },
+    "packages/poly": {
+      "entry": ["src/index.ts", "src/types.ts"],
+      "project": ["src/**/*.ts"]
+    }
+  },
   "ignoreDependencies": [
     "geist",
     "tailwindcss",
