@@ -180,7 +180,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install poly dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
         working-directory: packages/poly
 
       - name: Build poly
