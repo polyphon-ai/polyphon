@@ -200,7 +200,7 @@ describe('API server integration', () => {
 
   it('sessions.create requires compositionId', async () => {
     await expect(sess.send('sessions.create', {}))
-      .rejects.toMatchObject({ code: -32003 });
+      .rejects.toMatchObject({ code: -32602 });
   });
 
   it('sessions.create returns NOT_FOUND for unknown compositionId', async () => {
