@@ -24,6 +24,7 @@ import {
   ScrollText,
   Download,
   Server,
+  Network,
 } from 'lucide-react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useUIStore, type Theme } from '../../store/uiStore';
@@ -40,6 +41,7 @@ import { AvatarEditor } from './AvatarEditor';
 import AboutPage from './AboutPage';
 import EncryptionSection from './EncryptionSection';
 import McpSection from './McpSection';
+import ApiSection from './ApiSection';
 
 // ── API Key Status badge ────────────────────────────────────────────────────
 
@@ -1616,7 +1618,7 @@ function GeneralSection() {
 
 // ── Section nav ─────────────────────────────────────────────────────────────
 
-type Section = 'conductor' | 'tones' | 'system-prompts' | 'providers' | 'encryption' | 'mcp' | 'general' | 'logs' | 'about';
+type Section = 'conductor' | 'tones' | 'system-prompts' | 'providers' | 'encryption' | 'mcp' | 'api' | 'general' | 'logs' | 'about';
 
 const SECTION_ITEMS: { id: Section; label: string; Icon: React.ElementType }[] = [
   { id: 'conductor', label: 'Conductor', Icon: Wand2 },
@@ -1625,6 +1627,7 @@ const SECTION_ITEMS: { id: Section; label: string; Icon: React.ElementType }[] =
   { id: 'providers', label: 'Providers', Icon: Plug },
   { id: 'encryption', label: 'Encryption', Icon: Lock },
   { id: 'mcp', label: 'MCP Server', Icon: Server },
+  { id: 'api', label: 'API Server & CLI', Icon: Network },
   { id: 'general', label: 'General', Icon: SlidersHorizontal },
   { id: 'logs', label: 'Logs', Icon: ScrollText },
   { id: 'about', label: 'About', Icon: Info },
@@ -1851,6 +1854,24 @@ export default function SettingsPage() {
             </div>
             <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
               <McpSection />
+            </div>
+          </div>
+        )}
+
+        {!loading && activeSection === 'api' && (
+          <div
+            role="tabpanel"
+            id="api-panel"
+            aria-labelledby="tab-api"
+            tabIndex={0}
+            className="max-w-2xl space-y-6"
+          >
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">API Server & CLI</h2>
+              <p className="text-sm text-gray-500 mt-1">Control Polyphon programmatically via the JSON-RPC server or the <code className="font-mono text-sm">poly</code> companion CLI.</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+              <ApiSection />
             </div>
           </div>
         )}
