@@ -268,7 +268,121 @@ test.describe.serial('poly CLI', () => {
     expect(stderr.length).toBeGreaterThan(0);
   });
 
-  // ── sessions ──────────────────────────────────────────────────────────────
+  // ── sessions new ─────────────────────────────────────────────────────────
+
+  test('poly sessions new creates session and prints id', async () => {
+    const { stdout, exitCode } = await runPoly(
+      ['sessions', 'new', '--composition', compId, '--name', 'Created by poly CLI'],
+      cliEnv,
+    );
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('Created by poly CLI');
+    // ID line must be present
+    expect(stdout).toMatch(/ID:\s+\S+/);
+  });
+
+  test('poly sessions new --format json returns session object', async () => {
+    const { stdout, exitCode } = await runPoly(
+      ['sessions', 'new', '--composition', compId, '--name', 'JSON session', '--format', 'json'],
+      cliEnv,
+    );
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.id).toBeTruthy();
+    expect(parsed.name).toBe('JSON session');
+    expect(parsed.compositionId).toBe(compId);
+    expect(parsed.mode).toBe('broadcast');
+    expect(parsed.archived).toBe(false);
+  });
+
+  test('poly sessions new created session appears in sessions list', async () => {
+    const { stdout: createOut, exitCode: createExit } = await runPoly(
+      ['sessions', 'new', '--composition', compId, '--name', 'Listing test session', '--format', 'json'],
+      cliEnv,
+    );
+    expect(createExit).toBe(0);
+    const created = JSON.parse(createOut);
+
+    const { stdout: listOut, exitCode: listExit } = await runPoly(
+      ['sessions', 'list'],
+      cliEnv,
+    );
+    expect(listExit).toBe(0);
+    expect(listOut).toContain('Listing test session');
+    expect(listOut).toContain(created.id);
+  });
+
+  test('poly sessions new without --name uses default name', async () => {
+    const { stdout, exitCode } = await runPoly(
+      ['sessions', 'new', '--composition', compId, '--format', 'json'],
+      cliEnv,
+    );
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(typeof parsed.name).toBe('string');
+    expect(parsed.name.length).toBeGreaterThan(0);
+  });
+
+  test('poly sessions new with --working-dir stores it on session', async () => {
+    const { stdout, exitCode } = await runPoly(
+      ['sessions', 'new', '--composition', compId, '--name', 'WorkDir session',
+       '--working-dir', '/tmp/poly-e2e-test', '--format', 'json'],
+      cliEnv,
+    );
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.workingDir).toBe('/tmp/poly-e2e-test');
+    expect(parsed.sandboxedToWorkingDir).toBe(false);
+  });
+
+  test('poly sessions new with --sandbox sets sandboxedToWorkingDir', async () => {
+    const { stdout, exitCode } = await runPoly(
+      ['sessions', 'new', '--composition', compId, '--name', 'Sandbox session',
+       '--working-dir', '/tmp/poly-e2e-sandbox', '--sandbox', '--format', 'json'],
+      cliEnv,
+    );
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(parsed.sandboxedToWorkingDir).toBe(true);
+  });
+
+  test('poly sessions new exits 1 for unknown composition id', async () => {
+    const { exitCode, stderr } = await runPoly(
+      ['sessions', 'new', '--composition', '00000000-0000-0000-0000-000000000001'],
+      cliEnv,
+    );
+    expect(exitCode).toBe(1);
+    expect(stderr.length).toBeGreaterThan(0);
+  });
+
+  test('poly sessions new exits 1 when --composition is missing', async () => {
+    const { exitCode } = await runPoly(
+      ['sessions', 'new', '--name', 'No comp'],
+      cliEnv,
+    );
+    expect(exitCode).not.toBe(0);
+  });
+
+  test('poly sessions new and run flow works end to end', async () => {
+    // Create session via CLI
+    const { stdout: newOut, exitCode: newExit } = await runPoly(
+      ['sessions', 'new', '--composition', compId, '--name', 'E2E flow session', '--format', 'json'],
+      cliEnv,
+    );
+    expect(newExit).toBe(0);
+    const newSession = JSON.parse(newOut);
+
+    // Run a prompt against the new session
+    const { stdout: runOut, exitCode: runExit } = await runPoly(
+      ['run', '--session', newSession.id, '--prompt', 'E2E flow test prompt'],
+      cliEnv,
+    );
+    expect(runExit).toBe(0);
+    expect(runOut).toContain('[Oracle]');
+    expect(runOut).toContain('Mock response from Oracle');
+  });
+
+  // ── sessions (continued) ──────────────────────────────────────────────────
 
   test('poly sessions list (human) shows seeded session', async () => {
     const { stdout, exitCode } = await runPoly(['sessions', 'list'], cliEnv);
