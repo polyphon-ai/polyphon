@@ -3,7 +3,7 @@
  *
  * Prerequisites:
  *   - Ollama running (native install recommended for Metal GPU) or Docker
- *   - Run via: make test-openai-compatible
+ *   - Run via: make test-e2e-compat-live
  *
  * Test coverage:
  *   - Dashboard: custom providers appear in the Providers section with an API status pill

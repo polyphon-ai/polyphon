@@ -51,9 +51,13 @@ test-integration: ## Run integration tests
 test-e2e: build-e2e ## Run e2e tests with mocked voices
 	npx playwright test
 
+.PHONY: test-e2e-poly-cli
+test-e2e-poly-cli: build-e2e ## Run poly CLI e2e tests in isolation (requires packages/poly/dist/index.js)
+	npx playwright test --config=playwright.config.ts e2e/poly-cli.spec.ts
+
 .PHONY: test-e2e-live
 test-e2e-live: build-e2e ## Run all live e2e tests (providers + search + encryption + openai-compat) — opt-in, never CI
-	npx playwright test --config=playwright.config.e2e-live.ts && npx playwright test --config=playwright.config.openai-compatible.ts
+	npx playwright test --config=playwright.config.e2e-live.ts
 
 .PHONY: test-e2e-providers-live
 test-e2e-providers-live: build-e2e ## Run all live provider e2e tests (API + CLI + mixed)
@@ -83,9 +87,9 @@ test-e2e-encryption-live: build-e2e ## Run live encryption e2e tests only
 test-e2e-mcp-live: build-e2e ## Run live MCP server e2e tests only (requires claude CLI)
 	npx playwright test --config=playwright.config.e2e-live.ts e2e/mcp.e2e-live.test.ts
 
-.PHONY: test-openai-compatible-live
-test-openai-compatible-live: build-e2e ## Run live e2e tests against Ollama in Docker — requires Docker
-	npx playwright test --config=playwright.config.openai-compatible.ts
+.PHONY: test-e2e-compat-live
+test-e2e-compat-live: build-e2e ## Run live OpenAI-compatible e2e tests against Ollama — requires Docker
+	npx playwright test --config=playwright.config.e2e-live.ts e2e/openai-compat-ollama.e2e-live.test.ts
 
 .PHONY: test-watch
 test-watch: ## Run Vitest in watch mode

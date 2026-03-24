@@ -7,6 +7,8 @@ like a conductor's podium: the user orchestrates, the agents are the ensemble.
 
 **Taglines:** "One chat. Many voices." / "Every agent has a voice." / "Orchestrate the conversation."
 
+**Platform:** macOS arm64 only. Linux and Windows are not supported and must not be referenced in code, documentation, or tooling.
+
 ---
 
 ## Domain Vocabulary
@@ -465,7 +467,7 @@ make test-unit                  # Vitest unit tests only
 make test-integration           # Vitest integration tests only
 make test-e2e                   # Playwright e2e with mocked voices
 make test-e2e-live              # e2e against real providers (opt-in, never CI)
-make test-openai-compatible-live # e2e against Ollama in Docker (opt-in, never CI)
+make test-e2e-compat-live       # e2e against Ollama in Docker (opt-in, never CI)
 make test-watch                 # Vitest in watch mode
 make lint                       # TypeScript type-check (no emit)
 ```
