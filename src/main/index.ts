@@ -15,6 +15,7 @@ import { IPC, APP_SETTING_KEYS } from '../shared/constants';
 import { SCHEMA_VERSION } from './db/schema';
 import { getBooleanSetting } from './db/queries/appSettings';
 import { createMcpController } from './mcp/index';
+import { createApiController } from './api/index';
 
 process.on('uncaughtException', (err) => {
   logger.error('Uncaught exception', err);
@@ -27,6 +28,7 @@ process.on('unhandledRejection', (reason) => {
 const argv = process.argv.slice(1);
 const isMcpServer = argv.includes('--mcp-server');
 const isHeadless = argv.includes('--headless');
+const isApiServer = argv.includes('--api-server'); // ephemeral: starts API server without persisting api_enabled
 
 // In MCP server mode, suppress console log transport to avoid stdout contamination.
 if (isMcpServer) {
@@ -208,8 +210,28 @@ app.whenReady().then(async () => {
     },
   });
 
+  // API (TCP) controller for GUI mode
+  const apiEnabled = getBooleanSetting(db, APP_SETTING_KEYS.API_ENABLED, false);
+  const shouldStartApi = isApiServer || apiEnabled;
+
+  const apiController = createApiController({
+    db,
+    voiceManager,
+    sessionManager,
+    mcpController,
+    userDataPath,
+    appVersion: app.getVersion(),
+    onStatusChanged: (status) => {
+      const wins = BrowserWindow.getAllWindows();
+      for (const w of wins) {
+        w.webContents.send(IPC.API_STATUS_CHANGED, status);
+      }
+    },
+  });
+  apiController.setEnabled(shouldStartApi);
+
   const encCtx: EncryptionContext = { userDataPath, dbKey: key, e2e };
-  registerIpcHandlers(db, voiceManager, sessionManager, encCtx, mcpController);
+  registerIpcHandlers(db, voiceManager, sessionManager, encCtx, mcpController, apiController);
   const win = createWindow();
   logger.info('Main window created');
   setupAutoUpdater(db, win);
@@ -217,6 +239,11 @@ app.whenReady().then(async () => {
   if (shouldStartMcp) {
     await mcpController.start();
     logger.info('MCP server started in GUI mode');
+  }
+
+  if (shouldStartApi) {
+    await apiController.start();
+    logger.info('API server started in GUI mode');
   }
 
   // After the renderer finishes loading, send any one-time push notifications.

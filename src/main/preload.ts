@@ -20,6 +20,7 @@ import type {
   DebugInfo,
   SearchResult,
   McpStatus,
+  ApiStatus,
 } from '../shared/types';
 import type { ProbeModelResult } from './ipc/settingsHandlers';
 import { IPC } from '../shared/constants';
@@ -282,6 +283,24 @@ const api = {
     export: (): Promise<{ ok: boolean; error?: string }> =>
       ipcRenderer.invoke(IPC.LOGS_EXPORT),
   },
+
+  api: {
+    getStatus: (): Promise<ApiStatus> =>
+      ipcRenderer.invoke(IPC.API_GET_STATUS),
+    getToken: (): Promise<string> =>
+      ipcRenderer.invoke(IPC.API_GET_TOKEN),
+    setEnabled: (enabled: boolean): Promise<ApiStatus> =>
+      ipcRenderer.invoke(IPC.API_SET_ENABLED, enabled),
+    setRemoteAccess: (remoteAccess: boolean): Promise<ApiStatus> =>
+      ipcRenderer.invoke(IPC.API_SET_REMOTE_ACCESS, remoteAccess),
+    rotateToken: (): Promise<ApiStatus> =>
+      ipcRenderer.invoke(IPC.API_ROTATE_TOKEN),
+    onStatusChanged: (handler: (status: ApiStatus) => void) => {
+      const listener = (_: Electron.IpcRendererEvent, status: ApiStatus) => handler(status);
+      ipcRenderer.on(IPC.API_STATUS_CHANGED, listener);
+      return () => ipcRenderer.off(IPC.API_STATUS_CHANGED, listener);
+    },
+  },
 } as const;
 
 contextBridge.exposeInMainWorld('polyphon', api);
@@ -290,4 +309,4 @@ contextBridge.exposeInMainWorld('polyphon', api);
 export type PolyphonAPI = typeof api;
 
 // Suppress unused import warning — these types are used in the api shape
-export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, UpdateInfo, UpdateDownloadProgress, UpdateChannel, EncryptionStatus, ProbeModelResult, SearchResult, McpStatus };
+export type { Composition, CompositionVoice, Session, Message, ProviderConfig, ProviderStatus, CliTestResult, ModelsResult, UserProfile, CustomProvider, CustomProviderWithStatus, ToneDefinition, SystemPromptTemplate, UpdateInfo, UpdateDownloadProgress, UpdateChannel, EncryptionStatus, ProbeModelResult, SearchResult, McpStatus, ApiStatus };

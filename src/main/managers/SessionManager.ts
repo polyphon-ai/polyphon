@@ -171,6 +171,77 @@ export class SessionManager {
     return result;
   }
 
+  // Streaming headless broadcast — calls onToken for each token as it arrives, returns voice messages
+  async runStreamingBroadcastRound(
+    db: Database.Database,
+    session: Session,
+    conductorMessage: Message,
+    onToken: (voiceId: string, voiceName: string, token: string) => void,
+  ): Promise<Message[]> {
+    const ensemble = this.voiceManager.getEnsemble(session.id);
+    const voiceNameMap = new Map<string, string>(ensemble.map((v) => [v.id, v.name]));
+    const collected = new Map<string, string>();
+    const streamingSink: SessionEventSink = {
+      onVoiceToken: (_sid: string, voiceId: string, token: string) => {
+        collected.set(voiceId, (collected.get(voiceId) ?? '') + token);
+        onToken(voiceId, voiceNameMap.get(voiceId) ?? voiceId, token);
+      },
+    };
+    await this.runBroadcastRoundWithSink(streamingSink, session, conductorMessage, db, 0);
+
+    const result: Message[] = [];
+    for (const voice of ensemble) {
+      const content = collected.get(voice.id) ?? '';
+      if (content) {
+        result.push({
+          id: generateId(),
+          sessionId: session.id,
+          role: 'voice',
+          voiceId: voice.id,
+          voiceName: voice.name,
+          content,
+          timestamp: Date.now(),
+          roundIndex: this.roundCounters.get(session.id) ?? 0,
+        });
+      }
+    }
+    return result;
+  }
+
+  // Streaming headless directed round — calls onToken, returns the voice message or null
+  async runStreamingDirectedRound(
+    db: Database.Database,
+    session: Session,
+    conductorMessage: Message,
+    targetVoiceId: string,
+    onToken: (voiceId: string, voiceName: string, token: string) => void,
+  ): Promise<Message | null> {
+    const voice = this.voiceManager.getVoice(session.id, targetVoiceId);
+    if (!voice) return null;
+
+    const collected = new Map<string, string>();
+    const streamingSink: SessionEventSink = {
+      onVoiceToken: (_sid: string, voiceId: string, token: string) => {
+        collected.set(voiceId, (collected.get(voiceId) ?? '') + token);
+        onToken(voiceId, voice.name, token);
+      },
+    };
+    await this.runDirectedRoundWithSink(streamingSink, session, conductorMessage, targetVoiceId, db);
+
+    const content = collected.get(targetVoiceId);
+    if (!content) return null;
+    return {
+      id: generateId(),
+      sessionId: session.id,
+      role: 'voice',
+      voiceId: voice.id,
+      voiceName: voice.name,
+      content,
+      timestamp: Date.now(),
+      roundIndex: this.roundCounters.get(session.id) ?? 0,
+    };
+  }
+
   // Headless directed round — returns the single voice response or null
   async runHeadlessDirectedRound(
     db: Database.Database,

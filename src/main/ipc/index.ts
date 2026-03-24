@@ -9,7 +9,9 @@ import { logger, isDebugEnabled, setDebugEnabled, writeDebugFlag } from '../util
 import { registerSettingsHandlers } from './settingsHandlers';
 import type { EncryptionContext } from './settingsHandlers';
 import { registerMcpHandlers } from './mcpHandlers';
+import { registerApiHandlers } from './apiHandlers';
 import type { McpServerController } from '../mcp/server';
+import type { ApiServerController } from '../api/server';
 import {
   requireId,
   requireString,
@@ -56,6 +58,7 @@ export function registerIpcHandlers(
   sessionManager: SessionManager,
   encCtx?: EncryptionContext,
   mcpController?: McpServerController,
+  apiController?: ApiServerController,
 ): void {
   // --- Session handlers ---
 
@@ -513,5 +516,11 @@ export function registerIpcHandlers(
   if (mcpController) {
     const win = BrowserWindow.getAllWindows()[0] ?? null;
     registerMcpHandlers(db, mcpController, win);
+  }
+
+  // --- API (TCP) handlers (GUI mode only) ---
+  if (apiController) {
+    const win = BrowserWindow.getAllWindows()[0] ?? null;
+    registerApiHandlers(db, apiController, win);
   }
 }

@@ -17,11 +17,18 @@ export function getCachedUpdateInfo(): UpdateInfo | null {
   return cachedUpdateInfo;
 }
 
+// Prevents setupAutoUpdater from registering listeners or firing a check more than once
+// per process lifetime. Accumulating listeners on the autoUpdater singleton causes
+// duplicate error logs and redundant checks.
+let initialized = false;
+
 // Test isolation — reset module-level state between tests.
 export function _resetForTests(): void {
   cachedUpdateInfo = null;
   manualCheck = false;
   downloading = false;
+  initialized = false;
+  autoUpdater.removeAllListeners();
 }
 
 // Flag to bypass dismissal prefs when the user explicitly triggers a check.
@@ -36,6 +43,8 @@ let activeDb: Database.Database | null = null;
 
 export function setupAutoUpdater(db: Database.Database, win: BrowserWindow): void {
   if (process.env.POLYPHON_E2E) return;
+  if (initialized) return;
+  initialized = true;
 
   activeWin = win;
   activeDb = db;
