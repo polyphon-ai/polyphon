@@ -215,3 +215,14 @@ export interface VoiceDescriptor {
   avatarIcon: string;
   side: 'left' | 'right'; // assigned at session load time; stays fixed for the session
 }
+
+export interface ApiStatus {
+  enabled: boolean;             // persisted: app_settings.api_enabled
+  remoteAccessEnabled: boolean; // persisted: app_settings.api_remote_access_enabled
+  running: boolean;             // currently listening?
+  port: number;                 // configured port (default 7432)
+  host: string;                 // '127.0.0.1' or '0.0.0.0'
+  tokenFingerprint: string;     // last 8 hex chars of token — never the full token
+  version: string;              // app version string for poly compatibility checks
+  startupError?: string;        // set when server failed to start (e.g. EADDRINUSE)
+}

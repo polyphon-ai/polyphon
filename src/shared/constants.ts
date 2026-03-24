@@ -140,11 +140,22 @@ export const IPC = {
   MCP_GET_STATUS: 'mcp:getStatus',
   MCP_SET_ENABLED: 'mcp:setEnabled',
   MCP_STATUS_CHANGED: 'mcp:statusChanged',
+
+  API_GET_STATUS: 'api:getStatus',
+  API_GET_TOKEN: 'api:getToken',
+  API_SET_ENABLED: 'api:setEnabled',
+  API_SET_REMOTE_ACCESS: 'api:setRemoteAccess',
+  API_ROTATE_TOKEN: 'api:rotateToken',
+  API_STATUS_CHANGED: 'api:statusChanged',
 } as const;
 
 export const APP_SETTING_KEYS = {
   MCP_ENABLED: 'mcp_enabled',
+  API_ENABLED: 'api_enabled',
+  API_REMOTE_ACCESS_ENABLED: 'api_remote_access_enabled',
 } as const;
+
+export const DEFAULT_API_PORT = 7432;
 
 export const CONTINUATION_MAX_ROUNDS_LIMIT = 10;
 
