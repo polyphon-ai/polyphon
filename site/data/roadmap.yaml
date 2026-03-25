@@ -9,7 +9,7 @@ items:
   - title: "Sync" paid
     status: planned
     description: "End-to-end encrypted sync of your sessions, compositions, and settings across all your devices. Your data stays private — we can't read it."
-    discussion: https://github.com/polyphon-ai/polyphon/discussions/5
+    discussion: https://github.com/polyphon-ai/polyphon/discussions/9
     feature_request:
 
   - title: "Working Directory" free
@@ -49,13 +49,13 @@ items:
   - title: "Plugins" free
     status: planned
     description: "Extend Polyphon with community and first-party plugins. Add new voice providers, custom session behaviors, output formatters, and more — without touching core."
-    discussion: https://github.com/polyphon-ai/polyphon/discussions/3
+    discussion: https://github.com/polyphon-ai/polyphon/discussions/10
     feature_request:
 
   - title: "Extensions" free
     status: planned
     description: "Build and install extensions that hook into the Polyphon UI — custom panels, session widgets, and integrations with external tools and workflows."
-    discussion: https://github.com/polyphon-ai/polyphon/discussions/4
+    discussion: https://github.com/polyphon-ai/polyphon/discussions/11
     feature_request:
 
   # ── Released ───────────────────────────────────────────────
