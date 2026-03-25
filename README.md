@@ -99,7 +99,7 @@ POLYPHON_DEVTOOLS=1 make run
 - **GitHub Org:** [github.com/polyphon-ai](https://github.com/polyphon-ai)
 - **GitHub:** [polyphon-ai/polyphon](https://github.com/polyphon-ai/polyphon)
 - **Reddit:** [u/PolyphonAI](https://www.reddit.com/user/PolyphonAI)
-- **Social email:** social@polyphon.ai
+- **Email:** [hello@polyphon.ai](mailto:hello@polyphon.ai)
 
 ---
 
