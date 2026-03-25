@@ -1,60 +1,65 @@
 name: Bug Report
 description: Report a bug or unexpected behavior in Polyphon
-labels: ["bug", "triage"]
+labels: ["bug", "needs-triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug. Please fill out the sections below as completely as you can.
+        Thanks for taking the time to report a bug. Please fill out the sections below so we can investigate effectively.
+
+        > **Security issue?** Do not file a public issue. See [SECURITY.md](../../blob/main/SECURITY.md) instead.
 
   - type: textarea
     id: description
     attributes:
-      label: Description
-      description: A clear and concise description of what the bug is.
+      label: What happened?
+      description: A clear description of the bug and what you expected to happen instead.
+      placeholder: |
+        What I did: ...
+        What happened: ...
+        What I expected: ...
     validations:
       required: true
 
   - type: textarea
     id: steps
     attributes:
-      label: Steps to Reproduce
-      description: Step-by-step instructions to reproduce the behavior.
+      label: Steps to reproduce
+      description: Minimal steps to reliably reproduce the issue.
       placeholder: |
-        1. Open a session with two voices
-        2. Send a message
+        1. ...
+        2. ...
         3. ...
-    validations:
-      required: true
-
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected Behavior
-      description: What did you expect to happen?
-    validations:
-      required: true
-
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual Behavior
-      description: What actually happened? Include any error messages or logs.
     validations:
       required: true
 
   - type: input
     id: version
     attributes:
-      label: Polyphon Version
-      placeholder: e.g. 0.1.0
+      label: Polyphon version
+      description: Found in the app or in the release tag (e.g. `v1.2.3`).
+      placeholder: v1.2.3
     validations:
-      required: false
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - iOS
+        - Android
+        - Other
+    validations:
+      required: true
 
   - type: textarea
     id: context
     attributes:
-      label: Additional Context
-      description: Anything else that might be relevant — screenshots, composition configs, voice providers involved, etc.
+      label: Additional context
+      description: Screenshots, logs, or anything else that might help.
     validations:
       required: false

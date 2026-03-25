@@ -1,56 +1,43 @@
 name: Feature Request
 description: Suggest a new feature or improvement for Polyphon
-labels: ["enhancement", "triage"]
+labels: ["enhancement", "needs-triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for suggesting an improvement. Please describe your idea as clearly as you can.
+        Thanks for suggesting a way to improve Polyphon! Please describe your idea below.
+
+        Not sure if it's a feature request? Start a [Discussion](../../discussions) instead — it's a great place to explore ideas with the community before filing a formal request.
 
   - type: textarea
     id: problem
     attributes:
-      label: Problem or Motivation
-      description: What problem does this solve, or what goal does it support? Why does this matter?
-      placeholder: I'm trying to... but currently...
+      label: What problem does this solve?
+      description: Describe the situation or workflow that this would improve. Focus on the problem, not the solution.
+      placeholder: I often find myself trying to... but currently I have to...
     validations:
       required: true
 
   - type: textarea
     id: solution
     attributes:
-      label: Proposed Solution
-      description: Describe the feature or change you'd like to see.
+      label: Proposed solution
+      description: What would you like to see? How would it work?
     validations:
       required: true
 
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives Considered
-      description: Have you considered any other approaches? Why do you prefer the proposed solution?
-    validations:
-      required: false
-
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area
-      description: Which part of Polyphon does this relate to?
-      options:
-        - Voice / agent integration
-        - Composition management
-        - Session / conversation UI
-        - Provider plugin system
-        - Documentation
-        - Other
+      label: Alternatives you've considered
+      description: Any workarounds or other approaches you've tried or thought about.
     validations:
       required: false
 
   - type: textarea
     id: context
     attributes:
-      label: Additional Context
-      description: Mockups, examples from other tools, or anything else that helps illustrate your idea.
+      label: Additional context
+      description: Mockups, examples from other tools, or anything else that helps illustrate the request.
     validations:
       required: false
