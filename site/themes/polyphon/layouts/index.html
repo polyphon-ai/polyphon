@@ -332,10 +332,6 @@
           <span>No telemetry</span>
         </li>
         <li class="principles-item">
-          {{ partial "icon.html" (dict "name" "heart" "size" 16) }}
-          <span>Free forever</span>
-        </li>
-        <li class="principles-item">
           {{ partial "icon.html" (dict "name" "key" "size" 16) }}
           <span>Bring your own key</span>
         </li>
@@ -356,10 +352,6 @@
           <span>No lock-in</span>
         </li>
         <li class="principles-item">
-          {{ partial "icon.html" (dict "name" "file-code" "size" 16) }}
-          <span>Markdown rendering</span>
-        </li>
-        <li class="principles-item">
           {{ partial "icon.html" (dict "name" "folder" "size" 16) }}
           <span>Project-aware</span>
         </li>
@@ -372,6 +364,30 @@
           <span>Encrypted at rest</span>
         </li>
       </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Open source callout -->
+<section class="opensource-callout" aria-label="Open source">
+  <div class="container">
+    <div class="opensource-callout-inner">
+      <div class="opensource-callout-eyebrow">
+        {{ partial "icon.html" (dict "name" "github" "size" 14) }}
+        <span>Apache 2.0</span>
+      </div>
+      <h2 class="opensource-callout-heading">The source is open.<br>Check it yourself.</h2>
+      <p class="opensource-callout-sub">If we say there's no telemetry, you should be able to verify that. Local-first software that touches your real work should be inspectable — not just trusted.</p>
+      <div class="opensource-callout-actions">
+        <a href="https://github.com/polyphon-ai/polyphon" target="_blank" rel="noopener noreferrer" class="btn-primary">
+          {{ partial "icon.html" (dict "name" "github" "size" 16) }}
+          View on GitHub
+        </a>
+        <a href="/blog/polyphon-is-now-open-source/" class="opensource-callout-readmore">
+          Read the full story
+          {{ partial "icon.html" (dict "name" "chevron-right" "size" 14) }}
+        </a>
+      </div>
     </div>
   </div>
 </section>
@@ -466,7 +482,7 @@
           <li>No accounts</li>
           <li>No usage caps from us</li>
         </ul>
-        <p class="pricing-teaser-sub">* Optional paid services are planned for the future</p>
+        <p class="pricing-teaser-sub">You pay your API providers directly. That's it.</p>
       </div>
     </div>
   </div>

@@ -3799,6 +3799,91 @@ a:hover {
   color: var(--color-text-primary);
 }
 
+/* Open source callout (homepage) */
+.opensource-callout {
+  padding: 5rem 0;
+  background: #0d1117;
+  border-top: 1px solid #30363d;
+  border-bottom: 1px solid #30363d;
+  text-align: center;
+}
+
+.opensource-callout-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.opensource-callout-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8b949e;
+  background: #161b22;
+  border: 1px solid #30363d;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-full);
+}
+
+.opensource-callout-heading {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  color: #f0f6fc;
+  margin: 0;
+}
+
+.opensource-callout-sub {
+  font-size: 1.0625rem;
+  color: #8b949e;
+  line-height: 1.65;
+  max-width: 540px;
+  margin: 0;
+}
+
+.opensource-callout-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.opensource-callout-actions .btn-primary {
+  background: #238636;
+  border-color: #2ea043;
+  color: #ffffff;
+}
+
+.opensource-callout-actions .btn-primary:hover {
+  background: #2ea043;
+  border-color: #3fb950;
+}
+
+.opensource-callout-readmore {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #58a6ff;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.opensource-callout-readmore:hover {
+  color: #79c0ff;
+  text-decoration: underline;
+}
+
 /* Pricing teaser (homepage) */
 .pricing-teaser {
   padding: 3.5rem 0;
