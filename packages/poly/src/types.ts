@@ -112,6 +112,8 @@ export interface SearchResult {
   archived: boolean;
 }
 
+export type ApiGetSpecResult = Record<string, unknown>;
+
 export const RPC_ERROR = {
   PARSE_ERROR: -32700,
   INVALID_REQUEST: -32600,

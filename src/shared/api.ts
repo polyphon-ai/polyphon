@@ -205,3 +205,6 @@ export interface SearchMessagesParams {
 export interface McpSetEnabledParams {
   enabled: boolean;
 }
+
+// api.getSpec
+export type ApiGetSpecResult = Record<string, unknown>;
