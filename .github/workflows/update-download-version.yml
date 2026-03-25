@@ -85,26 +85,3 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete old releases
-        run: |
-          CURRENT_TAG="v${VERSION}"
-
-          # Keep: the stable we just promoted + the single most recent pre-release.
-          # Delete: all older stables and all older pre-releases.
-          LATEST_PRERELEASE=$(gh release list --limit 100 \
-            --json tagName,isPrerelease \
-            --jq '[.[] | select(.isPrerelease == true)] | first | .tagName // ""')
-
-          gh release list --limit 100 --json tagName,isPrerelease \
-            --jq '.[] | "\(.isPrerelease) \(.tagName)"' | while read -r IS_PRE TAG; do
-            if [ "$TAG" = "$CURRENT_TAG" ]; then
-              echo "Keeping stable: $TAG"
-            elif [ "$TAG" = "$LATEST_PRERELEASE" ]; then
-              echo "Keeping pre-release: $TAG"
-            else
-              echo "Deleting: $TAG"
-              gh release delete "$TAG" --yes --cleanup-tag
-            fi
-          done
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
