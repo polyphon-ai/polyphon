@@ -8,10 +8,9 @@
       <img src="/brand/wordmark-dark.svg" alt="" class="hero-logo-dark" />
     </div>
 
-    <h1>One chat. Many voices.</h1>
+    <h1>One chat.<br>Many voices.</h1>
     <p class="hero-subtitle">
-      Polyphon orchestrates conversations between multiple AI voices simultaneously.
-      You send a message — every voice responds. They hear each other.
+      <span class="hero-accent">Every voice responds to you, and to each other.</span>
     </p>
 
     <div class="demo-window card-base hero-demo" aria-label="See Polyphon in action">
@@ -268,7 +267,7 @@
       <div class="card-base feature-card">
         <div class="feature-card-header">
           <div class="feature-icon" aria-hidden="true">
-            {{ partial "icon.html" (dict "name" .icon "size" 20) }}
+            {{ partial "icon.html" (dict "name" .icon "size" 24) }}
           </div>
           <h3>{{ .title }}</h3>
         </div>
@@ -282,10 +281,13 @@
 <!-- Supported providers -->
 <section class="providers" aria-label="Supported providers">
   <div class="container">
-    <h2>Works with the models you already use</h2>
+    <div class="providers-heading">
+      <h2>Works with the models you already use</h2>
+      <p>API keys, CLI tools, and custom endpoints — all treated equally inside a session.</p>
+    </div>
     <div class="providers-grid">
       <div class="provider-group">
-        <span class="provider-group-label">API</span>
+        <span class="provider-group-label">API Providers</span>
         <ul class="provider-group-list">
           <li>{{ partial "provider-logo.html" (dict "name" "anthropic" "size" 16) }}Anthropic Claude</li>
           <li>{{ partial "provider-logo.html" (dict "name" "openai" "size" 16) }}OpenAI GPT</li>
@@ -293,7 +295,7 @@
         </ul>
       </div>
       <div class="provider-group">
-        <span class="provider-group-label">CLI</span>
+        <span class="provider-group-label">CLI Providers</span>
         <ul class="provider-group-list">
           <li>{{ partial "provider-logo.html" (dict "name" "anthropic" "size" 16) }}Claude Code</li>
           <li>{{ partial "provider-logo.html" (dict "name" "openai" "size" 16) }}Codex</li>
@@ -316,7 +318,10 @@
 <section class="principles" aria-label="Designed with you in mind">
   <div class="container">
     <div class="principles-inner">
-      <h2 class="principles-heading">Designed with you in mind</h2>
+      <div class="principles-lede">
+        <h2 class="principles-heading">Designed with you in mind</h2>
+        <p class="principles-sub">The decisions we made before writing the first line of code.</p>
+      </div>
       <ul class="principles-list" role="list">
         <li class="principles-item">
           {{ partial "icon.html" (dict "name" "hard-drive" "size" 16) }}
@@ -343,8 +348,8 @@
           <span>Multi-voice</span>
         </li>
         <li class="principles-item">
-          {{ partial "icon.html" (dict "name" "accessibility" "size" 16) }}
-          <span>Accessible</span>
+          {{ partial "icon.html" (dict "name" "terminal" "size" 16) }}
+          <span>Scriptable</span>
         </li>
         <li class="principles-item">
           {{ partial "icon.html" (dict "name" "unlink" "size" 16) }}
@@ -517,6 +522,38 @@
       </div>
 
     </div>
+
+    <!-- poly CLI callout -->
+    <div class="download-card card-base poly-callout">
+      <div class="download-card-platform">
+        <div class="download-platform-icon" aria-hidden="true">
+          {{ partial "icon.html" (dict "name" "terminal" "size" 28) }}
+        </div>
+        <div>
+          <h3 class="download-platform-name">poly CLI</h3>
+          <p class="download-platform-sub">
+            npm
+            <span class="download-platform-sub-sep" aria-hidden="true">·</span>
+            @polyphon-ai/poly
+          </p>
+        </div>
+      </div>
+      <div class="download-files">
+        <div class="download-file-btn poly-install-cmd">
+          {{ partial "icon.html" (dict "name" "terminal" "size" 14) }}
+          <span class="download-file-info">
+            <span class="download-filename">npm install -g @polyphon-ai/poly</span>
+            <span class="download-arch">Control Polyphon from the terminal or CI</span>
+          </span>
+        </div>
+      </div>
+      <a class="download-docs-link" href="/docs/poly/">
+        {{ partial "icon.html" (dict "name" "book-open" "size" 14) }}
+        <span>New to poly? Read the CLI documentation</span>
+        {{ partial "icon.html" (dict "name" "chevron-right" "size" 14) }}
+      </a>
+    </div>
+
     {{ else }}
     <div class="downloads-pending">
       <p>The first release is on its way. Check back here soon.</p>
