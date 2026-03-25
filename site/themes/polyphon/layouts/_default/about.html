@@ -1,125 +1,55 @@
 {{ define "main" }}
-<div class="pricing-page">
+<div class="about-page">
 
   <!-- Hero -->
-  <section class="pricing-hero">
+  <section class="about-hero">
     <div class="container">
-      <h1>Free. Fully featured.</h1>
-
-    </div>
-  </section>
-
-  <!-- Free plan -->
-  <section class="pricing-main">
-    <div class="container">
-      <div class="pricing-card-free card-base">
-        <div class="pricing-card-header">
-          <div class="pricing-card-header-inner">
-            <div class="pricing-card-header-text">
-<p class="pricing-plan-name">Polyphon</p>
-              <p class="pricing-card-desc">The full application, free to use.<br>Download it, run it, keep it — no card required.</p>
-              <div class="pricing-cta-row">
-                <a href="/#download" class="btn-primary">Download free</a>
-                <span class="pricing-no-card">No credit card, ever</span>
-              </div>
-            </div>
-            <div class="pricing-card-header-price">
-              <span class="pricing-price-amount">$0</span>
-            </div>
-          </div>
-        </div>
-        <div class="pricing-features-divider" aria-hidden="true"></div>
-        <div class="pricing-card-features">
-          <div class="pricing-features-col">
-            <p class="pricing-features-heading">Voices &amp; Sessions</p>
-            <ul class="pricing-features-list">
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                Multi-voice sessions with unlimited voices
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                Broadcast and conductor session modes
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                API voices — Anthropic Claude, OpenAI GPT, Google Gemini, and more
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                CLI voices — Claude Code, Codex, GitHub Copilot, and more
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                Custom OpenAI-compatible endpoints — Ollama, LM Studio, and more
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                Voices hear each other and can build on each other's responses
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                Full conversation history stored locally
-              </li>
-            </ul>
-          </div>
-          <div class="pricing-features-col">
-            <p class="pricing-features-heading">Compositions &amp; Settings</p>
-            <ul class="pricing-features-list">
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                Save and reuse voice configurations with Compositions
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                Custom tones and system prompt templates
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                Conductor profile — name, pronouns, and context injected into every session
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                Per-voice model selection and system prompts
-              </li>
-            </ul>
-            <p class="pricing-features-heading pricing-features-heading--gap">Privacy &amp; Data</p>
-            <ul class="pricing-features-list">
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                Local-first — your conversations never leave your machine
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                No account required — just download and run
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                No usage limits from Polyphon (you pay your API providers directly)
-              </li>
-              <li>
-                {{ partial "icon.html" (dict "name" "check" "size" 15) }}
-                No telemetry without explicit opt-in
-              </li>
-            </ul>
-          </div>
-        </div>
+      <div class="about-hero-inner about-hero-inner--centered">
+        <p class="about-hero-eyebrow">{{ partial "icon.html" (dict "name" "music" "size" 13) }} Multi-voice AI orchestration</p>
+        <h1 class="about-hero-tagline">One chat.<br>Many voices.</h1>
       </div>
     </div>
   </section>
 
-  <!-- Commitment -->
-  <section class="pricing-commitment">
+  <!-- Body content -->
+  <section class="about-body">
     <div class="container">
-      <div class="pricing-commitment-inner">
-        <div class="pricing-commitment-icon" aria-hidden="true">
-          {{ partial "icon.html" (dict "name" "heart" "size" 20) }}
+      <div class="about-body-inner">
+
+        <div class="about-body-section">
+          <h2>What Polyphon does</h2>
+          <p>Polyphon is a free, local-first desktop app for orchestrating conversations between multiple AI voices simultaneously. You send a message — every voice in the session responds, reading each other's replies and building on what came before. A critic and a builder. A generalist and a specialist. A cloud model and a local one. Running together, in the same conversation.</p>
+          <p>Polyphon supports API voices (Anthropic Claude, OpenAI GPT, Google Gemini), CLI voices (Claude Code, Codex, GitHub Copilot), and any OpenAI-compatible endpoint — Ollama, LM Studio, vLLM, or your own. Mix and match freely. The question Polyphon is designed around is "What voices do I want in this room?" — not "Which single model should I use?"</p>
+          <p>Sessions can be broadcast (everyone responds) or directed (you @mention a specific voice). Compositions let you save and reuse your favorite configurations. Voices can use tools — reading and writing files, running commands, fetching URLs — scoped to a working directory you control.</p>
         </div>
-        <div class="pricing-commitment-body">
-          <h2>Our commitment</h2>
-          <p>Polyphon is built for people who want to think with multiple AI voices at once. The core experience — multi-voice sessions, all provider types, local-first storage — is free. We'll only charge for services that add genuine value on top of that foundation.</p>
-          <p>If you want to support development today, the best thing you can do is <a href="/#download">download Polyphon</a>, share it with someone who'd find it useful, or leave a star on <a href="https://github.com/polyphon-ai/polyphon">GitHub</a>.</p>
+
+        <hr class="about-divider" />
+
+        <div class="about-body-section">
+          <h2>How it's built</h2>
+          <p>Polyphon is local-first. Your sessions, compositions, and settings live on your machine, encrypted at rest with AES-256 via SQLCipher. Nothing is routed through a backend. There is no account. There is no telemetry — ever.</p>
+          <p>API keys are read from your shell environment and never leave the main process. The renderer makes zero network calls directly. These aren't marketing claims — they're verifiable properties of the code, which is <a href="https://github.com/polyphon-ai/polyphon">open source on GitHub</a> under the Apache 2.0 license.</p>
+          <p>Polyphon is free. Not "free tier with limits" — free. You pay your API providers directly for whatever you use. That's the whole model.</p>
         </div>
+
+        <hr class="about-divider" />
+
+        <div class="about-body-section">
+          <h2>Open source</h2>
+          <p>The full source is on GitHub under Apache 2.0. Issues and discussions are open. GitHub Sponsors is enabled for anyone who wants to support development financially. Pull requests aren't open yet, but forks are welcome and the license is permissive.</p>
+          <p>If you want to support the project today, the best things you can do are <a href="https://polyphon.ai/#download">download Polyphon</a>, share it with someone who'd find it useful, or <a href="https://github.com/polyphon-ai/polyphon">leave a star on GitHub</a>. If you want to support it financially, <a href="https://github.com/sponsors/coreydaley">GitHub Sponsors</a> is open.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTAs -->
+  <section class="about-cta">
+    <div class="container">
+      <div class="about-cta-inner">
+        <a href="https://polyphon.ai/#download" class="btn-primary">Get Polyphon</a>
+        <a href="https://github.com/polyphon-ai/polyphon" target="_blank" rel="noopener noreferrer" class="btn-secondary">{{ partial "icon.html" (dict "name" "github" "size" 15) }} View on GitHub</a>
       </div>
     </div>
   </section>

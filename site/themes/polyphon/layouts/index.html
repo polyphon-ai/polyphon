@@ -285,34 +285,132 @@
       <h2>Works with the models you already use</h2>
       <p>API keys, CLI tools, and custom endpoints — all treated equally inside a session.</p>
     </div>
-    <div class="providers-grid">
-      <div class="provider-group">
-        <span class="provider-group-label">API Providers</span>
-        <ul class="provider-group-list">
-          <li>{{ partial "provider-logo.html" (dict "name" "anthropic" "size" 16) }}Anthropic Claude</li>
-          <li>{{ partial "provider-logo.html" (dict "name" "openai" "size" 16) }}OpenAI GPT</li>
-          <li>{{ partial "provider-logo.html" (dict "name" "gemini" "size" 16) }}Google Gemini</li>
-        </ul>
+    <div class="staff-wrap">
+      <!-- Music staff -->
+      <div class="staff" aria-label="Provider ensemble">
+        <!-- Clef — Polyphon logo -->
+        <!-- Staff lines -->
+        <div class="staff-lines" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <!-- Notes — provider logos + conductor evenly spaced -->
+        <div class="staff-note staff-note--6" data-emoji="🎵" style="--note-x: 8%;  --note-line: 3;">{{ partial "icon.html" (dict "name" "wand-2" "size" 18) }}</div>
+        <div class="staff-note staff-note--1" data-emoji="🤔" style="--note-x: 23%; --note-line: 1;">{{ partial "provider-logo.html" (dict "name" "anthropic" "size" 18) }}</div>
+        <div class="staff-note staff-note--2" data-emoji="⚡" style="--note-x: 38%; --note-line: 4;">{{ partial "provider-logo.html" (dict "name" "openai" "size" 18) }}</div>
+        <div class="staff-note staff-note--3" data-emoji="✨" style="--note-x: 53%; --note-line: 2;">{{ partial "provider-logo.html" (dict "name" "gemini" "size" 18) }}</div>
+        <div class="staff-note staff-note--4" data-emoji="🔒" style="--note-x: 68%; --note-line: 3;">{{ partial "provider-logo.html" (dict "name" "ollama" "size" 18) }}</div>
+        <div class="staff-note staff-note--5" data-emoji="💻" style="--note-x: 83%; --note-line: 2;">{{ partial "provider-logo.html" (dict "name" "copilot" "size" 18) }}</div>
       </div>
-      <div class="provider-group">
-        <span class="provider-group-label">CLI Providers</span>
-        <ul class="provider-group-list">
-          <li>{{ partial "provider-logo.html" (dict "name" "anthropic" "size" 16) }}Claude Code</li>
-          <li>{{ partial "provider-logo.html" (dict "name" "openai" "size" 16) }}Codex</li>
-          <li>{{ partial "provider-logo.html" (dict "name" "copilot" "size" 16) }}GitHub Copilot</li>
-        </ul>
-      </div>
-      <div class="provider-group">
-        <span class="provider-group-label">OpenAI-compatible</span>
-        <ul class="provider-group-list">
-          <li>{{ partial "provider-logo.html" (dict "name" "ollama" "size" 16) }}Ollama</li>
-          <li>{{ partial "provider-logo.html" (dict "name" "lmstudio" "size" 16) }}LM Studio</li>
-          <li>{{ partial "provider-logo.html" (dict "name" "custom" "size" 16) }}Any custom endpoint</li>
-        </ul>
+      <!-- Signal cards below -->
+      <div class="providers-orbital-labels">
+        <div class="providers-signal-card" style="--signal-color: var(--demo-anthropic)">
+          <span class="providers-signal-tag">API</span>
+          <ul class="providers-signal-list">
+            <li>{{ partial "provider-logo.html" (dict "name" "anthropic" "size" 13) }}<span>Anthropic Claude</span></li>
+            <li>{{ partial "provider-logo.html" (dict "name" "openai" "size" 13) }}<span>OpenAI GPT</span></li>
+            <li>{{ partial "provider-logo.html" (dict "name" "gemini" "size" 13) }}<span>Google Gemini</span></li>
+          </ul>
+        </div>
+        <div class="providers-signal-card" style="--signal-color: var(--demo-copilot)">
+          <span class="providers-signal-tag">CLI</span>
+          <ul class="providers-signal-list">
+            <li>{{ partial "provider-logo.html" (dict "name" "anthropic" "size" 13) }}<span>Claude Code</span></li>
+            <li>{{ partial "provider-logo.html" (dict "name" "openai" "size" 13) }}<span>Codex</span></li>
+            <li>{{ partial "provider-logo.html" (dict "name" "copilot" "size" 13) }}<span>GitHub Copilot</span></li>
+          </ul>
+        </div>
+        <div class="providers-signal-card" style="--signal-color: var(--demo-ollama)">
+          <span class="providers-signal-tag">LOCAL</span>
+          <ul class="providers-signal-list">
+            <li>{{ partial "provider-logo.html" (dict "name" "ollama" "size" 13) }}<span>Ollama</span></li>
+            <li>{{ partial "provider-logo.html" (dict "name" "lmstudio" "size" 13) }}<span>LM Studio</span></li>
+            <li>{{ partial "provider-logo.html" (dict "name" "custom" "size" 13) }}<span>Any OpenAI-compatible</span></li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
 </section>
+
+<script>
+(function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    // Staff interaction (landing page)
+    document.querySelectorAll('.staff').forEach(function(container) {
+      var notes = Array.from(container.querySelectorAll('.staff-note'));
+      var all = notes;
+
+      function floatEmoji(el, emoji) {
+        var rect = el.getBoundingClientRect();
+        var containerRect = container.getBoundingClientRect();
+        var span = document.createElement('span');
+        span.textContent = emoji;
+        span.className = 'about-hero-emoji-float';
+        span.style.left = (rect.left - containerRect.left + rect.width / 2) + 'px';
+        span.style.top  = (rect.top  - containerRect.top) + 'px';
+        container.appendChild(span);
+        setTimeout(function() { span.remove(); }, 1400);
+      }
+
+      function pulse(el, delay) {
+        setTimeout(function() {
+          el.classList.remove('voice-activated');
+          void el.offsetWidth;
+          el.classList.add('voice-activated');
+          setTimeout(function() { el.classList.remove('voice-activated'); }, 1000);
+          floatEmoji(el, el.dataset.emoji);
+        }, delay);
+      }
+
+      all.forEach(function(el) {
+        el.addEventListener('mouseenter', function() {
+          pulse(el, 0);
+          var others = all.filter(function(o) { return o !== el; });
+          others.forEach(function(o, i) { pulse(o, 250 + i * 150); });
+        });
+      });
+    });
+
+    // Orbital interaction (about page)
+    document.querySelectorAll('.about-hero-voices').forEach(function(container) {
+      var conductor = container.querySelector('.about-hero-conductor');
+      var voices = Array.from(container.querySelectorAll('.about-hero-voice'));
+      var all = [conductor].concat(voices);
+
+      function floatEmoji(el, emoji) {
+        var rect = el.getBoundingClientRect();
+        var containerRect = container.getBoundingClientRect();
+        var span = document.createElement('span');
+        span.textContent = emoji;
+        span.className = 'about-hero-emoji-float';
+        span.style.left = (rect.left - containerRect.left + rect.width / 2) + 'px';
+        span.style.top  = (rect.top  - containerRect.top) + 'px';
+        container.appendChild(span);
+        setTimeout(function() { span.remove(); }, 1400);
+      }
+
+      function pulse(el, delay) {
+        setTimeout(function() {
+          var cls = el === conductor ? 'conductor-activated' : 'voice-activated';
+          el.classList.remove(cls);
+          void el.offsetWidth;
+          el.classList.add(cls);
+          setTimeout(function() { el.classList.remove(cls); }, 1000);
+          floatEmoji(el, el.dataset.emoji);
+        }, delay);
+      }
+
+      all.forEach(function(el) {
+        el.addEventListener('mouseenter', function() {
+          pulse(el, 0);
+          var others = all.filter(function(o) { return o !== el; });
+          others.forEach(function(o, i) { pulse(o, 250 + i * 150); });
+        });
+      });
+    });
+  });
+})();
+</script>
 
 <!-- Principles -->
 <section class="principles" aria-label="Designed with you in mind">
