@@ -81,9 +81,9 @@ jobs:
       - name: Promote release on GitHub
         run: |
           TAG="v${VERSION}"
-          gh release edit "$TAG" --repo polyphon-ai/releases --prerelease=false --latest
+          gh release edit "$TAG" --prerelease=false --latest
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Delete old releases
         run: |
@@ -91,11 +91,11 @@ jobs:
 
           # Keep: the stable we just promoted + the single most recent pre-release.
           # Delete: all older stables and all older pre-releases.
-          LATEST_PRERELEASE=$(gh release list --repo polyphon-ai/releases --limit 100 \
+          LATEST_PRERELEASE=$(gh release list --limit 100 \
             --json tagName,isPrerelease \
             --jq '[.[] | select(.isPrerelease == true)] | first | .tagName // ""')
 
-          gh release list --repo polyphon-ai/releases --limit 100 --json tagName,isPrerelease \
+          gh release list --limit 100 --json tagName,isPrerelease \
             --jq '.[] | "\(.isPrerelease) \(.tagName)"' | while read -r IS_PRE TAG; do
             if [ "$TAG" = "$CURRENT_TAG" ]; then
               echo "Keeping stable: $TAG"
@@ -103,8 +103,8 @@ jobs:
               echo "Keeping pre-release: $TAG"
             else
               echo "Deleting: $TAG"
-              gh release delete "$TAG" --repo polyphon-ai/releases --yes --cleanup-tag
+              gh release delete "$TAG" --yes --cleanup-tag
             fi
           done
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
