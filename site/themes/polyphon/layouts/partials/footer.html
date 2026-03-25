@@ -1,9 +1,26 @@
 <footer data-pagefind-ignore class="site-footer" role="contentinfo">
   <div class="container">
-    <span>&copy; {{ now.Year }} Polyphon. All rights reserved.</span>
-    <div class="footer-links">
-<a href="https://x.com/PolyphonAI" target="_blank" rel="noopener noreferrer" aria-label="Polyphon on X / Twitter">{{ partial "icon.html" (dict "name" "x-twitter" "size" 16) }}</a>
-      <a href="#" class="manage-consent">Manage cookie preferences</a>
+    <div class="footer-main">
+      <div class="footer-brand">
+        <span class="footer-copyright">&copy; {{ now.Year }} Polyphon. All rights reserved.</span>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div class="footer-nav-group">
+          <span class="footer-nav-label">Product</span>
+          <a href="/docs/getting-started/">Getting started</a>
+          <a href="/docs/">Documentation</a>
+          <a href="/roadmap/">Roadmap</a>
+          <a href="/blog/">Blog</a>
+        </div>
+        <div class="footer-nav-group">
+          <span class="footer-nav-label">Community</span>
+          <a href="https://github.com/polyphon-ai/releases" target="_blank" rel="noopener noreferrer">{{ partial "icon.html" (dict "name" "github" "size" 14) }}GitHub</a>
+          <a href="https://x.com/PolyphonAI" target="_blank" rel="noopener noreferrer" aria-label="Polyphon on X / Twitter">{{ partial "icon.html" (dict "name" "x-twitter" "size" 14) }}X / Twitter</a>
+        </div>
+      </nav>
+      <div class="footer-legal">
+        <a href="#" class="manage-consent">Cookie preferences</a>
+      </div>
     </div>
   </div>
 </footer>
