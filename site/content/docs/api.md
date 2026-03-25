@@ -89,6 +89,58 @@ Notifications have no `id` field. Multiple voice streams may interleave; use `vo
 | `-32002` | Not found — session or composition doesn't exist |
 | `-32003` | Port conflict or server not running |
 
+## Machine-Readable Spec (OpenRPC)
+
+The TCP API has a machine-readable spec document in [OpenRPC 1.3](https://spec.open-rpc.org/) format. Call `api.getSpec` after authenticating to retrieve it:
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"api.authenticate","params":{"token":"<token>"}}
+{"jsonrpc":"2.0","id":2,"method":"api.getSpec","params":{}}
+```
+
+Response (abbreviated):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "openrpc": "1.3.0",
+    "info": {
+      "title": "Polyphon TCP API",
+      "version": "0.11.0",
+      "description": "JSON-RPC 2.0 API for controlling Polyphon over a local TCP connection."
+    },
+    "servers": [
+      { "name": "local", "url": "tcp://127.0.0.1:7432" }
+    ],
+    "methods": [
+      {
+        "name": "sessions.create",
+        "summary": "Create a session from a composition",
+        "description": "Creates a new conversation session from the given composition.",
+        "params": [
+          { "name": "compositionId", "required": true, "schema": { "type": "string" } },
+          { "name": "name", "required": false, "schema": { "type": "string" } }
+        ],
+        "result": { "name": "session", "schema": { "$ref": "#/components/schemas/Session" } }
+      }
+    ],
+    "components": { "schemas": { "Session": { "..." } } }
+  }
+}
+```
+
+The `info.version` field always matches the running app version reported by `api.getStatus`. Use it to verify compatibility before making calls.
+
+**When the spec is useful:**
+
+- **Agent auto-discovery** — An AI agent calls `api.getSpec` to learn the available methods and their parameter shapes before issuing any commands.
+- **Client library generation** — Use an OpenRPC code generator to produce typed bindings for any language.
+- **Version compatibility** — Compare `info.version` against a known minimum version before running a script that depends on newer methods.
+
+> **Note:** `stream.chunk` notification documentation will be added to the spec in a future update.
+
 ## Methods
 
 ### api.authenticate
@@ -117,6 +169,15 @@ Return the current server status.
   startupError?: string;      // set when binding failed (e.g. EADDRINUSE)
 }
 ```
+
+### api.getSpec
+
+Return the complete [OpenRPC 1.3](https://spec.open-rpc.org/) document for this API. The `info.version` field matches the app version returned by `api.getStatus`. Requires authentication.
+
+**Params:** none
+**Result:** OpenRPC 1.3 document (JSON object)
+
+See [Machine-Readable Spec (OpenRPC)](#machine-readable-spec-openrpc) below for a full example and usage guidance.
 
 ### compositions.list
 
