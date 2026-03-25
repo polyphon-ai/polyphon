@@ -2,6 +2,9 @@
 
 **One chat. Many voices.**
 
+[![CI](https://github.com/polyphon-ai/polyphon/actions/workflows/release.yml/badge.svg)](https://github.com/polyphon-ai/polyphon/actions/workflows/release.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 ![Polyphon screenshot](docs/images/screenshot.png)
 
 Polyphon is an Electron desktop application for orchestrating conversations between multiple AI agents simultaneously. Agents can respond to the user and to each other — like a conductor leading an ensemble.
@@ -111,7 +114,7 @@ Issues and bug reports are welcome. This project is not currently accepting pull
 
 ## License
 
-[Apache 2.0](LICENSE.md) © 2026 Corey Daley
+[Apache 2.0](LICENSE) © 2026 Corey Daley
 
 ---
 
