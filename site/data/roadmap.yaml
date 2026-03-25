@@ -1,6 +1,16 @@
 items:
   # ── Active / upcoming ──────────────────────────────────────
 
+  - title: "TCP API Server"
+    status: released
+    release_date: 2026-03-23
+    description: "A built-in TCP API server that exposes Polyphon's core functionality over a local network interface. Enables programmatic control of sessions, compositions, and voices from external tools, scripts, and CI pipelines."
+
+  - title: "poly CLI"
+    status: released
+    release_date: 2026-03-23
+    description: "A command-line tool (@polyphon-ai/poly) for controlling Polyphon from the terminal. List compositions, start sessions, broadcast prompts with live streaming output, and export transcripts — all without touching the UI."
+
   - title: "MCP Server"
     status: released
     release_date: 2026-03-23
