@@ -90,31 +90,6 @@ POLYPHON_DEVTOOLS=1 make run
 
 ---
 
-## Releasing
-
-Push a semver tag to trigger the release pipeline:
-
-```sh
-git tag v1.2.3
-git push origin v1.2.3
-```
-
-The pipeline runs automatically:
-
-1. **Test** — lint, unit, integration, and e2e tests on macOS
-2. **Build** — creates the macOS arm64 DMG
-3. **Publish** — attaches the DMG to a GitHub Release in `polyphon-ai/releases`
-4. **Update site** — bumps `downloadVersion` in `site/hugo.yaml` and pushes to `main`
-   (which triggers a site redeploy)
-
-### Required secrets
-
-| Secret | Description |
-|---|---|
-| `RELEASES_REPO_TOKEN` | GitHub PAT with write access to `polyphon-ai/releases` |
-
----
-
 ## Community
 
 - **Website:** [polyphon.ai](https://polyphon.ai)
@@ -123,6 +98,18 @@ The pipeline runs automatically:
 - **GitHub:** [polyphon-ai/polyphon](https://github.com/polyphon-ai/polyphon)
 - **Reddit:** [u/PolyphonAI](https://www.reddit.com/user/PolyphonAI)
 - **Social email:** social@polyphon.ai
+
+---
+
+## Contributing
+
+Issues and bug reports are welcome. This project is not currently accepting pull requests.
+
+---
+
+## License
+
+[Apache 2.0](LICENSE.md) © 2026 Corey Daley
 
 ---
 
