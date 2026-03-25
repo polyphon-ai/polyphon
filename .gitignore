@@ -58,6 +58,12 @@ coverage/
 # Blog drafts (internal working documents)
 drafts/
 
+# Internal planning and development docs
+docs/sprints/
+docs/security/
+docs/screenshot-script.md
+docs/video-scripts.md
+
 # SQLCipher amalgamation (committed deliberately — needed by CI build)
 !deps/
 !deps/sqlcipher/
