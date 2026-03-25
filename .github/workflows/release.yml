@@ -147,6 +147,11 @@ jobs:
           name: installers-macos-arm64
           path: dist/macos
 
+      - name: Delete existing release if present
+        run: gh release delete "${{ github.ref_name }}" --yes || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
         with:
