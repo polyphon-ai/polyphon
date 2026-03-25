@@ -24,7 +24,7 @@ Examples of unacceptable behavior:
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by opening an issue or contacting the maintainers directly via GitHub. All complaints will be reviewed and investigated and will result in a response deemed necessary and appropriate to the circumstances.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported privately by emailing [hello@polyphon.ai](mailto:hello@polyphon.ai). Please do not open a public issue for conduct reports. All complaints will be reviewed and investigated promptly and confidentially, and will result in a response deemed necessary and appropriate to the circumstances.
 
 Maintainers who do not follow or enforce the Code of Conduct in good faith may face temporary or permanent repercussions as determined by other members of the project's leadership.
 

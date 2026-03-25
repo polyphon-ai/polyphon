@@ -47,12 +47,7 @@ body:
     attributes:
       label: Operating system
       options:
-        - macOS
-        - Windows
-        - Linux
-        - iOS
-        - Android
-        - Other
+        - macOS (Apple Silicon)
     validations:
       required: true
 
