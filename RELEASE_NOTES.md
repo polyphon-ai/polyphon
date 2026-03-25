@@ -1,13 +1,4 @@
-**What's New**
-- Polyphon is now open source under the Apache 2.0 license — the full source is available at [github.com/polyphon-ai/polyphon](https://github.com/polyphon-ai/polyphon)
-- Issues, Discussions, and GitHub Sponsors are open on the main repository
-- Pricing tiers removed from the public roadmap — Polyphon is free
-- Footer now includes links to GitHub, community resources, and direct contact
-
-**Fixed**
-- Roadmap page no longer shows malformed tokens in section titles
-
 **Improved**
-- Release workflow consolidated from a separate releases repository into the main polyphon repo
-- Homepage features section and site-wide styling refreshed
-- Community health files (code of conduct, contributing guide, security policy) added
+- Release workflow no longer deletes old releases — all previous versions remain available for download
+- Community health files (contributing guide, code of conduct, security policy) polished for the public repo
+- LICENSE file renamed so GitHub correctly detects the Apache 2.0 license on the repository page
