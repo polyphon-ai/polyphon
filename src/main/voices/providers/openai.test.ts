@@ -448,6 +448,43 @@ describe('CodexVoice.send()', () => {
   });
 });
 
+describe('CodexVoice yolo mode', () => {
+  it('does NOT include --dangerously-bypass-approvals-and-sandbox when yoloMode is false', async () => {
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = openaiProvider.create(makeConfig({ cliCommand: 'codex', yoloMode: false }));
+    const sendPromise = (async () => { for await (const _ of voice.send(makeMsg(), [])) {} })();
+    emitEnd();
+    await sendPromise;
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).not.toContain('--dangerously-bypass-approvals-and-sandbox');
+    expect(spawnArgs).toEqual(['exec', '-']);
+  });
+
+  it('places --dangerously-bypass-approvals-and-sandbox after exec but before - when yoloMode is true', async () => {
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = openaiProvider.create(makeConfig({ cliCommand: 'codex', yoloMode: true }));
+    const sendPromise = (async () => { for await (const _ of voice.send(makeMsg(), [])) {} })();
+    emitEnd();
+    await sendPromise;
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).toContain('exec');
+    expect(spawnArgs).toContain('--dangerously-bypass-approvals-and-sandbox');
+    expect(spawnArgs).toContain('-');
+    // Correct order: exec → --dangerously-bypass-approvals-and-sandbox → -
+    const idxExec = spawnArgs.indexOf('exec');
+    const idxFlag = spawnArgs.indexOf('--dangerously-bypass-approvals-and-sandbox');
+    const idxStdin = spawnArgs.lastIndexOf('-');
+    expect(idxExec).toBeLessThan(idxFlag);
+    expect(idxFlag).toBeLessThan(idxStdin);
+  });
+});
+
 describe('CodexVoice constructor validation (base-class guard via CodexVoice)', () => {
   it('throws for cliCommand with shell metacharacter', () => {
     expect(() => openaiProvider.create(makeConfig({ cliCommand: 'cmd;rm' }))).toThrow();

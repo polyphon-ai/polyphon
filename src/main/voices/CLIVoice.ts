@@ -17,6 +17,7 @@ export abstract class CLIVoice implements Voice {
   protected readonly cliCommand: string;
   protected readonly cliArgs: string[];
   protected workingDir: string | null;
+  protected readonly yoloMode: boolean;
   protected readonly systemPrompt: string | undefined;
   protected ensembleSystemPrompt = '';
 
@@ -37,6 +38,7 @@ export abstract class CLIVoice implements Voice {
     this.cliCommand = cliCommand;
     this.cliArgs = config.cliArgs ?? [];
     this.workingDir = config.workingDir ?? null;
+    this.yoloMode = config.yoloMode ?? false;
     this.systemPrompt = config.systemPrompt;
   }
 

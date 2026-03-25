@@ -73,7 +73,11 @@ class CodexVoice extends CLIVoice {
 
   async *send(_message: Message, context: Message[]): AsyncIterable<string> {
     // `codex exec -` reads the prompt from stdin and runs non-interactively
-    yield* this.spawnAndStream(this.buildPrompt(context), ['exec', '-']);
+    // --dangerously-bypass-approvals-and-sandbox must come after the `exec` subcommand
+    const extraArgs = ['exec'];
+    if (this.yoloMode) extraArgs.push('--dangerously-bypass-approvals-and-sandbox');
+    extraArgs.push('-');
+    yield* this.spawnAndStream(this.buildPrompt(context), extraArgs);
   }
 
   async isAvailable(): Promise<boolean> {

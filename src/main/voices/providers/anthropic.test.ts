@@ -301,6 +301,74 @@ describe('AnthropicCLIVoice constructor validation (base-class guard via Anthrop
   });
 });
 
+describe('AnthropicCLIVoice yolo mode', () => {
+  const mockSpawn = spawn as ReturnType<typeof vi.fn>;
+
+  function makeMockProcessSimple() {
+    const stdout = new EventEmitter() as EventEmitter & { [Symbol.asyncIterator](): AsyncIterator<Buffer> };
+    const stdin = { write: vi.fn(), end: vi.fn() };
+    const proc = new EventEmitter() as EventEmitter & {
+      stdin: typeof stdin;
+      stdout: typeof stdout;
+      kill: ReturnType<typeof vi.fn>;
+    };
+    proc.stdin = stdin;
+    proc.stdout = stdout;
+    proc.kill = vi.fn();
+    let resolveNext: ((val: IteratorResult<Buffer>) => void) | null = null;
+    let done = false;
+    stdout[Symbol.asyncIterator] = function () {
+      return {
+        next(): Promise<IteratorResult<Buffer>> {
+          if (done) return Promise.resolve({ value: undefined as unknown as Buffer, done: true });
+          return new Promise((resolve) => { resolveNext = resolve; });
+        },
+        return(): Promise<IteratorResult<Buffer>> {
+          done = true;
+          return Promise.resolve({ value: undefined as unknown as Buffer, done: true });
+        },
+      };
+    };
+    function emitEnd() {
+      done = true;
+      if (resolveNext) { const r = resolveNext; resolveNext = null; r({ value: undefined as unknown as Buffer, done: true }); }
+    }
+    return { proc, emitEnd };
+  }
+
+  it('does NOT include --dangerously-skip-permissions when yoloMode is false', async () => {
+    const { proc, emitEnd } = makeMockProcessSimple();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = anthropicProvider.create(makeConfig({ cliCommand: 'claude', yoloMode: false }));
+    const sendPromise = (async () => { for await (const _ of voice.send(makeMsg(), [])) {} })();
+    emitEnd();
+    await sendPromise;
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).not.toContain('--dangerously-skip-permissions');
+    expect(spawnArgs).toContain('--print');
+  });
+
+  it('includes --dangerously-skip-permissions after --print when yoloMode is true', async () => {
+    const { proc, emitEnd } = makeMockProcessSimple();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = anthropicProvider.create(makeConfig({ cliCommand: 'claude', yoloMode: true }));
+    const sendPromise = (async () => { for await (const _ of voice.send(makeMsg(), [])) {} })();
+    emitEnd();
+    await sendPromise;
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).toContain('--print');
+    expect(spawnArgs).toContain('--dangerously-skip-permissions');
+    // --dangerously-skip-permissions must come after --print (in extraArgs position)
+    expect(spawnArgs.indexOf('--dangerously-skip-permissions')).toBeGreaterThan(
+      spawnArgs.indexOf('--print')
+    );
+  });
+});
+
 describe('AnthropicCLIVoice.send()', () => {
   const mockSpawn = spawn as ReturnType<typeof vi.fn>;
 

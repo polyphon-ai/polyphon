@@ -11,7 +11,9 @@ class CopilotVoice extends CLIVoice {
   }
 
   async *send(_message: Message, context: Message[]): AsyncIterable<string> {
-    yield* this.spawnAndStream(this.buildPrompt(context), []);
+    const extraArgs: string[] = [];
+    if (this.yoloMode) extraArgs.push('--allow-all');
+    yield* this.spawnAndStream(this.buildPrompt(context), extraArgs);
   }
 }
 

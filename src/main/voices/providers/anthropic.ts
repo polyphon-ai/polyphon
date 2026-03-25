@@ -226,7 +226,9 @@ class AnthropicCLIVoice extends CLIVoice {
   }
 
   async *send(_message: Message, context: Message[]): AsyncIterable<string> {
-    yield* this.spawnAndStream(this.buildPrompt(context), ['--print']);
+    const extraArgs = ['--print'];
+    if (this.yoloMode) extraArgs.push('--dangerously-skip-permissions');
+    yield* this.spawnAndStream(this.buildPrompt(context), extraArgs);
   }
 }
 

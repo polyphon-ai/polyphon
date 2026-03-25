@@ -86,19 +86,10 @@ export class VoiceManager {
       ? (this.systemPromptTemplatesById.get(compositionVoice.systemPromptTemplateId)?.content ?? compositionVoice.systemPrompt)
       : compositionVoice.systemPrompt;
 
-    // Inject yolo flag if enabled for this provider's CLI config
-    let cliArgs = compositionVoice.cliArgs;
-    const providerCLIConfig = this.providerCLIConfigs.get(`${compositionVoice.provider}:cli`);
-    if (providerCLIConfig?.yoloMode) {
-      const yoloFlag = PROVIDER_METADATA[compositionVoice.provider]?.yoloFlag;
-      if (yoloFlag) {
-        cliArgs = cliArgs ? [...cliArgs, yoloFlag] : [yoloFlag];
-      }
-    }
-
     // Tools are only supported by API voices; CLI voices are explicitly excluded.
     const isCli = Boolean(compositionVoice.cliCommand);
     const enabledTools = isCli ? undefined : (compositionVoice.enabledTools ?? []);
+    const providerCLIConfig = this.providerCLIConfigs.get(`${compositionVoice.provider}:cli`);
 
     const config: VoiceConfig = {
       id: compositionVoice.id,
@@ -109,8 +100,9 @@ export class VoiceManager {
       toneOverride: compositionVoice.toneOverride,
       model: compositionVoice.model,
       cliCommand: compositionVoice.cliCommand,
-      cliArgs,
+      cliArgs: compositionVoice.cliArgs,
       enabledTools,
+      yoloMode: providerCLIConfig?.yoloMode ?? false,
     };
 
     if (process.env.POLYPHON_MOCK_VOICES === '1') {

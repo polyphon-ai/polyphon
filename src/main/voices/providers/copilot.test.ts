@@ -238,6 +238,32 @@ describe('CopilotVoice.send()', () => {
     expect(spawnArgs).toContain('python');
   });
 
+  it('does NOT include --allow-all when yoloMode is false', async () => {
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = copilotProvider.create(makeConfig({ yoloMode: false }));
+    const sendPromise = (async () => { for await (const _ of voice.send(makeMsg(), [])) {} })();
+    emitEnd();
+    await sendPromise;
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).not.toContain('--allow-all');
+  });
+
+  it('includes --allow-all when yoloMode is true', async () => {
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = copilotProvider.create(makeConfig({ yoloMode: true }));
+    const sendPromise = (async () => { for await (const _ of voice.send(makeMsg(), [])) {} })();
+    emitEnd();
+    await sendPromise;
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).toContain('--allow-all');
+  });
+
   it('abort() kills the active process', async () => {
     const { proc, emitEnd } = makeMockProcess();
     mockSpawn.mockReturnValue(proc);

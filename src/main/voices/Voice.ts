@@ -37,6 +37,8 @@ export interface VoiceConfig {
   apiKeyEnvVar?: string | null;
   // Filesystem tools (API voices only; CLI voices ignore this)
   enabledTools?: string[];
+  // CLI voices: skip confirmation prompts and sandbox restrictions
+  yoloMode?: boolean;
 }
 
 // A provider registration — one per provider file in providers/
