@@ -32,15 +32,23 @@ jobs:
           fi
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
 
+      - name: Checkout site repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: polyphon-ai/polyphon-ai.github.io
+          ref: main
+          token: ${{ secrets.POLYPHON_SITE_TOKEN }}
+          path: site-repo
+
       - name: Update downloadVersion in hugo.yaml
         run: |
-          sed -i "s/downloadVersion: .*/downloadVersion: \"${VERSION}\"/" site/hugo.yaml
+          sed -i "s/downloadVersion: .*/downloadVersion: \"${VERSION}\"/" site-repo/hugo.yaml
 
       - name: Create release blog post
         run: |
           DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           SLUG="polyphon-v${VERSION}-released"
-          POST_DIR="site/content/blog/${SLUG}"
+          POST_DIR="site-repo/content/blog/${SLUG}"
           mkdir -p "$POST_DIR"
 
           NOTES=""
@@ -65,18 +73,19 @@ jobs:
           [Download the latest release](https://polyphon.ai/#download)
           EOF
 
-      - name: Commit and push
+      - name: Commit and push site repo
         run: |
+          cd site-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add site/hugo.yaml site/content/blog/
+          git add hugo.yaml content/blog/
           git diff --cached --quiet || git commit -m "chore(release): update site to v${VERSION}"
           git push
 
       - name: Trigger site deploy
-        run: gh workflow run deploy-site.yml --ref main
+        run: gh workflow run deploy-site.yml --repo polyphon-ai/polyphon-ai.github.io --ref main
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.POLYPHON_SITE_TOKEN }}
 
       - name: Promote release on GitHub
         run: |

@@ -1,8 +1,0 @@
-{{ $docsSection := .Site.GetPage "section" "docs" }}
-{{ $currentPage := . }}
-<nav class="docs-sidebar-nav" aria-label="Documentation">
-  <p class="docs-sidebar-label">Documentation</p>
-  {{ range $docsSection.Pages.ByWeight }}
-  <a href="{{ .RelPermalink }}"{{ if eq $currentPage.RelPermalink .RelPermalink }} aria-current="page"{{ end }}>{{ .Title }}</a>
-  {{ end }}
-</nav>

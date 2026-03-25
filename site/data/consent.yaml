@@ -1,5 +1,0 @@
-items:
-  - title: Google Analytics
-    description: Gives us insight into the number of visitors and how they navigate the site. No personal data is sold.
-    is_functional: false
-    script_file: ga.js

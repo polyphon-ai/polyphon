@@ -505,13 +505,9 @@ Electron `userData` directory. See the Key Management section under Security for
 
 ## Website
 
-The Polyphon marketing site lives under `site/`. It uses Hugo with a custom theme.
+The Polyphon marketing site lives in a separate repository: [`polyphon-ai/polyphon-ai.github.io`](https://github.com/polyphon-ai/polyphon-ai.github.io). It uses Hugo with a custom theme and is deployed to [polyphon.ai](https://polyphon.ai) via GitHub Pages.
 
-- **Hugo theme:** `site/themes/polyphon/` — built from scratch; PaperMod is no longer the active theme.
-- **Design tokens:** `site/themes/polyphon/assets/css/main.css` is standalone plain CSS defining the same OKLCH color tokens and Geist Sans typography as `src/renderer/index.css`. It is **not** derived from the Tailwind app build; the site has no Node.js/Vite pipeline.
-- **Fonts:** Geist Sans variable font is self-hosted at `site/static/fonts/geist-sans/Geist-Variable.woff2` (copied from `node_modules/geist/`). No external font CDN.
-- **Cookie consent:** `site/layouts/partials/consent.html` (site-level, not inside the theme) + `site/data/consent.yaml`. GA fires only after explicit opt-in; no-ops on localhost.
-- **Build:** `cd site && hugo --minify` — no npm install required.
+To update the site from this repo, use the **Update Download Version** workflow (`update-download-version.yml`), which checks out the site repo, updates `hugo.yaml`, creates a release blog post, commits, and triggers a site deploy using the `POLYPHON_SITE_TOKEN` secret.
 
 ---
 
