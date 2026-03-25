@@ -2,9 +2,11 @@ import type { HandlerFn } from '../dispatcher';
 import { RpcError } from '../dispatcher';
 import { RPC_ERROR } from '../../../shared/api';
 import type { ApiStatus } from '../../../shared/types';
+import { buildOpenRpcSpec } from '../spec';
 
 export function buildApiHandlers(
   getStatus: () => ApiStatus,
+  appVersion: string,
 ): Record<string, HandlerFn> {
   return {
     // api.authenticate is handled directly in server.ts before dispatch
@@ -16,6 +18,10 @@ export function buildApiHandlers(
 
     'api.getStatus': async () => {
       return getStatus();
+    },
+
+    'api.getSpec': async () => {
+      return buildOpenRpcSpec(appVersion);
     },
   };
 }

@@ -128,7 +128,7 @@ describe('API server integration', () => {
     });
 
     controller.setDispatchTable({
-      ...buildApiHandlers(() => controller.getStatus()),
+      ...buildApiHandlers(() => controller.getStatus(), '0.0.0-test'),
       ...buildCompositionHandlers(db),
       ...buildSessionHandlers(db, vm),
       ...buildSearchHandlers(db),
@@ -337,6 +337,36 @@ describe('API server integration', () => {
     const result = await sess.send('search.messages', { query: 'hello world' });
     expect(Array.isArray(result)).toBe(true);
   });
+
+  it('api.getSpec returns a valid JSON-RPC success with openrpc 1.3.0', async () => {
+    const result = await sess.send('api.getSpec') as any;
+    expect(result).toBeDefined();
+    expect(result.openrpc).toBe('1.3.0');
+  });
+
+  it('api.getSpec info.version matches appVersion used to create the controller', async () => {
+    const result = await sess.send('api.getSpec') as any;
+    expect(result.info.version).toBe('0.0.0-test');
+  });
+
+  it('api.getSpec includes representative method from each namespace', async () => {
+    const result = await sess.send('api.getSpec') as any;
+    const names: string[] = result.methods.map((m: any) => m.name);
+    expect(names).toContain('api.getStatus');
+    expect(names).toContain('compositions.list');
+    expect(names).toContain('sessions.create');
+    expect(names).toContain('voice.broadcast');
+    expect(names).toContain('search.messages');
+    expect(names).toContain('settings.getDebugInfo');
+    expect(names).toContain('mcp.setEnabled');
+  });
+
+  it('api.getSpec method names are unique', async () => {
+    const result = await sess.send('api.getSpec') as any;
+    const names: string[] = result.methods.map((m: any) => m.name);
+    const unique = new Set(names);
+    expect(unique.size).toBe(names.length);
+  });
 });
 
 describe('Security: token not logged on auth failure', () => {
@@ -374,6 +404,44 @@ describe('Security: token not logged on auth failure', () => {
     const resp = JSON.parse(result);
     expect(resp.error?.code).toBe(-32001);
     expect(JSON.stringify(resp)).not.toContain(wrongToken);
+
+    await controller.stop();
+    try { fs.rmSync(dir, { recursive: true }); } catch { /* ignore */ }
+  });
+});
+
+describe('api.getSpec: unauthenticated returns -32001', () => {
+  it('returns UNAUTHORIZED when called before authentication', async () => {
+    const dir = tempDir();
+    const tokenPath = path.join(dir, 'api.key');
+    loadOrCreateApiToken(tokenPath);
+    const port = await getFreePort();
+    const controller = new ApiServerController({
+      port,
+      host: '127.0.0.1',
+      tokenPath,
+      appVersion: '0.0.0-test',
+    });
+    controller.setDispatchTable({
+      ...buildApiHandlers(() => controller.getStatus(), '0.0.0-test'),
+    });
+    await controller.start();
+
+    const result = await new Promise<string>((resolve) => {
+      const socket = net.createConnection({ host: '127.0.0.1', port }, () => {
+        socket.setEncoding('utf-8');
+        let buf = '';
+        socket.on('data', (chunk: string) => {
+          buf += chunk;
+          const idx = buf.indexOf('\n');
+          if (idx !== -1) { resolve(buf.slice(0, idx)); socket.destroy(); }
+        });
+        socket.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'api.getSpec', params: {} }) + '\n');
+      });
+    });
+
+    const resp = JSON.parse(result);
+    expect(resp.error?.code).toBe(-32001);
 
     await controller.stop();
     try { fs.rmSync(dir, { recursive: true }); } catch { /* ignore */ }

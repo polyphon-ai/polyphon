@@ -48,7 +48,7 @@ export function createApiController(options: ApiStartOptions): ApiServerControll
   controller.setRemoteAccessEnabled(remoteAccessEnabled);
 
   const dispatchTable = {
-    ...buildApiHandlers(() => controller.getStatus()),
+    ...buildApiHandlers(() => controller.getStatus(), appVersion),
     ...buildCompositionHandlers(db),
     ...buildSessionHandlers(db, voiceManager),
     ...buildVoiceHandlers(db, voiceManager, sessionManager),
