@@ -10,56 +10,52 @@ permissions:
 
 jobs:
   # ── 1. Lint + unit + integration + e2e ────────────────────────────────────
-  # Commented out: pre-push hook runs these locally before any tag is pushed.
-  # Uncomment to re-enable CI test gating (costs ~60 consumed minutes per run
-  # at the macOS 10× multiplier).
-  #
-  # test:
-  #   name: Test
-  #   runs-on: macos-latest
-  #   timeout-minutes: 35
-  #   env:
-  #     CI: true
-  #   steps:
-  #     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-  #
-  #     - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
-  #       with:
-  #         node-version: "24"
-  #         cache: "npm"
-  #
-  #     - name: Install npm dependencies
-  #       run: npm ci
-  #
-  #     - name: Lint (TypeScript type-check)
-  #       run: npm run lint
-  #
-  #     - name: Unit tests
-  #       run: npm run test:unit
-  #
-  #     - name: Integration tests
-  #       run: npm run test:integration
-  #
-  #     - name: Build app for e2e
-  #       run: npm run build:e2e
-  #
-  #     - name: E2E tests
-  #       run: npx playwright test
-  #
-  #     - name: Upload test artifacts on failure
-  #       if: failure()
-  #       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
-  #       with:
-  #         name: e2e-artifacts-${{ github.ref_name }}
-  #         path: |
-  #           test-results/
-  #           playwright-report/
-  #         retention-days: 7
+  test:
+    name: Test
+    runs-on: macos-latest
+    timeout-minutes: 35
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Lint (TypeScript type-check)
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: Build app for e2e
+        run: npm run build:e2e
+
+      - name: E2E tests
+        run: npx playwright test
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: e2e-artifacts-${{ github.ref_name }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
 
   # ── 2. Build, sign, and notarize macOS arm64 ─────────────────────────────
   make-macos-arm64:
     name: Make (macOS arm64)
-    # needs: [test]
+    needs: [test]
     runs-on: macos-latest
     timeout-minutes: 15
     steps:
