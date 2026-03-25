@@ -56,7 +56,7 @@ export function setupAutoUpdater(db: Database.Database, win: BrowserWindow): voi
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = channel === 'preview';
   autoUpdater.forceDevUpdateConfig = !app.isPackaged;
-  autoUpdater.setFeedURL({ provider: 'github', owner: 'polyphon-ai', repo: 'releases' });
+  autoUpdater.setFeedURL({ provider: 'github', owner: 'polyphon-ai', repo: 'polyphon' });
 
   autoUpdater.on('update-available', (info) => {
     const version = info.version;
@@ -127,7 +127,7 @@ export function changeChannel(channel: UpdateChannel): void {
 
 async function checkForStableRelease(): Promise<void> {
   try {
-    const res = await fetch('https://api.github.com/repos/polyphon-ai/releases/releases/latest');
+    const res = await fetch('https://api.github.com/repos/polyphon-ai/polyphon/releases/latest');
     if (!res.ok) return;
     const data = await res.json() as { tag_name?: string; prerelease?: boolean };
     if (!data.tag_name || data.prerelease) return;
