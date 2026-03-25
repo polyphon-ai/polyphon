@@ -2,6 +2,8 @@
 
 **One chat. Many voices.**
 
+![Polyphon screenshot](docs/images/screenshot.png)
+
 Polyphon is an Electron desktop application for orchestrating conversations between multiple AI agents simultaneously. Agents can respond to the user and to each other — like a conductor leading an ensemble.
 
 ---
