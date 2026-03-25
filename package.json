@@ -30,7 +30,7 @@
     "@electron-forge/maker-zip": "^7.11.1",
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron-forge/plugin-vite": "^7.11.1",
-    "@electron/fuses": "^1.8.0",
+    "@electron/fuses": "^2.1.0",
     "@electron/rebuild": "^3.7.2",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/vite": "^4.2.1",
