@@ -298,6 +298,23 @@ export default function ApiSection() {
               </div>
             )}
           </div>
+
+          {/* Machine-readable spec — only shown when server is running */}
+          {isRunning && (
+            <div className="border-t border-gray-100 dark:border-gray-800 pt-5 space-y-2">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Machine-Readable Spec</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                Call{' '}
+                <code className="font-mono text-gray-700 dark:text-gray-300">api.getSpec</code>{' '}
+                after authenticating to retrieve the OpenRPC 1.3 document for this API.
+                Useful for agent auto-discovery, generating typed client bindings, and version checks.
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                TCP JSON-RPC method — server running at{' '}
+                <code className="font-mono">{host}:{port}</code>
+              </p>
+            </div>
+          )}
         </>
       )}
     </div>

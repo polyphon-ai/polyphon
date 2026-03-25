@@ -120,7 +120,7 @@ describe('ApiSection', () => {
     setupMocks(makeStatus({ enabled: true, running: true, port: 7432 }));
     render(<ApiSection />);
     await waitFor(() => {
-      expect(screen.queryByText(/127\.0\.0\.1:7432/)).not.toBeNull();
+      expect(screen.queryByText(/Running on 127\.0\.0\.1:7432/)).not.toBeNull();
     });
   });
 
@@ -129,5 +129,34 @@ describe('ApiSection', () => {
     await waitFor(() => {
       expect(screen.queryByText(/npm install -g @polyphon-ai\/poly/i)).not.toBeNull();
     });
+  });
+
+  it('shows spec discovery block when server is running', async () => {
+    setupMocks(makeStatus({ enabled: true, running: true, port: 7432 }));
+    render(<ApiSection />);
+    await waitFor(() => {
+      expect(screen.queryByText(/Machine-Readable Spec/i)).not.toBeNull();
+    });
+    expect(screen.queryByText(/api\.getSpec/)).not.toBeNull();
+    expect(screen.queryByText(/TCP JSON-RPC method/i)).not.toBeNull();
+  });
+
+  it('hides spec discovery block when server is enabled but not running', async () => {
+    setupMocks(makeStatus({ enabled: true, running: false }));
+    render(<ApiSection />);
+    await waitFor(() => {
+      // API Key section should be visible (enabled=true)
+      expect(screen.queryByText(/^API Key$/)).not.toBeNull();
+    });
+    expect(screen.queryByText(/Machine-Readable Spec/i)).toBeNull();
+  });
+
+  it('hides spec discovery block when server is disabled', async () => {
+    setupMocks(makeStatus({ enabled: false, running: false }));
+    render(<ApiSection />);
+    await waitFor(() => {
+      expect(screen.getAllByRole('switch').length).toBeGreaterThan(0);
+    });
+    expect(screen.queryByText(/Machine-Readable Spec/i)).toBeNull();
   });
 });
