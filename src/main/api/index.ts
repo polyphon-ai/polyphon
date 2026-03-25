@@ -53,7 +53,7 @@ export function createApiController(options: ApiStartOptions): ApiServerControll
     ...buildSessionHandlers(db, voiceManager),
     ...buildVoiceHandlers(db, voiceManager, sessionManager),
     ...buildSearchHandlers(db),
-    ...buildSettingsHandlers(),
+    ...buildSettingsHandlers(db),
     ...buildMcpHandlers(db, mcpController),
   };
 

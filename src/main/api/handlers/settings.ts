@@ -1,11 +1,13 @@
+import type Database from 'better-sqlite3';
 import type { HandlerFn } from '../dispatcher';
 import { getProviderStatus, testCliVoice } from '../../ipc/settingsHandlers';
 import { SCHEMA_VERSION } from '../../db/schema';
 import { PROVIDER_METADATA, SETTINGS_PROVIDERS } from '../../../shared/constants';
+import { getUserProfile } from '../../db/queries/userProfile';
 import { app } from 'electron';
 import os from 'node:os';
 
-export function buildSettingsHandlers(): Record<string, HandlerFn> {
+export function buildSettingsHandlers(db: Database.Database): Record<string, HandlerFn> {
   return {
     'settings.getProviderStatus': async () => {
       const apiStatuses = getProviderStatus();
@@ -32,6 +34,16 @@ export function buildSettingsHandlers(): Record<string, HandlerFn> {
         schemaVersion: SCHEMA_VERSION,
         platform: os.platform(),
         arch: os.arch(),
+      };
+    },
+
+    'settings.getUserProfile': async () => {
+      const profile = getUserProfile(db);
+      return {
+        conductorName: profile.conductorName,
+        conductorColor: profile.conductorColor,
+        conductorAvatar: profile.conductorAvatar,
+        pronouns: profile.pronouns,
       };
     },
   };
