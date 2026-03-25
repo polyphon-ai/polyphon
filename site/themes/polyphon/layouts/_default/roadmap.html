@@ -42,7 +42,6 @@
               <h3 class="roadmap-card-title">{{ .title }}</h3>
               <div class="roadmap-card-badges">
                 <span class="roadmap-status roadmap-status--working-on">Working on it</span>
-                {{ if eq .pricing "paid" }}<span class="roadmap-pricing roadmap-pricing--paid">Paid</span>{{ else }}<span class="roadmap-pricing roadmap-pricing--free">Free</span>{{ end }}
               </div>
             </div>
             <p class="roadmap-card-desc">{{ .description }}</p>
@@ -80,7 +79,6 @@
               <h3 class="roadmap-card-title">{{ .title }}</h3>
               <div class="roadmap-card-badges">
                 <span class="roadmap-status roadmap-status--alpha">Alpha</span>
-                {{ if eq .pricing "paid" }}<span class="roadmap-pricing roadmap-pricing--paid">Paid</span>{{ else }}<span class="roadmap-pricing roadmap-pricing--free">Free</span>{{ end }}
               </div>
             </div>
             <p class="roadmap-card-desc">{{ .description }}</p>
@@ -118,7 +116,6 @@
               <h3 class="roadmap-card-title">{{ .title }}</h3>
               <div class="roadmap-card-badges">
                 <span class="roadmap-status roadmap-status--beta">Beta</span>
-                {{ if eq .pricing "paid" }}<span class="roadmap-pricing roadmap-pricing--paid">Paid</span>{{ else }}<span class="roadmap-pricing roadmap-pricing--free">Free</span>{{ end }}
               </div>
             </div>
             <p class="roadmap-card-desc">{{ .description }}</p>
@@ -156,7 +153,6 @@
               <h3 class="roadmap-card-title">{{ .title }}</h3>
               <div class="roadmap-card-badges">
                 <span class="roadmap-status roadmap-status--planned">Planned</span>
-                {{ if eq .pricing "paid" }}<span class="roadmap-pricing roadmap-pricing--paid">Paid</span>{{ else }}<span class="roadmap-pricing roadmap-pricing--free">Free</span>{{ end }}
               </div>
             </div>
             <p class="roadmap-card-desc">{{ .description }}</p>
@@ -211,7 +207,6 @@
               <h3 class="roadmap-shipped-title">{{ .title }}</h3>
               <div class="roadmap-shipped-meta">
                 {{ if .release_date }}<time class="roadmap-shipped-date" datetime="{{ .release_date }}">{{ dateFormat "Jan 2006" .release_date }}</time>{{ end }}
-                {{ if eq .pricing "paid" }}<span class="roadmap-pricing roadmap-pricing--paid">Paid</span>{{ else }}<span class="roadmap-pricing roadmap-pricing--free">Free</span>{{ end }}
               </div>
             </div>
             <p class="roadmap-shipped-desc">{{ .description }}</p>
