@@ -180,19 +180,6 @@ publish-poly: ## Build and publish @polyphon-ai/poly to npm — requires npm log
 	head -1 dist/index.js | grep -q '#!' || (echo "ERROR: dist/index.js missing shebang line" && exit 1); \
 	npm publish --access public
 
-##@ Site
-
-.PHONY: site-dev
-site-dev: ## Serve the Hugo site locally (run site-search first to enable /search/)
-	hugo server -s site
-
-.PHONY: site-build
-site-build: ## Build the Hugo marketing site
-	hugo --minify -s site
-
-.PHONY: site-search
-site-search: site-build ## Build Hugo site + generate Pagefind search index (run cd site && npm install first)
-	cd site && npm run pagefind
 
 .PHONY: screenshots
 screenshots: build-e2e ## Capture site screenshots
