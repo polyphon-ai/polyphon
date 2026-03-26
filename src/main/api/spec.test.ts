@@ -45,8 +45,8 @@ describe('buildOpenRpcSpec', () => {
     expect(spec.info.title.length).toBeGreaterThan(0);
   });
 
-  it('has exactly 25 methods', () => {
-    expect(spec.methods).toHaveLength(25);
+  it('has exactly 26 methods', () => {
+    expect(spec.methods).toHaveLength(26);
   });
 
   it('contains all method names from the method inventory', () => {
