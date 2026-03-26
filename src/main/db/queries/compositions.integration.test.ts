@@ -154,4 +154,49 @@ describe('compositions queries', () => {
     expect(retrieved!.voices[0]!.cliArgs).toEqual(['--flag']);
     expect(retrieved!.voices[0]!.cliCommand).toBe('claude');
   });
+
+  it('round-trips yoleModeOverride: true', () => {
+    const comp = makeComposition({
+      voices: [makeVoice({ cliCommand: 'claude', model: undefined, yoleModeOverride: true })],
+    });
+    insertComposition(db, comp);
+    const retrieved = getComposition(db, 'comp-1');
+    expect(retrieved!.voices[0]!.yoleModeOverride).toBe(true);
+  });
+
+  it('round-trips yoleModeOverride: false', () => {
+    const comp = makeComposition({
+      voices: [makeVoice({ cliCommand: 'claude', model: undefined, yoleModeOverride: false })],
+    });
+    insertComposition(db, comp);
+    const retrieved = getComposition(db, 'comp-1');
+    expect(retrieved!.voices[0]!.yoleModeOverride).toBe(false);
+  });
+
+  it('round-trips yoleModeOverride: null (inherit)', () => {
+    const comp = makeComposition({
+      voices: [makeVoice({ cliCommand: 'claude', model: undefined, yoleModeOverride: null })],
+    });
+    insertComposition(db, comp);
+    const retrieved = getComposition(db, 'comp-1');
+    expect(retrieved!.voices[0]!.yoleModeOverride).toBeNull();
+  });
+
+  it('round-trips yoleModeOverride: undefined (absent → stored as null)', () => {
+    const comp = makeComposition({
+      voices: [makeVoice({ cliCommand: 'claude', model: undefined })],
+    });
+    insertComposition(db, comp);
+    const retrieved = getComposition(db, 'comp-1');
+    expect(retrieved!.voices[0]!.yoleModeOverride).toBeNull();
+  });
+
+  it('upsertCompositionVoices persists yoleModeOverride correctly', () => {
+    insertComposition(db, makeComposition());
+    upsertCompositionVoices(db, [
+      makeVoice({ id: 'v-yolo', displayName: 'YoloVoice', cliCommand: 'claude', model: undefined, yoleModeOverride: true }),
+    ]);
+    const retrieved = getComposition(db, 'comp-1');
+    expect(retrieved!.voices[0]!.yoleModeOverride).toBe(true);
+  });
 });

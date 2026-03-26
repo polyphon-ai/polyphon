@@ -216,6 +216,31 @@ describe('incremental migration from v6', () => {
     const cols = db.prepare('PRAGMA table_info(sessions)').all() as { name: string }[];
     expect(cols.map((c) => c.name)).toContain('sandboxed_to_working_dir');
   });
+
+  it('adds yolo_mode_override column to composition_voices', () => {
+    const db = makeV6Database();
+    runMigrations(db);
+    const cols = db.prepare('PRAGMA table_info(composition_voices)').all() as { name: string }[];
+    expect(cols.map((c) => c.name)).toContain('yolo_mode_override');
+  });
+
+  it('yolo_mode_override defaults to NULL for existing rows', () => {
+    const db = makeV6Database();
+    // Insert a voice row before migrating
+    db.prepare(`
+      INSERT INTO compositions (id, name, mode, continuation_policy, continuation_max_rounds, created_at, updated_at)
+      VALUES ('c1', 'Test', 'broadcast', 'none', 1, 0, 0)
+    `).run();
+    db.prepare(`
+      INSERT INTO composition_voices (id, composition_id, provider, display_name, sort_order, color, avatar_icon)
+      VALUES ('v1', 'c1', 'anthropic', 'Alice', 0, '#fff', 'star')
+    `).run();
+    runMigrations(db);
+    const row = db.prepare('SELECT yolo_mode_override FROM composition_voices WHERE id = ?').get('v1') as
+      | { yolo_mode_override: number | null }
+      | undefined;
+    expect(row?.yolo_mode_override).toBeNull();
+  });
 });
 
 describe('crash-recovery: DDL already applied but schema_version not updated', () => {
@@ -228,6 +253,7 @@ describe('crash-recovery: DDL already applied but schema_version not updated', (
     db.exec('ALTER TABLE user_profile ADD COLUMN prefer_markdown INTEGER NOT NULL DEFAULT 1');
     db.exec(`ALTER TABLE composition_voices ADD COLUMN enabled_tools TEXT NOT NULL DEFAULT '[]'`);
     db.exec('ALTER TABLE sessions ADD COLUMN sandboxed_to_working_dir INTEGER NOT NULL DEFAULT 0');
+    db.exec('ALTER TABLE composition_voices ADD COLUMN yolo_mode_override INTEGER');
 
     runMigrations(db);
 
