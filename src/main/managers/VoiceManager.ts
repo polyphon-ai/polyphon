@@ -102,7 +102,7 @@ export class VoiceManager {
       cliCommand: compositionVoice.cliCommand,
       cliArgs: compositionVoice.cliArgs,
       enabledTools,
-      yoloMode: providerCLIConfig?.yoloMode ?? false,
+      yoloMode: compositionVoice.yoleModeOverride ?? providerCLIConfig?.yoloMode ?? false,
     };
 
     if (process.env.POLYPHON_MOCK_VOICES === '1') {

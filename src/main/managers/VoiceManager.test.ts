@@ -244,3 +244,105 @@ describe('VoiceManager.createVoice — yolo mode flag injection', () => {
     expect(spawnArgs).not.toContain(PROVIDER_METADATA[PROVIDER_NAMES.ANTHROPIC]!.yoloFlag);
   });
 });
+
+describe('VoiceManager.createVoice — yoleModeOverride resolution', () => {
+  let vm: VoiceManager;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vm = new VoiceManager();
+  });
+
+  function loadConfig(provider: string, yoloMode: boolean) {
+    mockListProviderConfigs.mockReturnValue([makeProviderConfig(provider, yoloMode)]);
+    vm.loadProviderConfigs({} as Database.Database);
+  }
+
+  it('voice override true forces yolo on even when provider default is false', async () => {
+    loadConfig(PROVIDER_NAMES.ANTHROPIC, false);
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = vm.createVoice(makeCliVoice(PROVIDER_NAMES.ANTHROPIC, {
+      cliCommand: 'claude',
+      yoleModeOverride: true,
+    }));
+    await drainSend(voice, emitEnd);
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).toContain(PROVIDER_METADATA[PROVIDER_NAMES.ANTHROPIC]!.yoloFlag);
+  });
+
+  it('voice override false forces yolo off even when provider default is true', async () => {
+    loadConfig(PROVIDER_NAMES.ANTHROPIC, true);
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = vm.createVoice(makeCliVoice(PROVIDER_NAMES.ANTHROPIC, {
+      cliCommand: 'claude',
+      yoleModeOverride: false,
+    }));
+    await drainSend(voice, emitEnd);
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).not.toContain(PROVIDER_METADATA[PROVIDER_NAMES.ANTHROPIC]!.yoloFlag);
+  });
+
+  it('voice override null inherits provider default (true)', async () => {
+    loadConfig(PROVIDER_NAMES.ANTHROPIC, true);
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = vm.createVoice(makeCliVoice(PROVIDER_NAMES.ANTHROPIC, {
+      cliCommand: 'claude',
+      yoleModeOverride: null,
+    }));
+    await drainSend(voice, emitEnd);
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).toContain(PROVIDER_METADATA[PROVIDER_NAMES.ANTHROPIC]!.yoloFlag);
+  });
+
+  it('voice override null inherits provider default (false)', async () => {
+    loadConfig(PROVIDER_NAMES.ANTHROPIC, false);
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = vm.createVoice(makeCliVoice(PROVIDER_NAMES.ANTHROPIC, {
+      cliCommand: 'claude',
+      yoleModeOverride: null,
+    }));
+    await drainSend(voice, emitEnd);
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).not.toContain(PROVIDER_METADATA[PROVIDER_NAMES.ANTHROPIC]!.yoloFlag);
+  });
+
+  it('voice override undefined (absent) inherits provider default', async () => {
+    loadConfig(PROVIDER_NAMES.ANTHROPIC, true);
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    // no yoleModeOverride key at all
+    const voice = vm.createVoice(makeCliVoice(PROVIDER_NAMES.ANTHROPIC, { cliCommand: 'claude' }));
+    await drainSend(voice, emitEnd);
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).toContain(PROVIDER_METADATA[PROVIDER_NAMES.ANTHROPIC]!.yoloFlag);
+  });
+
+  it('override true with no provider config still enables yolo', async () => {
+    // no loadProviderConfigs — providerCLIConfigs empty
+    const { proc, emitEnd } = makeMockProcess();
+    mockSpawn.mockReturnValue(proc);
+
+    const voice = vm.createVoice(makeCliVoice(PROVIDER_NAMES.ANTHROPIC, {
+      cliCommand: 'claude',
+      yoleModeOverride: true,
+    }));
+    await drainSend(voice, emitEnd);
+
+    const spawnArgs = mockSpawn.mock.calls[0]![1] as string[];
+    expect(spawnArgs).toContain(PROVIDER_METADATA[PROVIDER_NAMES.ANTHROPIC]!.yoloFlag);
+  });
+});
