@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 15;
+export const SCHEMA_VERSION = 16;
 
 export const CREATE_TABLES_SQL = `
   CREATE TABLE IF NOT EXISTS schema_version (
@@ -31,7 +31,8 @@ export const CREATE_TABLES_SQL = `
     custom_provider_id TEXT,  -- NULL for built-in providers; UUID for 'openai-compat' voices
     tone_override TEXT,       -- NULL means use conductor default_tone
     system_prompt_template_id TEXT,  -- NULL means use inline system_prompt
-    enabled_tools TEXT NOT NULL DEFAULT '[]'  -- JSON-serialized string[] of tool names
+    enabled_tools TEXT NOT NULL DEFAULT '[]',  -- JSON-serialized string[] of tool names
+    yolo_mode_override INTEGER                  -- NULL = inherit from provider_configs; 1 = force on; 0 = force off
   );
 
   CREATE TABLE IF NOT EXISTS sessions (

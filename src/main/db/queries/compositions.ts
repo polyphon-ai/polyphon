@@ -28,6 +28,7 @@ interface CompositionVoiceRow {
   tone_override: string | null;
   system_prompt_template_id: string | null;
   enabled_tools: string;
+  yolo_mode_override: number | null;
 }
 
 function rowToCompositionVoice(row: CompositionVoiceRow): CompositionVoice {
@@ -47,6 +48,7 @@ function rowToCompositionVoice(row: CompositionVoiceRow): CompositionVoice {
     avatarIcon: row.avatar_icon,
     customProviderId: row.custom_provider_id ?? undefined,
     enabledTools: JSON.parse(row.enabled_tools ?? '[]') as string[],
+    yoleModeOverride: row.yolo_mode_override === null ? null : row.yolo_mode_override === 1,
   };
 }
 
@@ -98,8 +100,8 @@ export function getComposition(db: Database.Database, id: string): Composition |
 }
 
 const INSERT_VOICE_SQL = `
-  INSERT INTO composition_voices (id, composition_id, provider, model, cli_command, cli_args, display_name, system_prompt, sort_order, color, avatar_icon, custom_provider_id, tone_override, system_prompt_template_id, enabled_tools)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO composition_voices (id, composition_id, provider, model, cli_command, cli_args, display_name, system_prompt, sort_order, color, avatar_icon, custom_provider_id, tone_override, system_prompt_template_id, enabled_tools, yolo_mode_override)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 function runInsertVoice(stmt: Database.Statement, voice: CompositionVoice): void {
@@ -119,6 +121,7 @@ function runInsertVoice(stmt: Database.Statement, voice: CompositionVoice): void
     voice.toneOverride ?? null,
     voice.systemPromptTemplateId ?? null,
     JSON.stringify(voice.enabledTools ?? []),
+    voice.yoleModeOverride === undefined ? null : (voice.yoleModeOverride === null ? null : (voice.yoleModeOverride ? 1 : 0)),
   );
 }
 

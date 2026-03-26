@@ -15,6 +15,7 @@ import { up as migration012 } from './012_add_messages_fts';
 import { up as migration013 } from './013_add_app_settings';
 import { up as migration014 } from './014_seed_api_settings';
 import { up as migration015 } from './015_add_session_source';
+import { up as migration016 } from './016_add_voice_yolo_override';
 
 const SAMPLE_TEMPLATES: Array<[string, string, string]> = [
   [
@@ -139,4 +140,5 @@ export function runMigrations(db: Database.Database): void {
   apply(13, migration013);
   apply(14, migration014);
   apply(15, migration015);
+  apply(16, migration016);
 }

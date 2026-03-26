@@ -90,6 +90,7 @@ export interface CompositionVoice {
   avatarIcon: string;
   customProviderId?: string; // for 'openai-compat' provider voices
   enabledTools?: string[]; // tool names from AVAILABLE_TOOLS; API voices only
+  yoleModeOverride?: boolean | null; // null/undefined = inherit from provider_configs; true/false = override
 }
 
 export interface CustomProvider {
