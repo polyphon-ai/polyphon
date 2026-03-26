@@ -252,7 +252,7 @@ function SessionsList({
   const { compositions, setCompositions } = useCompositionStore();
   const [showPicker, setShowPicker] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const [showAllSources, setShowAllSources] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
 
   useEffect(() => {
     window.polyphon.session.list(showArchived).then(setSessions).catch(() => {});
@@ -284,19 +284,22 @@ function SessionsList({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {sessions.some(s => s.source && s.source !== 'polyphon') && (
-            <button
-              onClick={() => setShowAllSources(v => !v)}
-              title={showAllSources ? 'Showing all sources' : 'Showing Polyphon sessions only'}
-              className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                showAllSources
-                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  : 'text-gray-400 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
-            >
-              {showAllSources ? 'All sources' : 'Polyphon only'}
-            </button>
-          )}
+          {(() => {
+            const uniqueSources = Array.from(new Set(sessions.map(s => s.source || 'polyphon')));
+            if (uniqueSources.length <= 1) return null;
+            return (
+              <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value)}
+                className="text-xs px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium"
+              >
+                <option value="all">All sources</option>
+                {uniqueSources.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            );
+          })()}
           <ArchiveToggle on={showArchived} onChange={setShowArchived} />
           <button
             onClick={() => setShowPicker(true)}
@@ -329,7 +332,7 @@ function SessionsList({
             </div>
           </div>
         ) : (() => {
-          const filtered = showAllSources ? sessions : sessions.filter(s => !s.source || s.source === 'polyphon');
+          const filtered = sourceFilter === 'all' ? sessions : sessions.filter(s => (s.source || 'polyphon') === sourceFilter);
           const grouped = new Map<DateGroup, Session[]>();
           for (const s of filtered) {
             const g = getDateGroup(s.createdAt);
