@@ -79,6 +79,7 @@ function SortableVoiceRow({
   );
   const [voiceType, setVoiceType] = useState<VoiceType>(voice.cliCommand ? 'cli' : 'api');
   const [enabledTools, setEnabledTools] = useState<string[]>(voice.enabledTools ?? []);
+  const [yoleModeOverride, setYoleModeOverride] = useState<boolean | null>(voice.yoleModeOverride ?? null);
 
   // Re-sync form fields when the row is opened for editing
   useEffect(() => {
@@ -91,6 +92,7 @@ function SortableVoiceRow({
       setSystemPromptTemplateId(voice.systemPromptTemplateId);
       setVoiceType(voice.cliCommand ? 'cli' : 'api');
       setEnabledTools(voice.enabledTools ?? []);
+      setYoleModeOverride(voice.yoleModeOverride ?? null);
     }
   }, [isExpanded]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -147,6 +149,7 @@ function SortableVoiceRow({
       toneOverride: toneOverride || undefined,
       systemPromptTemplateId,
       enabledTools: switchingToCli ? [] : enabledTools,
+      yoleModeOverride: switchingToCli ? yoleModeOverride : undefined,
     });
     onToggle();
   }
@@ -248,6 +251,13 @@ function SortableVoiceRow({
             setEnabledTools={setEnabledTools}
             nameError={nameError}
             setNameError={setNameError}
+            yoleModeOverride={yoleModeOverride}
+            setYoleModeOverride={setYoleModeOverride}
+            providerYoloDefault={
+              isCli
+                ? (providerConfigs[voice.provider]?.cli?.yoloMode ?? false)
+                : undefined
+            }
             isCli={isCli}
             enabledTypes={enabledTypes}
             canToggleType={canToggleType}

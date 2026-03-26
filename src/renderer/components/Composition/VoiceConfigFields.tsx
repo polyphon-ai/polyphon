@@ -33,6 +33,9 @@ export interface VoiceConfigFieldsProps {
   setToneOverride: (v: string) => void;
   setSystemPromptTemplateId: (v: string | undefined) => void;
   setEnabledTools: (v: string[] | ((prev: string[]) => string[])) => void;
+  yoleModeOverride: boolean | null | undefined;
+  setYoleModeOverride: (v: boolean | null) => void;
+  providerYoloDefault?: boolean;
 
   // Validation
   nameError: string;
@@ -77,6 +80,9 @@ export function VoiceConfigFields({
   setToneOverride,
   setSystemPromptTemplateId,
   setEnabledTools,
+  yoleModeOverride,
+  setYoleModeOverride,
+  providerYoloDefault,
   nameError,
   setNameError,
   isCli,
@@ -372,13 +378,52 @@ export function VoiceConfigFields({
         </div>
       )}
 
-      {/* CLI voice filesystem access note */}
+      {/* CLI voice: YOLO mode override */}
       {voiceType === 'cli' && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-3 py-2.5">
-          <Terminal size={14} strokeWidth={1.75} className="shrink-0 mt-0.5 text-gray-400 dark:text-gray-500" />
-          <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-            CLI voices run as autonomous subprocess agents with unrestricted filesystem access. Tool toggles and sandbox restrictions apply only to API voices.
-          </p>
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+            YOLO mode
+          </label>
+          <div className="flex gap-1.5">
+            {([
+              { value: null, label: providerYoloDefault === undefined
+                ? 'Provider default'
+                : `Provider default (${providerYoloDefault ? 'on' : 'off'})` },
+              { value: true, label: 'On' },
+              { value: false, label: 'Off' },
+            ] as { value: boolean | null; label: string }[]).map(({ value, label }) => {
+              const active = yoleModeOverride === value || (yoleModeOverride === undefined && value === null);
+              return (
+                <button
+                  key={String(value)}
+                  type="button"
+                  onClick={() => setYoleModeOverride(value)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                    active
+                      ? value === true
+                        ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-300'
+                        : 'bg-indigo-100 dark:bg-indigo-900/30 border-indigo-400 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300'
+                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {yoleModeOverride === true && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 px-3 py-2">
+              <TriangleAlert size={13} strokeWidth={1.75} className="shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+              <p className="text-xs text-amber-700/80 dark:text-amber-400/80">
+                This voice will skip all confirmation prompts and run with full tool access.
+              </p>
+            </div>
+          )}
+          {(yoleModeOverride === null || yoleModeOverride === undefined) && (
+            <p className="text-xs text-gray-400 dark:text-gray-600">
+              Inherits the YOLO mode setting from the provider configured in Settings.
+            </p>
+          )}
         </div>
       )}
     </>

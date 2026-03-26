@@ -52,6 +52,7 @@ export default function VoiceSelector({
   const [systemPrompt, setSystemPrompt] = useState('');
   const [toneOverride, setToneOverride] = useState('');
   const [systemPromptTemplateId, setSystemPromptTemplateId] = useState<string | undefined>(undefined);
+  const [yoleModeOverride, setYoleModeOverride] = useState<boolean | null>(null);
 
   // A provider shows up if at least one of its types is enabled
   const enabledProviders = SETTINGS_PROVIDERS.filter(
@@ -74,6 +75,7 @@ export default function VoiceSelector({
     setSystemPrompt('');
     setToneOverride('');
     setSystemPromptTemplateId(undefined);
+    setYoleModeOverride(null);
   }
 
   function openCustomProvider(cp: CustomProviderWithStatus) {
@@ -85,6 +87,7 @@ export default function VoiceSelector({
     setSystemPrompt('');
     setToneOverride('');
     setSystemPromptTemplateId(undefined);
+    setYoleModeOverride(null);
   }
 
   function handleAdd() {
@@ -133,6 +136,7 @@ export default function VoiceSelector({
         ? {
             cliCommand:
               config?.cliCommand ?? meta?.defaultCliCommand ?? undefined,
+            yoleModeOverride,
           }
         : { model: model || undefined }),
       systemPrompt: systemPrompt.trim() || undefined,
@@ -146,6 +150,7 @@ export default function VoiceSelector({
     setSystemPrompt('');
     setToneOverride('');
     setSystemPromptTemplateId(undefined);
+    setYoleModeOverride(null);
   }
 
   const availableModels: readonly string[] = selectedCustomProvider
@@ -283,6 +288,13 @@ export default function VoiceSelector({
                 setEnabledTools={() => {}}
                 nameError={nameError}
                 setNameError={setNameError}
+                yoleModeOverride={yoleModeOverride}
+                setYoleModeOverride={setYoleModeOverride}
+                providerYoloDefault={
+                  selectedProvider && voiceType === 'cli'
+                    ? (providerConfigs[selectedProvider]?.cli?.yoloMode ?? false)
+                    : undefined
+                }
                 isCli={voiceType === 'cli'}
                 enabledTypes={enabledTypes}
                 canToggleType={enabledTypes.length > 1}
