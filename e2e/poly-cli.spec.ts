@@ -192,6 +192,7 @@ test.describe.serial('poly CLI', () => {
     const session = await tcpClient.call('sessions.create', {
       compositionId: compId,
       name: 'Poly CLI Test Session',
+      source: 'polyphon',
     }) as any;
     sessionId = session.id;
 

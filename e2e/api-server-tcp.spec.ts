@@ -312,6 +312,7 @@ test.describe.serial('API server TCP', () => {
     const session = await sess.call('sessions.create', {
       compositionId: sessionCompId,
       name: 'My TCP Session',
+      source: 'polyphon',
     }) as any;
 
     expect(session.name).toBe('My TCP Session');
@@ -386,7 +387,7 @@ test.describe.serial('API server TCP', () => {
   });
 
   test('sessions.delete removes the session', async () => {
-    const tmp = await sess.call('sessions.create', { compositionId: sessionCompId }) as any;
+    const tmp = await sess.call('sessions.create', { compositionId: sessionCompId, source: 'polyphon' }) as any;
     await sess.call('sessions.delete', { id: tmp.id });
     await expect(
       sess.call('sessions.get', { id: tmp.id }),
@@ -415,6 +416,7 @@ test.describe.serial('API server TCP', () => {
     const session = await sess.call('sessions.create', {
       compositionId: voiceCompId,
       name: 'Voice Test Session',
+      source: 'polyphon',
     }) as any;
     voiceSessionId = session.id;
     expect(voiceSessionId).toBeTruthy();
@@ -522,6 +524,7 @@ test.describe.serial('API server TCP', () => {
     const session = await sess.call('sessions.create', {
       compositionId: comp.id,
       name: 'Search Test Session',
+      source: 'polyphon',
     }) as any;
     searchSessionId = session.id;
 

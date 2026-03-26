@@ -206,6 +206,7 @@ describe('API server integration', () => {
   it('sessions.create returns NOT_FOUND for unknown compositionId', async () => {
     await expect(sess.send('sessions.create', {
       compositionId: '00000000-0000-0000-0000-000000000001',
+      source: 'polyphon',
     })).rejects.toMatchObject({ code: -32002 });
   });
 
@@ -221,6 +222,7 @@ describe('API server integration', () => {
     const session = await sess.send('sessions.create', {
       compositionId: comp.id,
       name: 'My New Session',
+      source: 'polyphon',
     }) as any;
 
     expect(session.id).toBeTruthy();
@@ -241,6 +243,7 @@ describe('API server integration', () => {
 
     const session = await sess.send('sessions.create', {
       compositionId: comp.id,
+      source: 'polyphon',
     }) as any;
 
     expect(session.name).toBeTruthy();
@@ -260,6 +263,7 @@ describe('API server integration', () => {
     const session = await sess.send('sessions.create', {
       compositionId: comp.id,
       name: 'Conductor Session',
+      source: 'polyphon',
     }) as any;
 
     expect(session.mode).toBe('conductor');
@@ -278,6 +282,7 @@ describe('API server integration', () => {
       compositionId: comp.id,
       name: 'WorkDir Session',
       workingDir: '/tmp/test-workdir',
+      source: 'polyphon',
     }) as any;
 
     expect(session.workingDir).toBe('/tmp/test-workdir');
@@ -298,6 +303,7 @@ describe('API server integration', () => {
       name: 'Sandbox Session',
       workingDir: '/tmp/sandbox-test',
       sandboxedToWorkingDir: true,
+      source: 'polyphon',
     }) as any;
 
     expect(session.workingDir).toBe('/tmp/sandbox-test');
@@ -316,6 +322,7 @@ describe('API server integration', () => {
     const session = await sess.send('sessions.create', {
       compositionId: comp.id,
       name: 'List Test Session',
+      source: 'polyphon',
     }) as any;
 
     const list = await sess.send('sessions.list') as any[];
@@ -410,8 +417,8 @@ describe('Security: token not logged on auth failure', () => {
   });
 });
 
-describe('api.getSpec: unauthenticated returns -32001', () => {
-  it('returns UNAUTHORIZED when called before authentication', async () => {
+describe('api.getSpec: unauthenticated access', () => {
+  it('returns the OpenRPC spec without authentication', async () => {
     const dir = tempDir();
     const tokenPath = path.join(dir, 'api.key');
     loadOrCreateApiToken(tokenPath);
@@ -441,7 +448,8 @@ describe('api.getSpec: unauthenticated returns -32001', () => {
     });
 
     const resp = JSON.parse(result);
-    expect(resp.error?.code).toBe(-32001);
+    expect(resp.error).toBeUndefined();
+    expect(resp.result).toMatchObject({ openrpc: '1.3.0', info: { title: expect.any(String) } });
 
     await controller.stop();
     try { fs.rmSync(dir, { recursive: true }); } catch { /* ignore */ }

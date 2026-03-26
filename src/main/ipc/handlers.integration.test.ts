@@ -116,6 +116,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     updatedAt: 1000,
     archived: false,
     workingDir: null,
+    source: 'polyphon',
     ...overrides,
   } as Session;
 }
