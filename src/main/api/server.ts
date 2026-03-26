@@ -187,6 +187,14 @@ export class ApiServerController {
 
         // Authentication gate
         if (!authenticated) {
+          // api.getSpec is public — no token required
+          if (request.method === 'api.getSpec') {
+            dispatch(this._dispatchTable, request, () => {}).then((response) => {
+              if (!socket.destroyed) socket.write(JSON.stringify(response) + '\n');
+            });
+            continue;
+          }
+
           if (request.method !== 'api.authenticate') {
             const err = makeErrorResponse(requestId, RPC_ERROR.UNAUTHORIZED, 'Authentication required');
             socket.write(JSON.stringify(err) + '\n');

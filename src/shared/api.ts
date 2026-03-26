@@ -200,6 +200,14 @@ export interface SearchMessagesParams {
 
 // settings.getDebugInfo — no params, returns DebugInfo
 
+// settings.getUserProfile
+export interface SettingsGetUserProfileResult {
+  conductorName: string;
+  conductorColor: string;
+  conductorAvatar: string;
+  pronouns: string;
+}
+
 // mcp.getStatus — no params, returns McpStatus
 
 // mcp.setEnabled

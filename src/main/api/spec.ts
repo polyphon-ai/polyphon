@@ -88,7 +88,7 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
         description:
           'Returns this OpenRPC 1.3 document describing the complete TCP API surface. ' +
           'The info.version field reflects the running app version. ' +
-          'Requires authentication.',
+          'Does not require authentication.',
         params: [],
         result: {
           name: 'OpenRpcSpec',
@@ -232,8 +232,8 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
           },
         ],
         result: {
-          name: 'composition',
-          schema: { $ref: '#/components/schemas/Composition' },
+          name: 'result',
+          schema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] },
         },
       },
 
@@ -284,6 +284,12 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
             description: 'The UUID of the composition to base the session on.',
             required: true,
             schema: { type: 'string' },
+          },
+          {
+            name: 'source',
+            description: 'Identifier for the caller creating the session (e.g. "polyphon", "poly-cli", "mcp"). Max 64 chars.',
+            required: true,
+            schema: { type: 'string', maxLength: 64 },
           },
           {
             name: 'name',
@@ -368,8 +374,8 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
           },
         ],
         result: {
-          name: 'session',
-          schema: { $ref: '#/components/schemas/Session' },
+          name: 'result',
+          schema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] },
         },
       },
       {
@@ -546,6 +552,16 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
           schema: { $ref: '#/components/schemas/DebugInfo' },
         },
       },
+      {
+        name: 'settings.getUserProfile',
+        summary: 'Get the conductor profile',
+        description: 'Returns the conductor display name, color, avatar, and pronouns.',
+        params: [],
+        result: {
+          name: 'userProfile',
+          schema: { $ref: '#/components/schemas/UserProfilePublic' },
+        },
+      },
 
       // ---- mcp namespace ----
       {
@@ -595,9 +611,10 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
             host: { type: 'string' },
             tokenFingerprint: { type: 'string' },
             version: { type: 'string' },
+            activeConnections: { type: 'integer' },
             startupError: { type: 'string' },
           },
-          required: ['enabled', 'remoteAccessEnabled', 'running', 'port', 'host', 'tokenFingerprint', 'version'],
+          required: ['enabled', 'remoteAccessEnabled', 'running', 'port', 'host', 'tokenFingerprint', 'version', 'activeConnections'],
         },
         Composition: {
           type: 'object',
@@ -631,6 +648,7 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
             avatarIcon: { type: 'string' },
             customProviderId: { type: 'string' },
             enabledTools: { type: 'array', items: { type: 'string' } },
+            yoleModeOverride: { type: 'boolean', nullable: true },
           },
           required: ['id', 'provider', 'displayName', 'order', 'color', 'avatarIcon'],
         },
@@ -663,13 +681,14 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
             mode: { type: 'string', enum: ['conductor', 'broadcast'] },
             continuationPolicy: { type: 'string', enum: ['none', 'prompt', 'auto'] },
             continuationMaxRounds: { type: 'integer' },
+            source: { type: 'string' },
             workingDir: { type: 'string', nullable: true },
             sandboxedToWorkingDir: { type: 'boolean' },
             createdAt: { type: 'integer' },
             updatedAt: { type: 'integer' },
             archived: { type: 'boolean' },
           },
-          required: ['id', 'compositionId', 'name', 'mode', 'continuationPolicy', 'continuationMaxRounds', 'sandboxedToWorkingDir', 'createdAt', 'updatedAt', 'archived'],
+          required: ['id', 'compositionId', 'name', 'mode', 'continuationPolicy', 'continuationMaxRounds', 'source', 'sandboxedToWorkingDir', 'createdAt', 'updatedAt', 'archived'],
         },
         Message: {
           type: 'object',
@@ -677,12 +696,13 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
             id: { type: 'string' },
             sessionId: { type: 'string' },
             role: { type: 'string', enum: ['conductor', 'voice', 'system'] },
-            voiceId: { type: 'string' },
-            voiceName: { type: 'string' },
+            voiceId: { type: 'string', nullable: true },
+            voiceName: { type: 'string', nullable: true },
             content: { type: 'string' },
-            createdAt: { type: 'integer' },
+            timestamp: { type: 'integer' },
+            roundIndex: { type: 'integer' },
           },
-          required: ['id', 'sessionId', 'role', 'content', 'createdAt'],
+          required: ['id', 'sessionId', 'role', 'content', 'timestamp', 'roundIndex'],
         },
         ExportResult: {
           type: 'object',
@@ -710,30 +730,63 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
           type: 'object',
           properties: {
             provider: { type: 'string' },
-            configured: { type: 'boolean' },
-            available: { type: 'boolean' },
+            apiKeyStatus: { $ref: '#/components/schemas/ApiKeyStatus' },
+            cliStatus: { $ref: '#/components/schemas/CliStatus', nullable: true },
           },
-          required: ['provider', 'configured', 'available'],
+          required: ['provider', 'apiKeyStatus'],
+        },
+        ApiKeyStatus: {
+          type: 'object',
+          description: 'API key resolution result. `status` is "specific" (provider-specific env var), "fallback" (canonical env var), or "none" (no key found).',
+          properties: {
+            status: { type: 'string', enum: ['specific', 'fallback', 'none'] },
+            varName: { type: 'string' },
+            maskedKey: { type: 'string' },
+            specificVar: { type: 'string' },
+            fallbackVar: { type: 'string' },
+          },
+          required: ['status'],
+        },
+        CliStatus: {
+          type: 'object',
+          properties: {
+            available: { type: 'boolean' },
+            command: { type: 'string' },
+            path: { type: 'string' },
+            error: { type: 'string' },
+          },
+          required: ['available'],
         },
         DebugInfo: {
           type: 'object',
           properties: {
             appVersion: { type: 'string' },
+            schemaVersion: { type: 'integer' },
             platform: { type: 'string' },
             arch: { type: 'string' },
-            electronVersion: { type: 'string' },
-            nodeVersion: { type: 'string' },
           },
-          required: ['appVersion', 'platform', 'arch'],
+          required: ['appVersion', 'schemaVersion', 'platform', 'arch'],
         },
         McpStatus: {
           type: 'object',
           properties: {
             enabled: { type: 'boolean' },
             running: { type: 'boolean' },
-            port: { type: 'integer' },
+            headless: { type: 'boolean' },
+            transport: { type: 'string', enum: ['stdio'] },
           },
-          required: ['enabled', 'running'],
+          required: ['enabled', 'running', 'headless', 'transport'],
+        },
+        UserProfilePublic: {
+          type: 'object',
+          description: 'Public subset of the conductor profile returned by settings.getUserProfile.',
+          properties: {
+            conductorName: { type: 'string' },
+            conductorColor: { type: 'string' },
+            conductorAvatar: { type: 'string' },
+            pronouns: { type: 'string' },
+          },
+          required: ['conductorName', 'conductorColor', 'conductorAvatar', 'pronouns'],
         },
       },
     },
