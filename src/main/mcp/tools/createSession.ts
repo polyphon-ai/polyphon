@@ -66,6 +66,7 @@ export function buildCreateSessionTool(db: Database.Database, voiceManager: Voic
       archived: false,
       workingDir: validWorkingDir,
       sandboxedToWorkingDir: sandboxed,
+      source: 'mcp',
     };
 
     const profile = getUserProfile(db);

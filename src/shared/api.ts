@@ -123,6 +123,7 @@ export interface SessionsGetParams {
 // sessions.create
 export interface SessionsCreateParams {
   compositionId: string;
+  source: string;
   name?: string;
   workingDir?: string | null;
   sandboxedToWorkingDir?: boolean;

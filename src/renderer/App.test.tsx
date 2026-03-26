@@ -79,6 +79,7 @@ const baseSession: Session = {
   archived: false,
   workingDir: null,
   sandboxedToWorkingDir: false,
+  source: 'polyphon',
 };
 
 function stubPolyphon(compositions: Composition[] = [], sessions: Session[] = []) {

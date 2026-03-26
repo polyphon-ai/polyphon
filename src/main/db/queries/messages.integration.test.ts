@@ -26,6 +26,7 @@ function makeSession(): Session {
     archived: false,
     workingDir: null,
     sandboxedToWorkingDir: false,
+      source: 'polyphon',
   };
 }
 

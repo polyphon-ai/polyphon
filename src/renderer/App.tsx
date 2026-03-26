@@ -197,6 +197,11 @@ function SessionRow({
           >
             {session.mode === 'conductor' ? 'Directed' : 'Broadcast'}
           </span>
+          {session.source && session.source !== 'polyphon' && (
+            <span className="text-[10px] px-1.5 py-px rounded-full font-medium shrink-0 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+              {session.source}
+            </span>
+          )}
         </div>
         <div className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
           {compositionName}
@@ -247,6 +252,7 @@ function SessionsList({
   const { compositions, setCompositions } = useCompositionStore();
   const [showPicker, setShowPicker] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [showAllSources, setShowAllSources] = useState(false);
 
   useEffect(() => {
     window.polyphon.session.list(showArchived).then(setSessions).catch(() => {});
@@ -278,6 +284,19 @@ function SessionsList({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {sessions.some(s => s.source && s.source !== 'polyphon') && (
+            <button
+              onClick={() => setShowAllSources(v => !v)}
+              title={showAllSources ? 'Showing all sources' : 'Showing Polyphon sessions only'}
+              className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-colors ${
+                showAllSources
+                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  : 'text-gray-400 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              {showAllSources ? 'All sources' : 'Polyphon only'}
+            </button>
+          )}
           <ArchiveToggle on={showArchived} onChange={setShowArchived} />
           <button
             onClick={() => setShowPicker(true)}
@@ -310,8 +329,9 @@ function SessionsList({
             </div>
           </div>
         ) : (() => {
+          const filtered = showAllSources ? sessions : sessions.filter(s => !s.source || s.source === 'polyphon');
           const grouped = new Map<DateGroup, Session[]>();
-          for (const s of sessions) {
+          for (const s of filtered) {
             const g = getDateGroup(s.createdAt);
             if (!grouped.has(g)) grouped.set(g, []);
             grouped.get(g)!.push(s);

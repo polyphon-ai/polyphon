@@ -13,6 +13,7 @@ interface SessionRow {
   archived: number;
   working_dir: string | null;
   sandboxed_to_working_dir: number;
+  source: string;
 }
 
 function rowToSession(row: SessionRow): Session {
@@ -28,6 +29,7 @@ function rowToSession(row: SessionRow): Session {
     archived: row.archived === 1,
     workingDir: row.working_dir,
     sandboxedToWorkingDir: row.sandboxed_to_working_dir === 1,
+    source: row.source ?? 'polyphon',
   };
 }
 
@@ -47,8 +49,8 @@ export function getSession(db: Database.Database, id: string): Session | null {
 
 export function insertSession(db: Database.Database, session: Session): void {
   db.prepare(`
-    INSERT INTO sessions (id, composition_id, name, mode, continuation_policy, continuation_max_rounds, created_at, updated_at, working_dir, sandboxed_to_working_dir)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO sessions (id, composition_id, name, mode, continuation_policy, continuation_max_rounds, created_at, updated_at, working_dir, sandboxed_to_working_dir, source)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     session.id,
     session.compositionId,
@@ -60,6 +62,7 @@ export function insertSession(db: Database.Database, session: Session): void {
     session.updatedAt,
     session.workingDir ?? null,
     session.sandboxedToWorkingDir ? 1 : 0,
+    session.source,
   );
 }
 

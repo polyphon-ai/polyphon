@@ -121,6 +121,7 @@ export interface Session {
   archived: boolean;
   workingDir: string | null;
   sandboxedToWorkingDir: boolean;
+  source: string; // e.g. 'polyphon', 'mcp', 'poly-cli', 'obsidian'
 }
 
 // Settings — provider configuration persisted to SQLite

@@ -25,6 +25,7 @@ export function registerSessionsCommand(program: Command): void {
         await client.connect(config);
         const result = await client.call('sessions.create', {
           compositionId: opts.composition,
+          source: 'poly-cli',
           ...(opts.name ? { name: opts.name } : {}),
           ...(opts.workingDir ? { workingDir: opts.workingDir } : {}),
           sandboxedToWorkingDir: opts.sandbox,

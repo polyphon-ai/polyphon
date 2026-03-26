@@ -53,6 +53,7 @@ function makeSession(id: string, compositionId: string): Session {
     archived: false,
     workingDir: null,
     sandboxedToWorkingDir: false,
+      source: 'polyphon',
   };
 }
 

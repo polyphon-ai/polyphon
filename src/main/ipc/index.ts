@@ -86,6 +86,7 @@ export function registerIpcHandlers(
       archived: false,
       workingDir: validWorkingDir,
       sandboxedToWorkingDir: validSandboxed,
+      source: 'polyphon',
     };
 
     const profile = getUserProfile(db);

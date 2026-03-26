@@ -36,7 +36,11 @@ export function buildSessionHandlers(
 
     'sessions.create': async (params) => {
       if (!params?.compositionId) throw new RpcError(RPC_ERROR.INVALID_PARAMS, 'compositionId is required');
+      if (!params?.source || typeof params.source !== 'string' || !params.source.trim()) {
+        throw new RpcError(RPC_ERROR.INVALID_PARAMS, 'source is required');
+      }
       const compositionId = requireId(params.compositionId, 'compositionId');
+      const source = params.source.trim().slice(0, 64);
       const composition = getComposition(db, compositionId);
       if (!composition) throw new RpcError(RPC_ERROR.NOT_FOUND, `Composition not found: ${compositionId}`);
 
@@ -59,6 +63,7 @@ export function buildSessionHandlers(
         archived: false,
         workingDir,
         sandboxedToWorkingDir,
+        source,
       };
       insertSession(db, session);
 

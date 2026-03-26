@@ -25,6 +25,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     archived: false,
     workingDir: null,
     sandboxedToWorkingDir: false,
+      source: 'polyphon',
     ...overrides,
   };
 }

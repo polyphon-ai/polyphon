@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 15;
 
 export const CREATE_TABLES_SQL = `
   CREATE TABLE IF NOT EXISTS schema_version (
@@ -45,7 +45,8 @@ export const CREATE_TABLES_SQL = `
     updated_at INTEGER NOT NULL,
     archived INTEGER NOT NULL DEFAULT 0,
     working_dir TEXT,
-    sandboxed_to_working_dir INTEGER NOT NULL DEFAULT 0
+    sandboxed_to_working_dir INTEGER NOT NULL DEFAULT 0,
+    source TEXT NOT NULL DEFAULT 'polyphon'
   );
 
   CREATE TABLE IF NOT EXISTS messages (
