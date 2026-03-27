@@ -58,7 +58,8 @@ export interface AuthenticateResult {
   ok: boolean;
 }
 
-// api.getStatus — returns ApiStatus from shared/types.ts
+// api.getStatus
+export type ApiGetStatusResult = import('./types').ApiStatus;
 
 // compositions.list
 export interface CompositionsListParams {
@@ -195,10 +196,17 @@ export interface SearchMessagesParams {
   query: string;
   sessionId?: string;
 }
+export type SearchMessagesResult = import('./types').SearchResult[];
 
-// settings.getProviderStatus — no params, returns ProviderStatus[]
+// settings.getProviderStatus
+// Extends ProviderStatus with CLI availability, resolved at request time.
+export type SettingsProviderStatus = import('./types').ProviderStatus & {
+  cliStatus: import('./types').CliStatus | null;
+};
+export type SettingsGetProviderStatusResult = SettingsProviderStatus[];
 
-// settings.getDebugInfo — no params, returns DebugInfo
+// settings.getDebugInfo
+export type SettingsGetDebugInfoResult = import('./types').DebugInfo;
 
 // settings.getUserProfile
 export interface SettingsGetUserProfileResult {
@@ -208,12 +216,27 @@ export interface SettingsGetUserProfileResult {
   pronouns: string;
 }
 
-// mcp.getStatus — no params, returns McpStatus
+// mcp.getStatus
+export type McpGetStatusResult = import('./types').McpStatus;
 
 // mcp.setEnabled
 export interface McpSetEnabledParams {
   enabled: boolean;
 }
+export type McpSetEnabledResult = import('./types').McpStatus;
 
 // api.getSpec
-export type ApiGetSpecResult = Record<string, unknown>;
+export interface OpenRpcSpec {
+  openrpc: string;
+  info: { title: string; version: string; description: string };
+  servers: Array<{ name: string; url: string; description?: string }>;
+  methods: Array<{
+    name: string;
+    summary: string;
+    description: string;
+    params: Array<{ name: string; description: string; required: boolean; schema: Record<string, unknown> }>;
+    result: { name: string; description?: string; schema: Record<string, unknown> };
+  }>;
+  components: { schemas: Record<string, unknown> };
+}
+export type ApiGetSpecResult = OpenRpcSpec;

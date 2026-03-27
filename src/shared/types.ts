@@ -151,6 +151,14 @@ export interface ProviderStatus {
   apiKeyStatus: ApiKeyStatus;
 }
 
+// CLI voice availability check result
+export interface CliStatus {
+  available: boolean;
+  command?: string;
+  path?: string;
+  error?: string;
+}
+
 // CLI voice test result
 export interface CliTestResult {
   success: boolean;

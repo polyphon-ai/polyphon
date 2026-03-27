@@ -1,37 +1,4 @@
-interface OpenRpcMethodParam {
-  name: string;
-  description: string;
-  required: boolean;
-  schema: Record<string, unknown>;
-}
-
-interface OpenRpcMethodResult {
-  name: string;
-  description?: string;
-  schema: Record<string, unknown>;
-}
-
-interface OpenRpcMethod {
-  name: string;
-  summary: string;
-  description: string;
-  params: OpenRpcMethodParam[];
-  result: OpenRpcMethodResult;
-}
-
-interface OpenRpcSpec {
-  openrpc: string;
-  info: {
-    title: string;
-    version: string;
-    description: string;
-  };
-  servers: Array<{ name: string; url: string; description?: string }>;
-  methods: OpenRpcMethod[];
-  components: {
-    schemas: Record<string, unknown>;
-  };
-}
+import type { OpenRpcSpec } from '../../shared/api';
 
 export function buildOpenRpcSpec(version: string): OpenRpcSpec {
   return {
@@ -526,8 +493,8 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
           },
         ],
         result: {
-          name: 'messages',
-          schema: { type: 'array', items: { $ref: '#/components/schemas/Message' } },
+          name: 'results',
+          schema: { type: 'array', items: { $ref: '#/components/schemas/SearchResult' } },
         },
       },
 
@@ -776,6 +743,20 @@ export function buildOpenRpcSpec(version: string): OpenRpcSpec {
             transport: { type: 'string', enum: ['stdio'] },
           },
           required: ['enabled', 'running', 'headless', 'transport'],
+        },
+        SearchResult: {
+          type: 'object',
+          properties: {
+            messageId: { type: 'string' },
+            sessionId: { type: 'string' },
+            sessionName: { type: 'string' },
+            role: { type: 'string', enum: ['conductor', 'voice', 'system'] },
+            voiceName: { type: 'string', nullable: true },
+            snippet: { type: 'string' },
+            timestamp: { type: 'integer' },
+            archived: { type: 'boolean' },
+          },
+          required: ['messageId', 'sessionId', 'sessionName', 'role', 'snippet', 'timestamp', 'archived'],
         },
         UserProfilePublic: {
           type: 'object',
