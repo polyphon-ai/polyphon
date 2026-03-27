@@ -8,7 +8,7 @@ Bug reports and feature requests are welcome — please use the appropriate issu
 
 ## Discussions
 
-For questions, ideas, or general feedback, use [GitHub Discussions](https://github.com/polyphon-ai/polyphon/discussions). It's a great place to explore ideas with the community before filing a formal request.
+For questions, ideas, or general feedback, use [GitHub Discussions](https://github.com/polyphon-ai/.github/discussions). It's a great place to explore ideas with the community before filing a formal request.
 
 ## Pull requests
 
