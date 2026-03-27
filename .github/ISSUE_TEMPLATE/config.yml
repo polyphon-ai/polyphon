@@ -1,8 +1,0 @@
-blank_issues_enabled: false
-contact_links:
-  - name: Discussions
-    url: https://github.com/polyphon-ai/polyphon/discussions
-    about: Ask questions, share ideas, and connect with the community
-  - name: Polyphon website
-    url: https://polyphon.ai
-    about: Product information, documentation, and contact
