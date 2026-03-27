@@ -1,0 +1,82 @@
+# Sync shared types to polyphon-js and publish @polyphon-ai/js to npm.
+#
+# Triggered on version tags (e.g. v0.12.0). Copies polyphon/src/shared/types.ts
+# and api.ts into polyphon-js with a sync header, bumps the SDK version to match,
+# commits, pushes, then builds and publishes.
+#
+# Required secrets:
+#   POLYPHON_SDK_SYNC_TOKEN — GitHub PAT scoped to polyphon-ai/polyphon-js
+#                             with contents:write permission only
+#   NPM_TOKEN               — npm granular token scoped to @polyphon-ai/js publish only
+
+name: Sync SDK
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+permissions:
+  contents: read
+
+jobs:
+  sync-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout polyphon
+        uses: actions/checkout@v4
+        with:
+          path: polyphon
+
+      - name: Checkout polyphon-js
+        uses: actions/checkout@v4
+        with:
+          repository: polyphon-ai/polyphon-js
+          token: ${{ secrets.POLYPHON_SDK_SYNC_TOKEN }}
+          path: polyphon-js
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Derive version from tag
+        id: version
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Copy shared types with sync header
+        run: |
+          HEADER="// AUTO-SYNCED from polyphon/src/shared"
+          for file in types.ts api.ts; do
+            src="polyphon/src/shared/${file}"
+            dst="polyphon-js/src/${file}"
+            printf "%s/${file} — do not edit by hand\n\n" "$HEADER" > "$dst"
+            # Rewrite relative import paths: ./types → ./types.js
+            sed 's|from '\''\.\/types'\''|from '\''./types.js'\''|g' "$src" >> "$dst"
+          done
+
+      - name: Bump SDK version
+        working-directory: polyphon-js
+        run: npm version ${{ steps.version.outputs.value }} --no-git-tag-version
+
+      - name: Commit and push polyphon-js changes
+        working-directory: polyphon-js
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/types.ts src/api.ts package.json package-lock.json
+          git commit -m "chore: sync types and bump version to ${{ steps.version.outputs.value }} [skip ci]"
+          git push
+
+      - name: Install dependencies and build
+        working-directory: polyphon-js
+        run: |
+          npm ci
+          npm run build
+
+      - name: Publish to npm
+        working-directory: polyphon-js
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
