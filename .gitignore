@@ -66,3 +66,7 @@ docs/
 !deps/sqlcipher/
 !deps/sqlcipher/sqlite3.c
 !deps/sqlcipher/sqlite3.h
+
+# SDK token helpers — force-include so *TOKEN* in global gitignore doesn't exclude them
+!src/sdk/token.ts
+!src/sdk/token.test.ts
