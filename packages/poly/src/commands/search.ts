@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { PolyClient } from '../client.js';
+import { PolyphonClient } from '../../../../src/sdk/index.js';
 import { resolveConnection } from '../connect.js';
 import { outputResult, outputError, type OutputFormat } from '../format.js';
 
@@ -12,18 +12,14 @@ export function registerSearchCommand(program: Command): void {
     .option('--remote <name>', 'Named remote connection')
     .action(async (query, opts) => {
       const format = opts.format as OutputFormat;
-      const client = new PolyClient();
+      const config = resolveConnection({ remote: opts.remote });
+      const client = new PolyphonClient(config);
       try {
-        const config = resolveConnection({ remote: opts.remote });
-        await client.connect(config);
-        const result = await client.call('search.messages', {
-          query,
-          sessionId: opts.session,
-        });
+        await client.connect();
+        const items = await client.searchMessages({ query, sessionId: opts.session });
         if (format === 'json') {
-          outputResult(result, format);
+          outputResult(items, format);
         } else {
-          const items = result as any[];
           if (items.length === 0) {
             process.stdout.write('No results found.\n');
           } else {
@@ -36,7 +32,7 @@ export function registerSearchCommand(program: Command): void {
         outputError(err, format);
         process.exit(1);
       } finally {
-        client.close();
+        client.disconnect();
       }
     });
 }

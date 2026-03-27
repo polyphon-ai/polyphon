@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { PolyClient } from '../client.js';
+import { PolyphonClient } from '../../../../src/sdk/index.js';
 import { resolveConnection } from '../connect.js';
 import { outputResult, outputError, formatComposition, type OutputFormat } from '../format.js';
 
@@ -16,15 +16,14 @@ export function registerCompositionsCommand(program: Command): void {
     .option('--remote <name>', 'Named remote connection')
     .action(async (opts) => {
       const format = opts.format as OutputFormat;
-      const client = new PolyClient();
+      const config = resolveConnection({ remote: opts.remote });
+      const client = new PolyphonClient(config);
       try {
-        const config = resolveConnection({ remote: opts.remote });
-        await client.connect(config);
-        const result = await client.call('compositions.list', { archived: opts.archived });
+        await client.connect();
+        const items = await client.compositions({ archived: opts.archived });
         if (format === 'json') {
-          outputResult(result, format);
+          outputResult(items, format);
         } else {
-          const items = result as any[];
           if (items.length === 0) {
             process.stdout.write('No compositions found.\n');
           } else {
@@ -35,7 +34,7 @@ export function registerCompositionsCommand(program: Command): void {
         outputError(err, format);
         process.exit(1);
       } finally {
-        client.close();
+        client.disconnect();
       }
     });
 
@@ -46,17 +45,17 @@ export function registerCompositionsCommand(program: Command): void {
     .option('--remote <name>', 'Named remote connection')
     .action(async (id, opts) => {
       const format = opts.format as OutputFormat;
-      const client = new PolyClient();
+      const config = resolveConnection({ remote: opts.remote });
+      const client = new PolyphonClient(config);
       try {
-        const config = resolveConnection({ remote: opts.remote });
-        await client.connect(config);
-        const result = await client.call('compositions.get', { id });
+        await client.connect();
+        const result = await client.getComposition({ id });
         outputResult(format === 'json' ? result : formatComposition(result), format);
       } catch (err) {
         outputError(err, format);
         process.exit(1);
       } finally {
-        client.close();
+        client.disconnect();
       }
     });
 }

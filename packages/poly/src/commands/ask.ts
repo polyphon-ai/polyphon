@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { PolyClient } from '../client.js';
+import { PolyphonClient } from '../../../../src/sdk/index.js';
 import { resolveConnection } from '../connect.js';
 import { outputResult, outputError, type OutputFormat } from '../format.js';
 
@@ -15,17 +15,16 @@ export function registerAskCommand(program: Command): void {
     .option('--remote <name>', 'Named remote connection')
     .action(async (opts) => {
       const format = opts.format as OutputFormat;
-      const client = new PolyClient();
+      const config = resolveConnection({ remote: opts.remote });
+      const client = new PolyphonClient(config);
       try {
-        const config = resolveConnection({ remote: opts.remote });
-        await client.connect(config);
+        await client.connect();
 
         if (opts.stream) {
-          const result = await client.callStreaming(
-            'voice.ask',
+          const result = await client.ask(
             { sessionId: opts.session, voiceId: opts.voice, content: opts.prompt },
             (chunk) => {
-              process.stdout.write(chunk.params.delta);
+              process.stdout.write(chunk.delta);
             },
           );
           process.stdout.write('\n');
@@ -33,7 +32,7 @@ export function registerAskCommand(program: Command): void {
             outputResult(result, format);
           }
         } else {
-          const result = await client.call('voice.ask', {
+          const result = await client.ask({
             sessionId: opts.session,
             voiceId: opts.voice,
             content: opts.prompt,
@@ -41,9 +40,8 @@ export function registerAskCommand(program: Command): void {
           if (format === 'json') {
             outputResult(result, format);
           } else {
-            const msg = (result as any).message;
-            if (msg) {
-              process.stdout.write(`[${msg.voiceName ?? 'voice'}]\n${msg.content}\n`);
+            if (result.message) {
+              process.stdout.write(`[${result.message.voiceName ?? 'voice'}]\n${result.message.content}\n`);
             }
           }
         }
@@ -51,7 +49,7 @@ export function registerAskCommand(program: Command): void {
         outputError(err, format);
         process.exit(1);
       } finally {
-        client.close();
+        client.disconnect();
       }
     });
 }

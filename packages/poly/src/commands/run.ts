@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { PolyClient } from '../client.js';
+import { PolyphonClient } from '../../../../src/sdk/index.js';
 import { resolveConnection } from '../connect.js';
 import { outputResult, outputError, type OutputFormat } from '../format.js';
 
@@ -14,23 +14,22 @@ export function registerRunCommand(program: Command): void {
     .option('--remote <name>', 'Named remote connection')
     .action(async (opts) => {
       const format = opts.format as OutputFormat;
-      const client = new PolyClient();
+      const config = resolveConnection({ remote: opts.remote });
+      const client = new PolyphonClient(config);
       try {
-        const config = resolveConnection({ remote: opts.remote });
-        await client.connect(config);
+        await client.connect();
 
         if (opts.stream) {
           let currentVoice = '';
-          const result = await client.callStreaming(
-            'voice.broadcast',
+          const result = await client.broadcast(
             { sessionId: opts.session, content: opts.prompt },
             (chunk) => {
-              if (chunk.params.voiceName !== currentVoice) {
+              if (chunk.voiceName !== currentVoice) {
                 if (currentVoice) process.stdout.write('\n');
-                currentVoice = chunk.params.voiceName;
+                currentVoice = chunk.voiceName;
                 process.stderr.write(`\n[${currentVoice}] `);
               }
-              process.stdout.write(chunk.params.delta);
+              process.stdout.write(chunk.delta);
             },
           );
           process.stdout.write('\n');
@@ -38,15 +37,14 @@ export function registerRunCommand(program: Command): void {
             outputResult(result, format);
           }
         } else {
-          const result = await client.call('voice.broadcast', {
+          const result = await client.broadcast({
             sessionId: opts.session,
             content: opts.prompt,
           });
           if (format === 'json') {
             outputResult(result, format);
           } else {
-            const messages = (result as any).messages ?? [];
-            for (const msg of messages) {
+            for (const msg of result.messages) {
               process.stdout.write(`[${msg.voiceName ?? 'voice'}]\n${msg.content}\n\n`);
             }
           }
@@ -55,7 +53,7 @@ export function registerRunCommand(program: Command): void {
         outputError(err, format);
         process.exit(1);
       } finally {
-        client.close();
+        client.disconnect();
       }
     });
 }

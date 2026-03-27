@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { PolyClient } from '../client.js';
+import { PolyphonClient } from '../../../../src/sdk/index.js';
 import { resolveConnection } from '../connect.js';
 import { outputResult, outputError, type OutputFormat } from '../format.js';
 
@@ -11,14 +11,14 @@ export function registerStatusCommand(program: Command, polyVersion: string): vo
     .option('--remote <name>', 'Named remote connection')
     .action(async (opts) => {
       const format = (opts.format ?? 'human') as OutputFormat;
-      const client = new PolyClient();
+      const config = resolveConnection({ remote: opts.remote });
+      const client = new PolyphonClient(config);
       try {
-        const config = resolveConnection({ remote: opts.remote });
-        await client.connect(config);
+        await client.connect();
         const [apiStatus, providerStatus, mcpStatus] = await Promise.all([
-          client.call('api.getStatus'),
-          client.call('settings.getProviderStatus'),
-          client.call('mcp.getStatus'),
+          client.getApiStatus(),
+          client.getProviderStatus(),
+          client.getMcpStatus(),
         ]);
 
         if (format === 'json') {
@@ -94,7 +94,7 @@ export function registerStatusCommand(program: Command, polyVersion: string): vo
         outputError(err, format);
         process.exit(1);
       } finally {
-        client.close();
+        client.disconnect();
       }
     });
 }
