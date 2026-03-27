@@ -21,7 +21,6 @@
       ]
     },
     "packages/poly": {
-      "entry": ["src/types.ts"],
       "project": ["src/**/*.ts"]
     }
   },

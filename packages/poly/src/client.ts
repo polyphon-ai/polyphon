@@ -1,5 +1,5 @@
 import net from 'node:net';
-import type { JsonRpcRequest, JsonRpcResponse, StreamChunkNotification } from './types.js';
+import type { JsonRpcRequest, JsonRpcResponse, StreamChunkNotification } from '../../../src/shared/api.js';
 import type { ConnectionConfig } from './connect.js';
 
 let requestCounter = 1;

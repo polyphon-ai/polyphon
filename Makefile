@@ -50,8 +50,12 @@ dist: ## Build macOS arm64 DMG; output to out/make/
 test: lint test-unit test-integration test-e2e ## Run lint + unit + integration + e2e (non-live)
 
 .PHONY: test-unit
-test-unit: ## Run unit tests
+test-unit: ## Run unit tests (includes SDK tests in src/sdk/)
 	npm run test:unit
+
+.PHONY: test-sdk
+test-sdk: ## Run SDK (polyphon-js client) tests only
+	npm run test:unit -- src/sdk
 
 .PHONY: test-integration
 test-integration: ## Run integration tests

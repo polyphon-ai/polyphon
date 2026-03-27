@@ -1,6 +1,5 @@
 import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
+import { readLocalToken as sdkReadLocalToken, defaultTokenPath } from '../../../src/sdk/token.js';
 import { loadRemote } from './remotes.js';
 
 export interface ConnectionConfig {
@@ -48,28 +47,12 @@ export function resolveConnection(options: {
   if (options.host) {
     const host = options.host;
     const port = options.port ?? 7432;
-    const token = options.token ?? readLocalToken();
+    const token = options.token ?? sdkReadLocalToken();
     return { host, port, token };
   }
 
-  const token = readLocalToken();
+  const token = sdkReadLocalToken();
   return { host: '127.0.0.1', port: 7432, token };
-}
-
-function readLocalToken(): string {
-  const tokenPath = localTokenPath();
-  try {
-    const content = fs.readFileSync(tokenPath, 'utf-8').trim();
-    if (!content) throw new Error('api.key is empty');
-    return content;
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(
-      `Could not read local API token from ${tokenPath}: ${msg}\n` +
-      'Is Polyphon running with the TCP API server enabled?\n' +
-      'Override with POLYPHON_DATA_DIR to point to a non-standard app data directory.',
-    );
-  }
 }
 
 function readTokenFromFile(filePath: string): string {
@@ -81,21 +64,4 @@ function readTokenFromFile(filePath: string): string {
   }
 }
 
-export function localTokenPath(): string {
-  const dataDir = process.env.POLYPHON_DATA_DIR ?? defaultUserDataPath();
-  return path.join(dataDir, 'api.key');
-}
-
-function defaultUserDataPath(): string {
-  const platform = os.platform();
-  const appName = 'Polyphon';
-  if (platform === 'darwin') {
-    return path.join(os.homedir(), 'Library', 'Application Support', appName);
-  } else if (platform === 'win32') {
-    const appData = process.env.APPDATA ?? path.join(os.homedir(), 'AppData', 'Roaming');
-    return path.join(appData, appName);
-  } else {
-    const xdgConfig = process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), '.config');
-    return path.join(xdgConfig, appName);
-  }
-}
+export { defaultTokenPath as localTokenPath };

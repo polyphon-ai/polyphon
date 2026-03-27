@@ -519,3 +519,7 @@ The [`polyphon-ai/obsidian-polyphon`](https://github.com/polyphon-ai/obsidian-po
 
 ---
 
+## Ecosystem
+
+This project is part of the polyphon-ai workspace. See `../.github/CLAUDE.md` for how the projects relate to each other.
+

@@ -1,8 +1,13 @@
-# Sync shared types to polyphon-js and publish @polyphon-ai/js to npm.
+# Sync all SDK source files to polyphon-js and publish @polyphon-ai/js to npm.
 #
-# Triggered on version tags (e.g. v0.12.0). Copies polyphon/src/shared/types.ts
-# and api.ts into polyphon-js with a sync header, bumps the SDK version to match,
-# commits, pushes, then builds and publishes.
+# Triggered on version tags (e.g. v0.12.0).
+#
+# What gets synced to polyphon-js/src/:
+#   - types.ts, api.ts          from polyphon/src/shared/ (source of truth for the API contract)
+#   - client.ts, errors.ts,     from polyphon/src/sdk/ (source of truth for the SDK implementation)
+#     token.ts, index.ts
+#   - testing/                  from polyphon/src/sdk/testing/ (mock server + fixtures)
+#   - *.test.ts                 from polyphon/src/sdk/ (test files run in polyphon CI first)
 #
 # Required secrets:
 #   POLYPHON_SDK_SYNC_TOKEN — GitHub PAT scoped to polyphon-ai/polyphon-js
@@ -56,18 +61,23 @@ jobs:
             sed 's|from '\''\.\/types'\''|from '\''./types.js'\''|g' "$src" >> "$dst"
           done
 
+      - name: Sync SDK source files
+        run: node polyphon/scripts/sync-sdk.mjs polyphon-js
+
       - name: Bump SDK version
         working-directory: polyphon-js
         run: npm version ${{ steps.version.outputs.value }} --no-git-tag-version
 
-      - name: Commit and push polyphon-js changes
+      - name: Commit, tag, and push polyphon-js changes
         working-directory: polyphon-js
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/types.ts src/api.ts package.json package-lock.json
-          git commit -m "chore: sync types and bump version to ${{ steps.version.outputs.value }} [skip ci]"
+          git add src/ package.json package-lock.json
+          git commit -m "chore: sync sdk and bump version to ${{ steps.version.outputs.value }} [skip ci]"
+          git tag v${{ steps.version.outputs.value }}
           git push
+          git push origin v${{ steps.version.outputs.value }}
 
       - name: Install dependencies and build
         working-directory: polyphon-js
