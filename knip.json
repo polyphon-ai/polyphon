@@ -6,6 +6,9 @@
         "src/main/index.ts",
         "src/main/preload.ts",
         "src/shared/api.ts",
+        "src/shared/types.ts",
+        "src/sdk/index.ts",
+        "src/sdk/testing/index.ts",
         "vite.*.config.ts",
         "e2e/**/*.ts",
         "src/**/*.test.{ts,tsx}",
@@ -18,7 +21,7 @@
       ]
     },
     "packages/poly": {
-      "entry": ["src/index.ts", "src/types.ts"],
+      "entry": ["src/types.ts"],
       "project": ["src/**/*.ts"]
     }
   },
