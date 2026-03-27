@@ -56,18 +56,7 @@ jobs:
         env:
           TAG: ${{ github.event.workflow_run.head_branch }}
 
-      - name: Copy shared types with sync header
-        run: |
-          HEADER="// AUTO-SYNCED from polyphon/src/shared"
-          for file in types.ts api.ts; do
-            src="polyphon/src/shared/${file}"
-            dst="polyphon-js/src/${file}"
-            printf "%s/${file} — do not edit by hand\n\n" "$HEADER" > "$dst"
-            # Rewrite relative import paths: ./types → ./types.js
-            sed 's|from '\''\.\/types'\''|from '\''./types.js'\''|g' "$src" >> "$dst"
-          done
-
-      - name: Sync SDK source files
+      - name: Sync shared types and SDK source files
         run: node polyphon/scripts/sync-sdk.mjs polyphon-js
 
       - name: Bump SDK version
