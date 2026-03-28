@@ -2,7 +2,7 @@
 
 **One chat. Many voices.**
 
-[![CI](https://github.com/polyphon-ai/polyphon/actions/workflows/ci.yml/badge.svg)](https://github.com/polyphon-ai/polyphon/actions/workflows/ci.yml)
+[![CI](https://github.com/polyphon-ai/polyphon/actions/workflows/ci.yml/badge.svg)](https://github.com/polyphon-ai/polyphon/actions/workflows/ci.yml) [![Follow on X](https://img.shields.io/badge/Follow-%40PolyphonAI-000?logo=x&logoColor=white)](https://x.com/PolyphonAI)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 ![Polyphon screenshot](docs/images/screenshot.png)
