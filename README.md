@@ -2,7 +2,7 @@
 
 **One chat. Many voices.**
 
-[![CI](https://github.com/polyphon-ai/polyphon/actions/workflows/ci.yml/badge.svg)](https://github.com/polyphon-ai/polyphon/actions/workflows/ci.yml) [![GitHub release](https://img.shields.io/github/v/release/polyphon-ai/polyphon)](https://github.com/polyphon-ai/polyphon/releases/latest) [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Follow on X](https://img.shields.io/badge/Follow-%40PolyphonAI-000?logo=x&logoColor=white)](https://x.com/PolyphonAI)
+[![CI](https://github.com/polyphon-ai/polyphon/actions/workflows/ci.yml/badge.svg)](https://github.com/polyphon-ai/polyphon/actions/workflows/ci.yml) [![GitHub release](https://img.shields.io/github/v/release/polyphon-ai/polyphon)](https://github.com/polyphon-ai/polyphon/releases/latest) [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) [![Follow on X](https://img.shields.io/badge/Follow-%40PolyphonAI-000?logo=x&logoColor=white)](https://x.com/intent/follow?screen_name=PolyphonAI)
 
 ![Polyphon screenshot](docs/images/screenshot.png)
 
@@ -97,7 +97,7 @@ POLYPHON_DEVTOOLS=1 make run
 ## Community
 
 - **Website:** [polyphon.ai](https://polyphon.ai)
-- **X / Twitter:** [@PolyphonAI](https://x.com/PolyphonAI)
+- **X / Twitter:** [@PolyphonAI](https://x.com/intent/follow?screen_name=PolyphonAI)
 - **GitHub Org:** [github.com/polyphon-ai](https://github.com/polyphon-ai)
 - **GitHub:** [polyphon-ai/polyphon](https://github.com/polyphon-ai/polyphon)
 - **Reddit:** [u/PolyphonAI](https://www.reddit.com/user/PolyphonAI)
