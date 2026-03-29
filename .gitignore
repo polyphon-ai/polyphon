@@ -2,6 +2,9 @@
 .DS_Store
 Thumbs.db
 
+# Un-ignore media/ (overrides global gitignore rule)
+!media/
+
 # electron-updater dev mode config
 dev-app-update.yml
 
